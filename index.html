@@ -1,46 +1,37 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta name="theme-color" content="#050505">
 
   <title>LIME DEVIL // encrypted terminal</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
-    rel="stylesheet"
-  />
-
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&display=swap');
+
     :root{
-      --bg:#030503;
-      --panel:#071007;
-      --panel2:#0a120a;
-
+      --void:#050505;
+      --panel:#0c0f0c;
+      --panel-2:#111511;
       --lime:#39FF14;
-      --lime-dim:#1ca00c;
-      --lime-soft:#79ff62;
-
-      --red:#ff1744;
-      --cyan:#00eaff;
-
-      --text:#d8ffd1;
-      --muted:#557653;
-
-      --border:rgba(57,255,20,.25);
-      --border-strong:rgba(57,255,20,.55);
-
-      --shadow:0 0 20px rgba(57,255,20,.08);
+      --lime-dim:#1c8a0c;
+      --lime-glow:#00FF66;
+      --crimson:#ff1744;
+      --crimson-dim:#7a0a1d;
+      --text:#c9ffcf;
+      --mono:'JetBrains Mono','Share Tech Mono','Courier New',monospace;
     }
 
     *{
       box-sizing:border-box;
+      margin:0;
+      padding:0;
       -webkit-tap-highlight-color:transparent;
     }
 
@@ -48,15 +39,17 @@
     body{
       width:100%;
       height:100%;
-      margin:0;
-      padding:0;
-      background:var(--bg);
+      min-height:100%;
+      background:var(--void);
       color:var(--text);
+      font-family:var(--mono);
       overflow:hidden;
     }
 
     body{
-      font-family:"JetBrains Mono",monospace;
+      overscroll-behavior:none;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
     }
 
     button,
@@ -64,446 +57,866 @@
       font:inherit;
     }
 
-    #app{
-      width:100%;
-      height:100dvh;
-      min-height:100dvh;
+    button{
+      -webkit-appearance:none;
+      appearance:none;
+      touch-action:manipulation;
+    }
 
-      display:grid;
-      grid-template-rows:auto minmax(0,1fr) auto auto;
+    input{
+      -webkit-appearance:none;
+      appearance:none;
+    }
+
+    /* ---------- background ---------- */
+
+    #matrixCanvas{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      opacity:0.10;
+      pointer-events:none;
+    }
+
+    /* ---------- CRT ---------- */
+
+    .crt-overlay{
+      position:fixed;
+      inset:0;
+      z-index:9998;
+      pointer-events:none;
+      background:repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0px,
+        rgba(0,0,0,0) 1px,
+        rgba(0,0,0,0.18) 2px,
+        rgba(0,0,0,0.18) 3px
+      );
+      mix-blend-mode:overlay;
+    }
+
+    .crt-vignette{
+      position:fixed;
+      inset:0;
+      z-index:9997;
+      pointer-events:none;
+      background:radial-gradient(
+        ellipse at center,
+        rgba(0,0,0,0) 40%,
+        rgba(0,0,0,0.65) 100%
+      );
+    }
+
+    .flicker{
+      animation:flicker 6s infinite;
+    }
+
+    @keyframes flicker{
+      0%,19%,21%,23%,25%,54%,56%,100%{
+        opacity:1;
+      }
+
+      20%,22%,24%,55%{
+        opacity:0.86;
+      }
+    }
+
+    /* ---------- glitch ---------- */
+
+    .glitch{
+      position:relative;
+      color:var(--lime-glow);
+      text-shadow:
+        0 0 6px var(--lime-glow),
+        0 0 18px rgba(0,255,102,0.5);
+      letter-spacing:2px;
+    }
+
+    .glitch::before,
+    .glitch::after{
+      content:attr(data-text);
+      position:absolute;
+      left:0;
+      top:0;
+      width:100%;
+      overflow:hidden;
+      background:transparent;
+      pointer-events:none;
+    }
+
+    .glitch::before{
+      color:var(--crimson);
+      left:2px;
+      animation:glitchTop 3.2s infinite linear alternate-reverse;
+      clip-path:inset(0 0 60% 0);
+    }
+
+    .glitch::after{
+      color:#00eaff;
+      left:-2px;
+      animation:glitchBottom 2.6s infinite linear alternate-reverse;
+      clip-path:inset(60% 0 0 0);
+    }
+
+    @keyframes glitchTop{
+      0%{transform:translate(0,0);}
+      20%{transform:translate(-2px,-1px);}
+      40%{transform:translate(2px,1px);}
+      60%{transform:translate(-1px,1px);}
+      80%{transform:translate(1px,-1px);}
+      100%{transform:translate(0,0);}
+    }
+
+    @keyframes glitchBottom{
+      0%{transform:translate(0,0);}
+      25%{transform:translate(2px,1px);}
+      50%{transform:translate(-2px,-1px);}
+      75%{transform:translate(1px,1px);}
+      100%{transform:translate(0,0);}
+    }
+
+    /* ================= LOCK SCREEN ================= */
+
+    #lockScreen{
+      position:fixed;
+      inset:0;
+      z-index:20;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      padding:
+        max(20px, env(safe-area-inset-top))
+        max(20px, env(safe-area-inset-right))
+        max(20px, env(safe-area-inset-bottom))
+        max(20px, env(safe-area-inset-left));
 
       background:
         radial-gradient(
-          circle at 50% -20%,
-          rgba(57,255,20,.08),
-          transparent 45%
+          ellipse at 50% 20%,
+          rgba(57,255,20,0.06),
+          transparent 60%
         ),
-        var(--bg);
-
-      position:relative;
-      overflow:hidden;
+        var(--void);
     }
 
-    #app::before{
-      content:"";
-      position:absolute;
-      inset:0;
+    .lock-box{
+      width:min(92vw,460px);
 
-      pointer-events:none;
+      background:linear-gradient(
+        180deg,
+        var(--panel),
+        #08090a
+      );
+
+      border:1px solid var(--lime-dim);
+      border-radius:6px;
+
+      padding:34px 30px 30px;
+
+      box-shadow:
+        0 0 40px rgba(57,255,20,0.12),
+        inset 0 0 30px rgba(0,0,0,0.6);
+
+      position:relative;
+    }
+
+    .lock-box::before{
+      content:'';
+      position:absolute;
+      inset:-1px;
+      border-radius:6px;
+      padding:1px;
 
       background:
-        repeating-linear-gradient(
-          to bottom,
-          rgba(255,255,255,.018) 0,
-          rgba(255,255,255,.018) 1px,
-          transparent 1px,
-          transparent 4px
+        linear-gradient(
+          135deg,
+          var(--lime),
+          transparent 40%,
+          var(--crimson-dim)
         );
 
-      opacity:.35;
-      z-index:20;
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+
+      opacity:0.5;
+      pointer-events:none;
+    }
+
+    .lock-title{
+      font-size:clamp(28px,6vw,40px);
+      font-weight:800;
+      text-align:center;
+      margin-bottom:6px;
+    }
+
+    .lock-sub{
+      text-align:center;
+      color:var(--lime-dim);
+      font-size:12px;
+      letter-spacing:3px;
+      margin-bottom:22px;
+      text-transform:uppercase;
+    }
+
+    .hint-line{
+      background:rgba(255,23,68,0.06);
+      border:1px dashed var(--crimson-dim);
+      color:var(--crimson);
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:4px;
+      margin-bottom:20px;
+      text-align:center;
+      letter-spacing:1px;
+      animation:pulseHint 2.4s infinite;
+    }
+
+    @keyframes pulseHint{
+      0%,100%{
+        box-shadow:0 0 0 rgba(255,23,68,0);
+      }
+
+      50%{
+        box-shadow:0 0 14px rgba(255,23,68,0.35);
+      }
+    }
+
+    .pass-row{
+      display:flex;
+      gap:8px;
+    }
+
+    #passInput{
+      flex:1;
+      min-width:0;
+
+      background:#050805;
+      border:1px solid var(--lime-dim);
+      border-radius:4px;
+
+      color:var(--lime-glow);
+      font-family:var(--mono);
+      font-size:18px;
+
+      letter-spacing:6px;
+      text-align:center;
+
+      padding:14px 10px;
+
+      outline:none;
+
+      transition:
+        box-shadow 0.15s,
+        border-color 0.15s;
+    }
+
+    #passInput:focus{
+      border-color:var(--lime-glow);
+      box-shadow:0 0 16px rgba(0,255,102,0.5);
+    }
+
+    #unlockBtn{
+      background:var(--lime);
+      border:none;
+      color:#031403;
+
+      font-family:var(--mono);
+      font-weight:800;
+
+      padding:0 18px;
+      border-radius:4px;
+
+      cursor:pointer;
+      letter-spacing:1px;
+
+      transition:
+        transform 0.1s,
+        box-shadow 0.15s;
+    }
+
+    #unlockBtn:disabled{
+      opacity:0.55;
+      cursor:not-allowed;
+    }
+
+    #unlockBtn:hover{
+      box-shadow:0 0 18px rgba(57,255,20,0.6);
+      transform:translateY(-1px);
+    }
+
+    .lock-error{
+      margin-top:12px;
+      text-align:center;
+      color:var(--crimson);
+      font-size:12px;
+      min-height:16px;
+      letter-spacing:1px;
+    }
+
+    .shake{
+      animation:shake 0.35s;
+    }
+
+    @keyframes shake{
+      0%,100%{transform:translateX(0);}
+      20%{transform:translateX(-8px);}
+      40%{transform:translateX(8px);}
+      60%{transform:translateX(-5px);}
+      80%{transform:translateX(5px);}
+    }
+
+    .lock-dissolve{
+      animation:dissolveOut 0.7s forwards;
+    }
+
+    @keyframes dissolveOut{
+      0%{
+        opacity:1;
+        filter:blur(0) brightness(1);
+      }
+
+      40%{
+        opacity:0.7;
+        filter:blur(2px) brightness(3) hue-rotate(30deg);
+      }
+
+      100%{
+        opacity:0;
+        filter:blur(10px) brightness(0.2);
+        transform:scale(1.04);
+      }
+    }
+
+    /* ================= APP ================= */
+
+    #app{
+      position:relative;
+      z-index:1;
+
+      display:none;
+      flex-direction:column;
+
+      width:100%;
+      height:100vh;
+      height:100dvh;
+
+      min-height:0;
+
+      animation:fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0;}
+      to{opacity:1;}
     }
 
     header{
-      position:relative;
-      z-index:2;
+      flex:0 0 auto;
 
       display:flex;
       align-items:center;
       justify-content:space-between;
+
       gap:12px;
 
       padding:
-        calc(10px + env(safe-area-inset-top))
-        14px
-        10px;
+        calc(12px + env(safe-area-inset-top))
+        max(18px, env(safe-area-inset-right))
+        12px
+        max(18px, env(safe-area-inset-left));
 
-      border-bottom:1px solid var(--border);
+      background:linear-gradient(
+        180deg,
+        #0a0c0a,
+        #060706
+      );
 
-      background:rgba(3,5,3,.92);
-      box-shadow:var(--shadow);
+      border-bottom:1px solid var(--lime-dim);
+
+      flex-wrap:wrap;
     }
 
-    .brand{
-      min-width:0;
-    }
-
-    .title{
-      color:var(--lime);
-      font-family:"Share Tech Mono",monospace;
-      font-size:clamp(18px,5vw,27px);
+    .logo{
+      font-size:22px;
+      font-weight:800;
       letter-spacing:2px;
-      line-height:1;
-      text-shadow:0 0 10px rgba(57,255,20,.35);
-
-      white-space:nowrap;
     }
 
-    .subtitle{
-      margin-top:5px;
-      color:var(--muted);
-      font-size:9px;
-      letter-spacing:1.4px;
-      white-space:nowrap;
+    .header-stats{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      font-size:12px;
     }
 
-    .status{
-      flex:none;
+    .stat-chip{
+      background:var(--panel-2);
+      border:1px solid var(--lime-dim);
+      border-radius:20px;
 
-      color:var(--lime);
-      border:1px solid var(--border);
-      padding:7px 9px;
+      padding:6px 12px;
 
-      font-size:9px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+
       letter-spacing:1px;
-
-      text-align:center;
-
-      background:rgba(57,255,20,.025);
+      white-space:nowrap;
     }
 
-    #userCount{
-      color:var(--lime-soft);
+    .dot{
+      width:7px;
+      height:7px;
+      flex:0 0 7px;
+
+      border-radius:50%;
+
+      background:var(--lime-glow);
+      box-shadow:0 0 8px var(--lime-glow);
+
+      animation:blink 1.6s infinite;
+    }
+
+    @keyframes blink{
+      50%{opacity:0.25;}
+    }
+
+    #purgeTimer{
+      color:var(--crimson);
+
+      text-shadow:
+        0 0 8px rgba(255,23,68,0.7);
+
       font-weight:700;
     }
 
-    #feed{
-      position:relative;
-      z-index:1;
+    /* ================= FEED ================= */
+
+    main{
+      flex:1 1 auto;
 
       min-height:0;
+
       overflow-y:auto;
       overflow-x:hidden;
 
+      padding:18px 14px 10px;
+
       display:flex;
       flex-direction:column;
-      gap:8px;
+      gap:10px;
 
-      padding:14px 12px 10px;
+      scroll-behavior:smooth;
 
-      overscroll-behavior:contain;
       -webkit-overflow-scrolling:touch;
 
-      scrollbar-width:thin;
-      scrollbar-color:var(--lime-dim) transparent;
+      overscroll-behavior:contain;
     }
 
-    #feed::-webkit-scrollbar{
-      width:5px;
+    main::-webkit-scrollbar{
+      width:8px;
     }
 
-    #feed::-webkit-scrollbar-track{
+    main::-webkit-scrollbar-thumb{
+      background:var(--lime-dim);
+      border-radius:4px;
+    }
+
+    main::-webkit-scrollbar-track{
       background:transparent;
     }
 
-    #feed::-webkit-scrollbar-thumb{
-      background:var(--lime-dim);
+    .sys-msg{
+      align-self:center;
+
+      color:var(--lime-dim);
+      font-size:11px;
+
+      letter-spacing:1px;
+
+      border:1px dashed var(--lime-dim);
+
+      padding:4px 12px;
+
+      border-radius:20px;
+
+      background:rgba(57,255,20,0.03);
+
+      direction:auto;
+      unicode-bidi:plaintext;
+      text-align:center;
     }
 
-    #messageList{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      width:100%;
+    .msg{
+      max-width:78%;
+
+      background:var(--panel-2);
+
+      border:1px solid #1c231c;
+      border-left:3px solid var(--lime-dim);
+
+      border-radius:4px;
+
+      padding:8px 12px;
+
+      animation:msgIn 0.25s ease;
+
+      direction:auto;
+      unicode-bidi:plaintext;
     }
 
-    .message{
-      width:100%;
-      display:flex;
-      flex-direction:column;
-      gap:3px;
-
-      animation:messageIn .16s ease-out;
-    }
-
-    @keyframes messageIn{
+    @keyframes msgIn{
       from{
         opacity:0;
-        transform:translateY(3px);
+        transform:translateY(8px);
       }
 
       to{
         opacity:1;
-        transform:none;
+        transform:translateY(0);
       }
     }
 
-    .message-head{
+    .msg.mine{
+      align-self:flex-end;
+
+      border-left:3px solid var(--crimson);
+
+      background:#12100f;
+    }
+
+    .msg-meta{
       display:flex;
-      align-items:center;
-      gap:7px;
+      justify-content:space-between;
+      gap:12px;
 
-      font-size:9px;
-      color:var(--muted);
+      font-size:11px;
+      margin-bottom:3px;
+
+      letter-spacing:0.5px;
     }
 
-    .message-name{
+    .msg-user{
       font-weight:700;
-      letter-spacing:.7px;
+      unicode-bidi:plaintext;
     }
 
-    .message-time{
-      opacity:.65;
+    .msg-time{
+      color:#5a6a5a;
+      direction:ltr;
+      unicode-bidi:isolate;
+      flex-shrink:0;
     }
 
-    .message-body{
-      width:fit-content;
-      max-width:min(90%,760px);
+    .msg-text{
+      font-size:14px;
 
-      padding:8px 10px;
+      line-height:1.5;
 
-      border:1px solid var(--border);
-      background:rgba(57,255,20,.025);
-
-      color:var(--text);
-
-      font-size:12px;
-      line-height:1.55;
+      color:#dfffe0;
 
       white-space:pre-wrap;
+
       overflow-wrap:anywhere;
-      word-break:break-word;
+      word-break:normal;
 
       direction:auto;
       unicode-bidi:plaintext;
+
       text-align:start;
 
-      box-shadow:0 0 12px rgba(57,255,20,.025);
+      -webkit-user-select:text;
+      user-select:text;
     }
 
-    .system{
-      align-self:center;
+    /* ================= TYPING INDICATOR ================= */
 
-      width:100%;
-      text-align:center;
+    #typingIndicator{
+      flex:0 0 auto;
 
-      color:var(--muted);
+      min-height:0;
 
-      font-size:9px;
-      letter-spacing:1px;
+      padding:0 16px 5px;
 
-      direction:auto;
-      unicode-bidi:plaintext;
-    }
-
-    .system-text{
-      display:inline-block;
-
-      padding:4px 9px;
-
-      border:1px dashed rgba(57,255,20,.18);
-
-      background:rgba(57,255,20,.015);
-    }
-
-    .typing-indicator{
-      flex:none;
-
-      align-self:center;
+      background:#080a08;
 
       color:var(--lime-dim);
 
-      font-size:9px;
+      font-size:10px;
+
       letter-spacing:1px;
 
-      border:1px dashed rgba(57,255,20,.3);
-
-      padding:5px 12px;
-      margin:0 0 4px;
-
-      background:rgba(57,255,20,.025);
+      text-align:start;
 
       direction:auto;
       unicode-bidi:plaintext;
-      text-align:center;
 
-      animation:typingPulse 1.2s infinite;
+      opacity:0;
+
+      transform:translateY(3px);
+
+      transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
     }
 
-    @keyframes typingPulse{
-      0%,
-      100%{
+    #typingIndicator.visible{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .typing-dots{
+      display:inline-flex;
+      gap:3px;
+      margin-left:4px;
+      vertical-align:middle;
+    }
+
+    .typing-dots span{
+      width:3px;
+      height:3px;
+
+      border-radius:50%;
+
+      background:var(--lime-glow);
+
+      box-shadow:0 0 5px var(--lime-glow);
+
+      animation:typingDot 1s infinite;
+    }
+
+    .typing-dots span:nth-child(2){
+      animation-delay:0.15s;
+    }
+
+    .typing-dots span:nth-child(3){
+      animation-delay:0.3s;
+    }
+
+    @keyframes typingDot{
+      0%,60%,100%{
+        opacity:0.25;
+        transform:translateY(0);
+      }
+
+      30%{
         opacity:1;
-      }
-
-      50%{
-        opacity:.4;
+        transform:translateY(-2px);
       }
     }
 
-    .typing-dots::after{
-      content:"";
-      animation:typingDots 1.2s steps(4,end) infinite;
-    }
+    /* ================= COMPOSER ================= */
 
-    @keyframes typingDots{
-      0%{content:"";}
-      25%{content:".";}
-      50%{content:"..";}
-      75%{content:"...";}
-      100%{content:"";}
-    }
-
-    #composer{
-      position:relative;
-      z-index:3;
+    form#composer{
+      flex:0 0 auto;
 
       display:flex;
-      gap:8px;
+      align-items:stretch;
+
+      gap:10px;
 
       padding:
-        8px
-        10px
-        calc(8px + env(safe-area-inset-bottom));
+        14px
+        max(14px, env(safe-area-inset-right))
+        calc(14px + env(safe-area-inset-bottom))
+        max(14px, env(safe-area-inset-left));
 
-      border-top:1px solid var(--border);
+      background:#080a08;
 
-      background:rgba(3,5,3,.96);
+      border-top:1px solid var(--lime-dim);
+
+      position:relative;
+      z-index:5;
     }
 
     #msgInput{
-      min-width:0;
       flex:1;
+      min-width:0;
 
-      height:44px;
+      background:#0b0e0b;
 
-      border:1px solid var(--border-strong);
-      outline:none;
+      border:1px solid var(--lime-dim);
+      border-radius:5px;
 
-      border-radius:0;
-
-      background:var(--panel);
       color:var(--text);
 
-      padding:0 11px;
+      font-family:var(--mono);
 
       font-size:16px;
-      line-height:44px;
+
+      line-height:1.4;
+
+      padding:12px 14px;
+
+      outline:none;
 
       direction:auto;
       unicode-bidi:plaintext;
+
       text-align:start;
 
-      caret-color:var(--lime);
+      transition:
+        box-shadow 0.15s,
+        border-color 0.15s;
 
-      box-shadow:
-        inset 0 0 12px rgba(57,255,20,.025);
-    }
+      -webkit-user-select:text;
+      user-select:text;
 
-    #msgInput::placeholder{
-      color:#426140;
-      opacity:1;
+      ime-mode:auto;
     }
 
     #msgInput:focus{
-      border-color:var(--lime);
+      border-color:var(--lime-glow);
 
       box-shadow:
-        0 0 12px rgba(57,255,20,.08),
-        inset 0 0 12px rgba(57,255,20,.025);
+        0 0 14px rgba(0,255,102,0.35);
+    }
+
+    #msgInput::placeholder{
+      color:#3d4d3d;
+      opacity:1;
     }
 
     #sendBtn{
-      flex:none;
+      flex:0 0 auto;
 
-      height:44px;
       min-width:88px;
 
-      border:1px solid var(--lime);
+      background:var(--lime);
 
-      background:rgba(57,255,20,.06);
-      color:var(--lime);
+      border:none;
+
+      color:#031403;
+
+      font-family:var(--mono);
+
+      font-weight:800;
+
+      padding:0 20px;
+
+      border-radius:5px;
 
       cursor:pointer;
 
-      font-family:"Share Tech Mono",monospace;
-      font-size:13px;
       letter-spacing:1px;
 
       transition:
-        background .12s ease,
-        color .12s ease,
-        opacity .12s ease;
+        transform 0.1s,
+        box-shadow 0.15s,
+        opacity 0.15s;
     }
 
     #sendBtn:hover{
-      background:var(--lime);
-      color:#000;
+      box-shadow:0 0 16px rgba(57,255,20,0.6);
+      transform:translateY(-1px);
     }
 
     #sendBtn:active{
-      transform:translateY(1px);
+      transform:translateY(0);
     }
 
     #sendBtn:disabled{
-      opacity:.45;
+      opacity:0.45;
       cursor:not-allowed;
+      transform:none;
+      box-shadow:none;
     }
 
     .footnote{
-      position:relative;
-      z-index:2;
-
-      padding:
-        0
-        10px
-        calc(5px + env(safe-area-inset-bottom));
-
-      color:#355633;
-
-      font-size:8px;
-      letter-spacing:1px;
+      flex:0 0 auto;
 
       text-align:center;
 
-      background:rgba(3,5,3,.96);
+      font-size:10px;
+
+      color:#33452f;
+
+      padding:4px 0 8px;
+
+      letter-spacing:1px;
+
+      background:#080a08;
+
+      padding-bottom:
+        max(8px, env(safe-area-inset-bottom));
     }
 
-    @media(max-width:600px){
-      header{
-        padding-left:10px;
-        padding-right:10px;
+    /* ================= MOBILE ================= */
+
+    @media (max-width:640px){
+
+      .logo{
+        font-size:18px;
       }
 
-      .subtitle{
+      .header-stats{
+        width:100%;
+        font-size:9px;
+        gap:6px;
+        overflow-x:auto;
+        scrollbar-width:none;
+      }
+
+      .header-stats::-webkit-scrollbar{
         display:none;
       }
 
-      .status{
-        font-size:8px;
-        padding:6px 7px;
+      .stat-chip{
+        padding:5px 8px;
       }
 
-      #feed{
-        padding:10px 8px 8px;
+      .msg{
+        max-width:92%;
       }
 
-      .message-body{
-        max-width:94%;
-        font-size:13px;
+      .lock-box{
+        padding:26px 18px 22px;
       }
 
-      #composer{
-        gap:6px;
-        padding-left:7px;
-        padding-right:7px;
+      form#composer{
+        gap:8px;
+        padding-top:10px;
+      }
+
+      #msgInput{
+        font-size:16px;
+        padding:12px;
       }
 
       #sendBtn{
-        min-width:78px;
-        font-size:12px;
+        min-width:72px;
+        padding:0 12px;
+      }
+
+      .footnote{
+        font-size:8px;
+        padding-left:8px;
+        padding-right:8px;
+      }
+
+      #typingIndicator{
+        padding-left:12px;
+        padding-right:12px;
       }
     }
 
-    @media(max-width:380px){
-      .title{
-        font-size:17px;
-        letter-spacing:1px;
+    @media (max-width:380px){
+
+      .header-stats{
+        font-size:8px;
       }
 
       #sendBtn{
-        min-width:68px;
-        padding:0 7px;
+        min-width:64px;
+        padding:0 8px;
       }
     }
   </style>
@@ -511,784 +924,956 @@
 
 <body>
 
-<div id="app">
+  <canvas id="matrixCanvas"></canvas>
 
-  <header>
-    <div class="brand">
-      <div class="title">LIME DEVIL</div>
-      <div class="subtitle">// ENCRYPTED TERMINAL</div>
+  <div class="crt-overlay"></div>
+  <div class="crt-vignette"></div>
+
+  <!-- ================= LOCK SCREEN ================= -->
+
+  <div id="lockScreen" class="flicker">
+
+    <div class="lock-box">
+
+      <div
+        class="lock-title glitch"
+        data-text="LIME DEVIL"
+      >
+        LIME DEVIL
+      </div>
+
+      <div class="lock-sub">
+        // encrypted node access required
+      </div>
+
+      <div class="hint-line">
+        [ CLEARANCE CODE REQUIRED — UNAUTHORIZED ACCESS WILL BE LOGGED ]
+      </div>
+
+      <div class="pass-row">
+
+        <input
+          type="password"
+          id="passInput"
+          maxlength="8"
+          placeholder="••••"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          inputmode="numeric"
+          enterkeyhint="go"
+        >
+
+        <button
+          id="unlockBtn"
+          type="button"
+        >
+          UNLOCK
+        </button>
+
+      </div>
+
+      <div
+        class="lock-error"
+        id="lockError"
+      ></div>
+
     </div>
-
-    <div class="status">
-      <span id="userCount">1</span> ONLINE
-    </div>
-  </header>
-
-  <main id="feed">
-    <div id="messageList"></div>
-
-    <div
-      id="typingIndicator"
-      class="typing-indicator"
-      hidden
-      aria-live="polite"
-    ></div>
-  </main>
-
-  <form
-    id="composer"
-    autocomplete="off"
-    novalidate
-  >
-    <input
-      type="text"
-      id="msgInput"
-      placeholder="transmit a message... [ENTER to send]"
-      maxlength="500"
-      autocomplete="off"
-      autocapitalize="sentences"
-      autocorrect="on"
-      spellcheck="true"
-      enterkeyhint="send"
-      inputmode="text"
-      dir="auto"
-      aria-label="Message"
-    >
-
-    <button
-      type="submit"
-      id="sendBtn"
-    >
-      SEND ▶
-    </button>
-  </form>
-
-  <div class="footnote">
-    AUTO-WIPE EVERY 10 MIN // CLIENT PURGE NODE ACTIVE
   </div>
 
-</div>
+  <!-- ================= MAIN APP ================= -->
 
-<script type="module">
+  <div id="app">
 
-  import {
-    initializeApp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    <header>
 
-  import {
-    getFirestore,
-    collection,
-    addDoc,
-    doc,
-    setDoc,
-    deleteDoc,
-    onSnapshot,
-    query,
-    orderBy,
-    runTransaction,
-    getDocs,
-    writeBatch
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      <div
+        class="logo glitch"
+        data-text="LIME DEVIL"
+      >
+        LIME DEVIL
+      </div>
 
-  import {
-    getAuth,
-    signInAnonymously
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      <div class="header-stats">
 
+        <div class="stat-chip">
+          <span class="dot"></span>
+          <span id="userCount">1</span>
+          ONLINE
+        </div>
 
-  /* =========================================================
-     FIREBASE
-  ========================================================= */
+        <div class="stat-chip">
+          SYSTEM PURGE IN:
+          <span id="purgeTimer">10:00</span>
+        </div>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
-    authDomain: "limedevil-d3725.firebaseapp.com",
-    projectId: "limedevil-d3725",
-    storageBucket: "limedevil-d3725.firebasestorage.app",
-    messagingSenderId: "678313318556",
-    appId: "1:678313318556:web:b0d4207b086319c05cf559",
-    measurementId: "G-BHJ50N5NNZ"
-  };
+        <div
+          class="stat-chip"
+          id="myNameChip"
+        >
+          YOU: —
+        </div>
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+      </div>
 
+    </header>
 
-  /* =========================================================
-     COLLECTIONS
-  ========================================================= */
+    <main id="feed"></main>
 
-  const messagesCol = collection(db, "messages");
-  const presenceCol = collection(db, "presence");
-  const purgeRef = doc(db, "meta", "purge");
+    <!-- خارج feed حتى لا يمسحه onSnapshot -->
+    <div id="typingIndicator" aria-live="polite"></div>
 
+    <form
+      id="composer"
+      autocomplete="off"
+      novalidate
+    >
 
-  /* =========================================================
-     CONFIG
-  ========================================================= */
+      <input
+        type="text"
+        id="msgInput"
 
-  const PASSWORD = "1280";
+        placeholder="transmit a message... [ENTER to send]"
 
-  // IMPORTANT:
-  // 10 MINUTES — DO NOT CHANGE TO 30.
-  const PURGE_MS = 10 * 60 * 1000;
+        maxlength="500"
 
-  const PRESENCE_STALE_MS = 20000;
-  const TYPING_STALE_MS = 4000;
+        autocomplete="off"
+        autocapitalize="sentences"
+        autocorrect="on"
+        spellcheck="true"
 
-  const NAME_COLORS = [
-    "#39FF14",
-    "#ff1744",
-    "#00eaff",
-    "#ffd600",
-    "#ff6e40",
-    "#b388ff",
-    "#00FF66",
-    "#ff4081"
-  ];
+        enterkeyhint="send"
 
+        inputmode="text"
 
-  /* =========================================================
-     DOM
-  ========================================================= */
+        dir="auto"
 
-  const feed = document.getElementById("feed");
-  const messageList = document.getElementById("messageList");
-  const typingIndicator = document.getElementById("typingIndicator");
+        aria-label="Message"
+      >
 
-  const composer = document.getElementById("composer");
-  const msgInput = document.getElementById("msgInput");
-  const sendBtn = document.getElementById("sendBtn");
+      <button
+        type="submit"
+        id="sendBtn"
+      >
+        SEND ▶
+      </button>
 
-  const userCountEl = document.getElementById("userCount");
+    </form>
+
+    <div class="footnote">
+      ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 10 MIN
+    </div>
+
+  </div>
 
 
-  /* =========================================================
-     IDENTITY
-  ========================================================= */
+  <script type="module">
 
-  const PREFIXES = [
-    "LIME",
-    "VOID",
-    "CYBER",
-    "NEON",
-    "GHOST",
-    "DARK",
-    "ZERO",
-    "NOVA",
-    "RUST",
-    "BYTE",
-    "GLITCH",
-    "SHADOW"
-  ];
+    /* =========================================================
+       FIREBASE SETUP
+    ========================================================= */
 
-  const SUFFIXES = [
-    "DEVIL",
-    "WOLF",
-    "CORE",
-    "NODE",
-    "FOX",
-    "BYTE",
-    "X",
-    "404",
-    "ZERO",
-    "GHOST",
-    "LORD",
-    "UNIT"
-  ];
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-  function randomItem(arr){
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  function randomHex(length = 6){
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-
-    for(let i = 0; i < length; i++){
-      result += chars[Math.floor(Math.random() * chars.length)];
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      doc,
+      setDoc,
+      deleteDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      runTransaction,
+      getDocs,
+      writeBatch
     }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    return result;
-  }
-
-  const myName =
-    `${randomItem(PREFIXES)}_${randomItem(SUFFIXES)}_${randomHex(2)}`;
-
-  const myColor = randomItem(NAME_COLORS);
-
-  const myId =
-    `${myName}_${randomHex(8)}`;
-
-
-  /* =========================================================
-     STATE
-  ========================================================= */
-
-  let sendingMessage = false;
-
-  let isComposing = false;
-  let compositionJustEndedAt = 0;
-
-  let chatInitialized = false;
-
-  let typingActive = false;
-  let typingStopTimer = null;
-  let typingPulseTimer = null;
-
-  let presenceCache = new Map();
-
-
-  /* =========================================================
-     TEXT
-  ========================================================= */
-
-  function normalizeMessage(value){
-
-    if(typeof value !== "string"){
-      return "";
+    import {
+      getAuth,
+      signInAnonymously,
+      signOut
     }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    return value
-      .normalize("NFC")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n");
-  }
 
+    const firebaseConfig = {
 
-  /* =========================================================
-     SCROLL
-  ========================================================= */
+      apiKey:
+        "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
 
-  function scrollToBottom(){
+      authDomain:
+        "limedevil-d3725.firebaseapp.com",
 
-    requestAnimationFrame(() => {
+      projectId:
+        "limedevil-d3725",
 
-      feed.scrollTop = feed.scrollHeight;
+      storageBucket:
+        "limedevil-d3725.firebasestorage.app",
 
-    });
+      messagingSenderId:
+        "678313318556",
 
-  }
+      appId:
+        "1:678313318556:web:b0d4207b086319c05cf559",
 
+      measurementId:
+        "G-BHJ50N5NNZ"
+    };
 
-  /* =========================================================
-     MESSAGE RENDER
-  ========================================================= */
 
-  function renderMessageDoc(m){
+    const fbApp = initializeApp(firebaseConfig);
 
-    if(!m){
-      return;
-    }
+    const db = getFirestore(fbApp);
 
-    const type = m.type || "msg";
+    const auth = getAuth(fbApp);
 
-    if(type === "system"){
 
-      const wrapper = document.createElement("div");
+    const messagesCol =
+      collection(db, "messages");
 
-      wrapper.className = "system";
+    const presenceCol =
+      collection(db, "presence");
 
-      const text = document.createElement("div");
+    const purgeRef =
+      doc(db, "meta", "purge");
 
-      text.className = "system-text";
 
-      text.textContent = m.text || "";
+    /* =========================================================
+       FORCE FRESH LOGIN AFTER EVERY REFRESH
+    ========================================================= */
 
-      wrapper.appendChild(text);
+    /*
+      Firebase Anonymous Auth normally persists the anonymous
+      session. We explicitly sign it out when this page loads,
+      so a browser refresh always starts from the LOCK SCREEN
+      and requires a new anonymous login.
+    */
 
-      messageList.appendChild(wrapper);
-
-      return;
-    }
-
-
-    const message = document.createElement("div");
-
-    message.className = "message";
-
-
-    const head = document.createElement("div");
-
-    head.className = "message-head";
-
-
-    const name = document.createElement("span");
-
-    name.className = "message-name";
-
-    name.textContent = m.user || "UNKNOWN";
-
-    if(m.color){
-      name.style.color = m.color;
-    }
-
-
-    const time = document.createElement("span");
-
-    time.className = "message-time";
-
-    if(typeof m.ts === "number"){
-
-      try{
-
-        time.textContent =
-          new Date(m.ts).toLocaleTimeString([], {
-            hour:"2-digit",
-            minute:"2-digit"
-          });
-
-      }catch{
-        time.textContent = "";
-      }
-
-    }
-
-
-    head.appendChild(name);
-    head.appendChild(time);
-
-
-    const body = document.createElement("div");
-
-    body.className = "message-body";
-
-    body.textContent = normalizeMessage(m.text || "");
-
-
-    message.appendChild(head);
-    message.appendChild(body);
-
-    messageList.appendChild(message);
-  }
-
-
-  /* =========================================================
-     SYSTEM MESSAGE
-  ========================================================= */
-
-  async function pushSystemMessage(text){
-
-    const now = Date.now();
-
-    try{
-
-      await addDoc(messagesCol, {
-        type: "system",
-        text: normalizeMessage(text),
-        ts: now,
-        expiresAt: new Date(now + PURGE_MS)
-      });
-
-    }catch(e){
-
-      console.error("system message error:", e);
-
-    }
-
-  }
-
-
-  /* =========================================================
-     SEND MESSAGE
-  ========================================================= */
-
-  async function sendMessage(rawText){
-
-    if(sendingMessage){
-      return false;
-    }
-
-    const text = normalizeMessage(rawText).trim();
-
-    if(!text){
-      return false;
-    }
-
-
-    sendingMessage = true;
-
-    sendBtn.disabled = true;
-
-
-    const now = Date.now();
-
-
-    try{
-
-      await addDoc(messagesCol, {
-
-        type: "msg",
-
-        user: myName,
-        userId: myId,
-        color: myColor,
-
-        text,
-
-        ts: now,
-
-        expiresAt: new Date(now + PURGE_MS)
-
-      });
-
-
-      return true;
-
-    }catch(e){
-
-      console.error("send message error:", e);
-
-      return false;
-
-    }finally{
-
-      sendingMessage = false;
-
-      sendBtn.disabled = false;
-
-    }
-
-  }
-
-
-  /* =========================================================
-     PRESENCE
-  ========================================================= */
-
-  async function heartbeat(){
-
-    try{
-
-      /*
-        IMPORTANT:
-
-        merge:true prevents heartbeat from deleting
-        typing / name / color fields.
-      */
-
-      await setDoc(
-        doc(presenceCol, myId),
-        {
-          lastSeen: Date.now(),
-          name: myName,
-          color: myColor
-        },
-        {
-          merge: true
+    const freshSessionReady =
+      signOut(auth).catch(
+        e => {
+          console.error(
+            "initial sign-out error:",
+            e
+          );
         }
       );
 
-    }catch(e){
 
-      console.error("heartbeat error:", e);
+    /* =========================================================
+       MATRIX BACKGROUND
+    ========================================================= */
 
-    }
+    const canvas =
+      document.getElementById("matrixCanvas");
 
-  }
+    const ctx =
+      canvas.getContext("2d");
 
-
-  /* =========================================================
-     TYPING STATE
-  ========================================================= */
-
-  async function writeTypingState(typing){
-
-    if(!myId){
-      return;
-    }
-
-    const now = Date.now();
-
-    try{
-
-      await setDoc(
-        doc(presenceCol, myId),
-        {
-          lastSeen: now,
-
-          name: myName,
-          color: myColor,
-
-          typing: !!typing,
-
-          typingAt: typing ? now : 0
-
-        },
-        {
-          merge: true
-        }
-      );
-
-    }catch(e){
-
-      console.error("typing state error:", e);
-
-    }
-
-  }
+    let cols = 0;
+    let drops = [];
 
 
-  function startTyping(){
+    function resizeCanvas(){
 
-    if(!typingActive){
+      canvas.width =
+        window.innerWidth;
 
-      typingActive = true;
+      canvas.height =
+        window.innerHeight;
 
-      writeTypingState(true);
+      cols =
+        Math.floor(canvas.width / 16);
 
+      drops =
+        new Array(cols)
+          .fill(0)
+          .map(() => Math.random() * -100);
     }
 
 
-    clearTimeout(typingStopTimer);
-
-
-    /*
-      If the user continues typing for a long time,
-      keep refreshing typingAt so other clients know
-      the indicator is still alive.
-    */
-
-    if(!typingPulseTimer){
-
-      typingPulseTimer = setInterval(() => {
-
-        if(typingActive){
-
-          writeTypingState(true);
-
-        }
-
-      }, 1500);
-
-    }
-
-
-    typingStopTimer = setTimeout(() => {
-
-      stopTyping();
-
-    }, 2500);
-
-  }
-
-
-  async function stopTyping(){
-
-    clearTimeout(typingStopTimer);
-
-    typingStopTimer = null;
-
-
-    if(typingPulseTimer){
-
-      clearInterval(typingPulseTimer);
-
-      typingPulseTimer = null;
-
-    }
-
-
-    if(!typingActive){
-      return;
-    }
-
-
-    typingActive = false;
-
-    await writeTypingState(false);
-
-  }
-
-
-  /* =========================================================
-     TYPING UI
-  ========================================================= */
-
-  function refreshPresenceUI(){
-
-    const now = Date.now();
-
-    let active = 0;
-
-    const typingNames = [];
-
-
-    presenceCache.forEach((data, id) => {
-
-      if(!data){
-        return;
-      }
-
-
-      const lastSeen = data.lastSeen;
-
-      const activeNow =
-        typeof lastSeen === "number" &&
-        now - lastSeen < PRESENCE_STALE_MS;
-
-
-      if(activeNow){
-
-        active++;
-
-      }
-
-
-      const typingNow =
-        id !== myId &&
-
-        activeNow &&
-
-        data.typing === true &&
-
-        typeof data.typingAt === "number" &&
-
-        now - data.typingAt < TYPING_STALE_MS;
-
-
-      if(typingNow){
-
-        typingNames.push(
-          typeof data.name === "string"
-            ? data.name
-            : "UNKNOWN"
-        );
-
-      }
-
-    });
-
-
-    /*
-      Keep at least 1 because the current client
-      is online even if its snapshot has not arrived yet.
-    */
-
-    userCountEl.textContent =
-      Math.max(1, active);
-
-
-    renderTypingIndicator(typingNames);
-
-  }
-
-
-  function renderTypingIndicator(names){
-
-    if(!names.length){
-
-      typingIndicator.hidden = true;
-
-      typingIndicator.textContent = "";
-
-      return;
-
-    }
-
-
-    let text;
-
-
-    if(names.length === 1){
-
-      text =
-        `[ ${names[0]} IS TYPING`;
-
-    }else{
-
-      const visibleNames =
-        names.slice(0, 3);
-
-      text =
-        `[ ${visibleNames.join(", ")} ARE TYPING`;
-
-      if(names.length > 3){
-
-        text += ` +${names.length - 3}`;
-
-      }
-
-    }
-
-
-    typingIndicator.textContent = text;
-
-
-    const dots = document.createElement("span");
-
-    dots.className = "typing-dots";
-
-    typingIndicator.appendChild(dots);
-
-
-    typingIndicator.appendChild(
-      document.createTextNode(" ]")
+    window.addEventListener(
+      "resize",
+      resizeCanvas,
+      { passive:true }
     );
 
 
-    typingIndicator.hidden = false;
-
-  }
+    resizeCanvas();
 
 
-  /* =========================================================
-     INPUT / ANDROID IME
-  ========================================================= */
+    const chars =
+      "01LIMEDEVIL01ΞΔ01";
 
-  msgInput.addEventListener(
-    "compositionstart",
-    () => {
 
-      isComposing = true;
+    function drawMatrix(){
 
+      ctx.fillStyle =
+        "rgba(5,5,5,0.08)";
+
+      ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      ctx.fillStyle =
+        "#39FF14";
+
+      ctx.font =
+        "14px monospace";
+
+
+      for(let i = 0; i < cols; i++){
+
+        const text =
+          chars[
+            Math.floor(
+              Math.random() * chars.length
+            )
+          ];
+
+
+        ctx.fillText(
+          text,
+          i * 16,
+          drops[i] * 16
+        );
+
+
+        if(
+          drops[i] * 16 >
+          canvas.height &&
+          Math.random() > 0.975
+        ){
+
+          drops[i] = 0;
+
+        }
+
+
+        drops[i]++;
+      }
+
+
+      requestAnimationFrame(drawMatrix);
     }
-  );
 
 
-  msgInput.addEventListener(
-    "compositionend",
-    () => {
+    drawMatrix();
 
-      isComposing = false;
 
-      compositionJustEndedAt = Date.now();
+    /* =========================================================
+       CONSTANTS
+    ========================================================= */
 
+    const PASSWORD = "1280";
+
+    const PURGE_MS =
+      10 * 60 * 1000;
+
+    const PRESENCE_STALE_MS =
+      20000;
+
+    const TYPING_STALE_MS =
+      3000;
+
+    const TYPING_STOP_DELAY =
+      1500;
+
+
+    const NAME_COLORS = [
+      "#39FF14",
+      "#ff1744",
+      "#00eaff",
+      "#ffd600",
+      "#ff6e40",
+      "#b388ff",
+      "#00FF66",
+      "#ff4081"
+    ];
+
+
+    /* =========================================================
+       CODENAME
+    ========================================================= */
+
+    const PREFIXES = [
+      "Devil",
+      "Lime",
+      "Void",
+      "Ghost",
+      "Shadow",
+      "Cipher",
+      "Wraith",
+      "Static",
+      "Toxin",
+      "Nyx",
+      "Fang",
+      "Ash"
+    ];
+
+
+    const SUFFIXES = [
+      "Ghost",
+      "Shadow",
+      "X",
+      "Prime",
+      "Null",
+      "Zero",
+      "Reaper",
+      "Node",
+      "Vex",
+      "Storm"
+    ];
+
+
+    function generateCodename(){
+
+      const usePrefixOnly =
+        Math.random() > 0.5;
+
+
+      const p =
+        PREFIXES[
+          Math.floor(
+            Math.random() * PREFIXES.length
+          )
+        ];
+
+
+      const num =
+        Math.floor(
+          1000 +
+          Math.random() * 8999
+        );
+
+
+      if(usePrefixOnly){
+
+        return `${p}_${num}`;
+
+      }
+
+
+      const s =
+        SUFFIXES[
+          Math.floor(
+            Math.random() * SUFFIXES.length
+          )
+        ];
+
+
+      return `${p}_${s}_${num % 100}`;
     }
-  );
 
 
-  /*
-    Do NOT force isComposing=true from beforeinput.
-
-    Android keyboards can emit composition events in
-    different orders. The combination of:
-      - composition events
-      - e.isComposing
-      - keyCode 229
-    is safer.
-  */
+    const myName =
+      generateCodename();
 
 
-  msgInput.addEventListener(
-    "keydown",
-    (e) => {
+    const myColor =
+      NAME_COLORS[
+        Math.floor(
+          Math.random() *
+          NAME_COLORS.length
+        )
+      ];
 
-      if(e.key !== "Enter"){
+
+    const myId =
+      myName +
+      "_" +
+      Math.random()
+        .toString(36)
+        .slice(2,8);
+
+
+    /* =========================================================
+       DOM
+    ========================================================= */
+
+    const feed =
+      document.getElementById("feed");
+
+    const userCountEl =
+      document.getElementById("userCount");
+
+    const purgeTimerEl =
+      document.getElementById("purgeTimer");
+
+    const typingIndicator =
+      document.getElementById("typingIndicator");
+
+    const composer =
+      document.getElementById("composer");
+
+    const msgInput =
+      document.getElementById("msgInput");
+
+    const sendBtn =
+      document.getElementById("sendBtn");
+
+    const lockScreen =
+      document.getElementById("lockScreen");
+
+    const passInput =
+      document.getElementById("passInput");
+
+    const unlockBtn =
+      document.getElementById("unlockBtn");
+
+    const lockError =
+      document.getElementById("lockError");
+
+    const lockBox =
+      document.querySelector(".lock-box");
+
+    const appEl =
+      document.getElementById("app");
+
+
+    document.getElementById(
+      "myNameChip"
+    ).textContent =
+      "YOU: " + myName;
+
+
+    /* =========================================================
+       TEXT HELPERS
+    ========================================================= */
+
+    function normalizeMessage(value){
+
+      if(typeof value !== "string"){
+        return "";
+      }
+
+      return value
+        .normalize("NFC")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n");
+    }
+
+
+    function fmtTime(ts){
+
+      const d =
+        new Date(ts);
+
+      return d
+        .toTimeString()
+        .slice(0,8);
+    }
+
+
+    /* =========================================================
+       RENDER MESSAGE
+    ========================================================= */
+
+    function renderMessageDoc(m){
+
+      if(!m){
         return;
       }
 
 
-      /*
-        Android IME may send Enter as keyCode 229
-        while composition is still active.
-      */
+      if(m.type === "system"){
+
+        const el =
+          document.createElement("div");
+
+        el.className =
+          "sys-msg";
+
+        el.dir =
+          "auto";
+
+        el.textContent =
+          typeof m.text === "string"
+            ? m.text
+            : "";
+
+        feed.appendChild(el);
+
+        return;
+      }
+
+
+      const el =
+        document.createElement("div");
+
+
+      el.className =
+        "msg" +
+        (m.userId === myId
+          ? " mine"
+          : "");
+
+
+      el.dir =
+        "auto";
+
+
+      const meta =
+        document.createElement("div");
+
+      meta.className =
+        "msg-meta";
+
+
+      const user =
+        document.createElement("span");
+
+      user.className =
+        "msg-user";
+
+      user.dir =
+        "auto";
+
+      user.style.color =
+        m.color || "#39FF14";
+
+      user.textContent =
+        m.user || "UNKNOWN";
+
+
+      const time =
+        document.createElement("span");
+
+      time.className =
+        "msg-time";
+
+      time.textContent =
+        fmtTime(m.ts);
+
+
+      meta.appendChild(user);
+      meta.appendChild(time);
+
+
+      const text =
+        document.createElement("div");
+
+      text.className =
+        "msg-text";
+
+      text.dir =
+        "auto";
+
+      text.textContent =
+        normalizeMessage(
+          typeof m.text === "string"
+            ? m.text
+            : ""
+        );
+
+
+      el.appendChild(meta);
+      el.appendChild(text);
+
+
+      feed.appendChild(el);
+    }
+
+
+    function scrollToBottom(){
+
+      requestAnimationFrame(() => {
+
+        feed.scrollTop =
+          feed.scrollHeight;
+
+      });
+    }
+
+
+    /* =========================================================
+       FIRESTORE MESSAGES
+    ========================================================= */
+
+    const messagesQuery =
+      query(
+        messagesCol,
+        orderBy("ts")
+      );
+
+
+    async function pushSystemMessage(text){
+
+      try{
+
+        const now =
+          Date.now();
+
+
+        await addDoc(
+          messagesCol,
+          {
+            type:"system",
+
+            text:
+              normalizeMessage(text),
+
+            ts:now,
+
+            expiresAt:
+              new Date(
+                now + PURGE_MS
+              )
+          }
+        );
+
+      }catch(e){
+
+        console.error(
+          "system message error:",
+          e
+        );
+
+      }
+    }
+
+
+    /* =========================================================
+       SEND MESSAGE
+    ========================================================= */
+
+    let sendingMessage = false;
+
+
+    async function sendMessage(rawText){
+
+      const text =
+        normalizeMessage(rawText)
+          .trim();
+
+
+      if(!text){
+        return false;
+      }
+
+
+      if(sendingMessage){
+        return false;
+      }
+
+
+      sendingMessage = true;
+
+      sendBtn.disabled = true;
+
+
+      try{
+
+        const now =
+          Date.now();
+
+
+        await addDoc(
+          messagesCol,
+          {
+            type:"msg",
+
+            user:myName,
+
+            userId:myId,
+
+            color:myColor,
+
+            text:text,
+
+            ts:now,
+
+            expiresAt:
+              new Date(
+                now + PURGE_MS
+              )
+          }
+        );
+
+
+        return true;
+
+      }catch(e){
+
+        console.error(
+          "send message error:",
+          e
+        );
+
+        return false;
+
+      }finally{
+
+        sendingMessage = false;
+
+        sendBtn.disabled = false;
+      }
+    }
+
+
+    /* =========================================================
+       ANDROID / MOBILE INPUT HANDLING
+    ========================================================= */
+
+    let isComposing = false;
+
+    let compositionGuardUntil = 0;
+
+
+    msgInput.addEventListener(
+      "compositionstart",
+      () => {
+
+        isComposing = true;
+
+        compositionGuardUntil =
+          Date.now() + 500;
+
+        setTyping(true);
+      }
+    );
+
+
+    msgInput.addEventListener(
+      "compositionend",
+      () => {
+
+        /*
+          Android can fire compositionend before the
+          final input/keydown event has completely settled.
+        */
+
+        compositionGuardUntil =
+          Date.now() + 250;
+
+        setTimeout(() => {
+
+          isComposing = false;
+
+          updateTypingFromInput();
+
+        }, 0);
+
+      }
+    );
+
+
+    msgInput.addEventListener(
+      "keydown",
+      (e) => {
+
+        if(e.key !== "Enter"){
+          return;
+        }
+
+
+        /*
+          Never submit while Android IME is composing.
+        */
+
+        if(
+          isComposing ||
+          e.isComposing ||
+          e.keyCode === 229 ||
+          Date.now() < compositionGuardUntil
+        ){
+
+          return;
+
+        }
+
+
+        e.preventDefault();
+
+
+        if(
+          !sendingMessage &&
+          msgInput.value.trim()
+        ){
+
+          composer.requestSubmit();
+
+        }
+
+      }
+    );
+
+
+    /*
+      Do not force isComposing=true here.
+      Android's beforeinput events can arrive in different
+      orders and doing so can leave the field permanently
+      "composing".
+    */
+
+    msgInput.addEventListener(
+      "beforeinput",
+      (e) => {
+
+        if(
+          e.isComposing ||
+          e.inputType === "insertCompositionText"
+        ){
+
+          compositionGuardUntil =
+            Date.now() + 500;
+
+        }
+
+      }
+    );
+
+
+    msgInput.addEventListener(
+      "input",
+      () => {
+
+        msgInput.dir =
+          "auto";
+
+        updateTypingFromInput();
+
+      }
+    );
+
+
+    msgInput.addEventListener(
+      "blur",
+      () => {
+
+        stopTyping();
+
+      }
+    );
+
+
+    /* =========================================================
+       TYPING STATE
+    ========================================================= */
+
+    let typing = false;
+
+    let typingStopTimer = null;
+
+
+    async function setTyping(value){
+
+      const next =
+        Boolean(value);
+
 
       if(
-        isComposing ||
-        e.isComposing ||
-        e.keyCode === 229
+        typing === next &&
+        next === false
       ){
 
         return;
@@ -1296,122 +1881,894 @@
       }
 
 
-      /*
-        Tiny protection against an Enter event arriving
-        immediately after compositionend.
-      */
+      typing =
+        next;
 
-      if(
-        Date.now() - compositionJustEndedAt < 120
-      ){
 
-        return;
+      try{
+
+        await setDoc(
+          doc(
+            presenceCol,
+            myId
+          ),
+          {
+            lastSeen:
+              Date.now(),
+
+            user:
+              myName,
+
+            color:
+              myColor,
+
+            typing:
+              typing,
+
+            typingAt:
+              typing
+                ? Date.now()
+                : null
+          },
+          {
+            merge:true
+          }
+        );
+
+      }catch(e){
+
+        console.error(
+          "typing state error:",
+          e
+        );
 
       }
-
-
-      e.preventDefault();
-
-
-      if(
-        !sendingMessage &&
-        msgInput.value.trim()
-      ){
-
-        composer.requestSubmit();
-
-      }
-
     }
-  );
 
 
-  msgInput.addEventListener(
-    "input",
-    () => {
+    function updateTypingFromInput(){
 
-      /*
-        Let the browser decide Arabic/LTR direction
-        automatically.
-      */
-
-      msgInput.dir = "auto";
+      const hasText =
+        msgInput.value.length > 0;
 
 
-      /*
-        Actual typing detection.
-      */
+      if(hasText){
 
-      if(msgInput.value.trim()){
+        setTyping(true);
 
-        startTyping();
+
+        clearTimeout(
+          typingStopTimer
+        );
+
+
+        typingStopTimer =
+          setTimeout(
+            () => {
+
+              if(
+                !msgInput.value.length
+              ){
+
+                stopTyping();
+
+              }else{
+
+                setTyping(false);
+
+              }
+
+            },
+            TYPING_STOP_DELAY
+          );
 
       }else{
 
         stopTyping();
 
       }
+    }
+
+
+    function stopTyping(){
+
+      clearTimeout(
+        typingStopTimer
+      );
+
+      typingStopTimer =
+        null;
+
+      if(typing){
+
+        setTyping(false);
+
+      }
+    }
+
+
+    function renderTypingUsers(users){
+
+      const visible =
+        users.filter(
+          u =>
+            u.id !== myId &&
+            u.typing === true &&
+            typeof u.typingAt === "number" &&
+            Date.now() - u.typingAt <
+              TYPING_STALE_MS
+        );
+
+
+      if(!visible.length){
+
+        typingIndicator.textContent =
+          "";
+
+        typingIndicator.classList.remove(
+          "visible"
+        );
+
+        return;
+      }
+
+
+      const names =
+        visible.map(
+          u =>
+            u.user ||
+            "UNKNOWN"
+        );
+
+
+      let text;
+
+
+      if(names.length === 1){
+
+        text =
+          `${names[0]} IS TYPING`;
+
+      }else if(names.length === 2){
+
+        text =
+          `${names[0]} AND ${names[1]} ARE TYPING`;
+
+      }else{
+
+        text =
+          `${names.length} USERS ARE TYPING`;
+
+      }
+
+
+      typingIndicator.textContent =
+        text;
+
+
+      const dots =
+        document.createElement("span");
+
+      dots.className =
+        "typing-dots";
+
+
+      for(let i = 0; i < 3; i++){
+
+        const dot =
+          document.createElement("span");
+
+        dots.appendChild(dot);
+
+      }
+
+
+      typingIndicator.appendChild(
+        dots
+      );
+
+
+      typingIndicator.classList.add(
+        "visible"
+      );
+    }
+
+
+    /* =========================================================
+       COMPOSER SUBMIT
+    ========================================================= */
+
+    composer.addEventListener(
+      "submit",
+      async (e) => {
+
+        e.preventDefault();
+
+
+        if(
+          isComposing ||
+          Date.now() < compositionGuardUntil
+        ){
+
+          return;
+
+        }
+
+
+        if(sendingMessage){
+          return;
+        }
+
+
+        const text =
+          msgInput.value;
+
+
+        if(!text.trim()){
+          return;
+        }
+
+
+        /*
+          Stop typing immediately before sending.
+        */
+
+        stopTyping();
+
+
+        /*
+          Do NOT clear before Firebase succeeds.
+        */
+
+        const success =
+          await sendMessage(text);
+
+
+        if(success){
+
+          msgInput.value = "";
+
+          msgInput.dir =
+            "auto";
+
+
+          stopTyping();
+
+
+          requestAnimationFrame(() => {
+
+            try{
+
+              msgInput.focus({
+                preventScroll:true
+              });
+
+            }catch{
+
+              msgInput.focus();
+
+            }
+
+          });
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       PRESENCE
+    ========================================================= */
+
+    async function heartbeat(){
+
+      try{
+
+        await setDoc(
+          doc(
+            presenceCol,
+            myId
+          ),
+          {
+            lastSeen:
+              Date.now(),
+
+            user:
+              myName,
+
+            color:
+              myColor,
+
+            /*
+              IMPORTANT:
+              merge:true prevents heartbeat from deleting
+              typing / typingAt fields.
+            */
+
+            typing:
+              typing,
+
+            typingAt:
+              typing
+                ? Date.now()
+                : null
+          },
+          {
+            merge:true
+          }
+        );
+
+      }catch(e){
+
+        console.error(
+          "heartbeat error:",
+          e
+        );
+
+      }
+    }
+
+
+    /* =========================================================
+       PURGE
+    ========================================================= */
+
+    let purgeStart = null;
+
+    let purging = false;
+
+
+    async function deleteAllMessagesInBatches(){
+
+      const msgsSnap =
+        await getDocs(
+          messagesCol
+        );
+
+
+      if(msgsSnap.empty){
+        return 0;
+      }
+
+
+      const docs =
+        msgsSnap.docs;
+
+
+      let deleted = 0;
+
+
+      for(
+        let i = 0;
+        i < docs.length;
+        i += 450
+      ){
+
+        const batch =
+          writeBatch(db);
+
+
+        docs
+          .slice(i, i + 450)
+          .forEach(d => {
+
+            batch.delete(
+              d.ref
+            );
+
+          });
+
+
+        await batch.commit();
+
+
+        deleted +=
+          Math.min(
+            450,
+            docs.length - i
+          );
+      }
+
+
+      return deleted;
+    }
+
+
+    async function tryPurge(){
+
+      if(
+        purging ||
+        typeof purgeStart !== "number"
+      ){
+
+        return;
+
+      }
+
+
+      purging = true;
+
+
+      try{
+
+        const now =
+          Date.now();
+
+
+        const didPurge =
+          await runTransaction(
+            db,
+            async(tx) => {
+
+              const snap =
+                await tx.get(
+                  purgeRef
+                );
+
+
+              const start =
+                (
+                  snap.exists() &&
+                  typeof snap.data().purgeStart === "number"
+                )
+                  ? snap.data().purgeStart
+                  : now;
+
+
+              if(
+                now - start >= PURGE_MS
+              ){
+
+                tx.set(
+                  purgeRef,
+                  {
+                    purgeStart:now
+                  }
+                );
+
+                return true;
+              }
+
+
+              return false;
+
+            }
+          );
+
+
+        if(didPurge){
+
+          await deleteAllMessagesInBatches();
+
+
+          await pushSystemMessage(
+            "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
+          );
+
+        }
+
+      }catch(e){
+
+        console.error(
+          "purge error:",
+          e
+        );
+
+      }finally{
+
+        purging = false;
+
+      }
+    }
+
+
+    function tickPurge(){
+
+      if(
+        typeof purgeStart !== "number"
+      ){
+
+        purgeTimerEl.textContent =
+          "10:00";
+
+        return;
+
+      }
+
+
+      const remaining =
+        PURGE_MS -
+        (
+          Date.now() -
+          purgeStart
+        );
+
+
+      if(remaining <= 0){
+
+        purgeTimerEl.textContent =
+          "00:00";
+
+        tryPurge();
+
+        return;
+
+      }
+
+
+      const mins =
+        Math.floor(
+          remaining / 60000
+        );
+
+
+      const secs =
+        Math.floor(
+          (remaining % 60000) /
+          1000
+        );
+
+
+      purgeTimerEl.textContent =
+        `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+    }
+
+
+    /* =========================================================
+       CHAT INITIALIZATION
+    ========================================================= */
+
+    let chatInitialized = false;
+
+
+    function initChat(){
+
+      if(chatInitialized){
+        return;
+      }
+
+
+      chatInitialized = true;
+
+
+      /* ---------- messages ---------- */
+
+      onSnapshot(
+        messagesQuery,
+
+        (snapshot) => {
+
+          /*
+            Typing indicator is OUTSIDE #feed,
+            therefore clearing feed won't destroy it.
+          */
+
+          feed.innerHTML = "";
+
+
+          snapshot.forEach(
+            docSnap => {
+
+              renderMessageDoc(
+                docSnap.data()
+              );
+
+            }
+          );
+
+
+          scrollToBottom();
+
+        },
+
+        (err) => {
+
+          console.error(
+            "messages listener error:",
+            err
+          );
+
+
+          feed.innerHTML = "";
+
+
+          const errorEl =
+            document.createElement("div");
+
+
+          errorEl.className =
+            "sys-msg";
+
+
+          errorEl.textContent =
+            "[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]";
+
+
+          feed.appendChild(
+            errorEl
+          );
+
+        }
+      );
+
+
+      /* ---------- presence ---------- */
+
+      onSnapshot(
+        presenceCol,
+
+        (snapshot) => {
+
+          const now =
+            Date.now();
+
+
+          let active = 0;
+
+          const users = [];
+
+
+          snapshot.forEach(
+            docSnap => {
+
+              const data =
+                docSnap.data();
+
+
+              if(
+                data &&
+                typeof data.lastSeen === "number" &&
+                (
+                  now -
+                  data.lastSeen
+                ) < PRESENCE_STALE_MS
+              ){
+
+                active++;
+
+                users.push({
+                  id:docSnap.id,
+
+                  user:
+                    data.user ||
+                    "UNKNOWN",
+
+                  color:
+                    data.color ||
+                    "#39FF14",
+
+                  typing:
+                    data.typing === true,
+
+                  typingAt:
+                    typeof data.typingAt === "number"
+                      ? data.typingAt
+                      : 0
+                });
+
+              }
+
+            }
+          );
+
+
+          userCountEl.textContent =
+            Math.max(
+              1,
+              active
+            );
+
+
+          renderTypingUsers(
+            users
+          );
+
+        },
+
+        (err) => {
+
+          console.error(
+            "presence listener error:",
+            err
+          );
+
+        }
+      );
+
+
+      /* ---------- purge ---------- */
+
+      onSnapshot(
+        purgeRef,
+
+        (snap) => {
+
+          if(
+            snap.exists() &&
+            typeof snap.data().purgeStart === "number"
+          ){
+
+            purgeStart =
+              snap.data().purgeStart;
+
+          }else{
+
+            const start =
+              Date.now();
+
+
+            purgeStart =
+              start;
+
+
+            setDoc(
+              purgeRef,
+              {
+                purgeStart:start
+              },
+              {
+                merge:true
+              }
+            ).catch(
+              e =>
+                console.error(
+                  "purge init error:",
+                  e
+                )
+            );
+
+          }
+
+
+          tickPurge();
+
+        },
+
+        (err) => {
+
+          console.error(
+            "purge listener error:",
+            err
+          );
+
+        }
+      );
+
+
+      setInterval(
+        tickPurge,
+        1000
+      );
+
+
+      tickPurge();
+
+
+      /* ---------- heartbeat ---------- */
+
+      heartbeat();
+
+
+      setInterval(
+        heartbeat,
+        5000
+      );
+
+
+      pushSystemMessage(
+        `[ ${myName} HAS JOINED THE NODE ]`
+      );
 
     }
-  );
 
 
-  /* =========================================================
-     COMPOSER
-  ========================================================= */
+    /* =========================================================
+       LOCK SCREEN
+    ========================================================= */
 
-  composer.addEventListener(
-    "submit",
-    async (e) => {
+    async function attemptUnlock(){
 
-      e.preventDefault();
+      if(
+        passInput.value.trim() !== PASSWORD
+      ){
+
+        lockError.textContent =
+          "ACCESS DENIED — INVALID CLEARANCE CODE";
 
 
-      if(isComposing){
+        lockBox.classList.remove(
+          "shake"
+        );
+
+
+        void lockBox.offsetWidth;
+
+
+        lockBox.classList.add(
+          "shake"
+        );
+
+
+        passInput.value = "";
+
+
         return;
       }
 
 
-      if(sendingMessage){
-        return;
-      }
+      unlockBtn.disabled = true;
 
 
-      const text = msgInput.value;
+      lockError.textContent =
+        "AUTHENTICATING NODE...";
 
 
-      if(!text.trim()){
-
-        stopTyping();
-
-        return;
-
-      }
+      lockError.style.color =
+        "var(--lime-glow)";
 
 
-      const success =
-        await sendMessage(text);
-
-
-      if(success){
+      try{
 
         /*
-          Clear ONLY after Firebase accepted the message.
+          Make absolutely sure the previous anonymous
+          session from a previous page load is gone.
         */
 
-        msgInput.value = "";
-
-        msgInput.dir = "auto";
+        await freshSessionReady;
 
 
-        /*
-          Stop typing indicator after successful send.
-        */
-
-        stopTyping();
+        await signOut(
+          auth
+        );
 
 
-        requestAnimationFrame(() => {
+        await signInAnonymously(
+          auth
+        );
+
+      }catch(e){
+
+        console.error(
+          "auth error:",
+          e
+        );
+
+
+        lockError.textContent =
+          "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
+
+
+        lockError.style.color =
+          "var(--crimson)";
+
+
+        unlockBtn.disabled = false;
+
+
+        return;
+      }
+
+
+      lockScreen.classList.add(
+        "lock-dissolve"
+      );
+
+
+      setTimeout(() => {
+
+        lockScreen.style.display =
+          "none";
+
+
+        appEl.style.display =
+          "flex";
+
+
+        initChat();
+
+
+        setTimeout(() => {
 
           try{
 
@@ -1425,621 +2782,128 @@
 
           }
 
-        });
+        }, 100);
 
-      }
-
-    }
-  );
-
-
-  /* =========================================================
-     MESSAGES LISTENER
-  ========================================================= */
-
-  const messagesQuery =
-    query(
-      messagesCol,
-      orderBy("ts")
-    );
-
-
-  function listenToMessages(){
-
-    onSnapshot(
-      messagesQuery,
-      (snapshot) => {
-
-        /*
-          IMPORTANT:
-
-          Only clear messageList.
-          Do NOT clear feed because typingIndicator
-          lives inside feed.
-        */
-
-        messageList.innerHTML = "";
-
-
-        snapshot.forEach(
-          (docSnap) => {
-
-            renderMessageDoc(
-              docSnap.data()
-            );
-
-          }
-        );
-
-
-        scrollToBottom();
-
-      },
-      (err) => {
-
-        console.error(
-          "messages listener error:",
-          err
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =========================================================
-     PRESENCE LISTENER
-  ========================================================= */
-
-  function listenToPresence(){
-
-    onSnapshot(
-      presenceCol,
-      (snapshot) => {
-
-        presenceCache = new Map();
-
-
-        snapshot.forEach(
-          (docSnap) => {
-
-            presenceCache.set(
-              docSnap.id,
-              docSnap.data()
-            );
-
-          }
-        );
-
-
-        refreshPresenceUI();
-
-      },
-      (err) => {
-
-        console.error(
-          "presence listener error:",
-          err
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =========================================================
-     PURGE
-  ========================================================= */
-
-  async function deleteAllMessagesInBatches(){
-
-    try{
-
-      const snapshot =
-        await getDocs(messagesCol);
-
-
-      if(snapshot.empty){
-        return;
-      }
-
-
-      const docs =
-        snapshot.docs;
-
-
-      /*
-        Firestore batch limit is 500.
-        Stay below it.
-      */
-
-      const CHUNK_SIZE = 450;
-
-
-      for(
-        let i = 0;
-        i < docs.length;
-        i += CHUNK_SIZE
-      ){
-
-        const batch = writeBatch(db);
-
-        const chunk =
-          docs.slice(
-            i,
-            i + CHUNK_SIZE
-          );
-
-
-        chunk.forEach(
-          (docSnap) => {
-
-            batch.delete(docSnap.ref);
-
-          }
-        );
-
-
-        await batch.commit();
-
-      }
-
-    }catch(e){
-
-      console.error(
-        "delete messages error:",
-        e
-      );
+      }, 680);
 
     }
 
-  }
+
+    unlockBtn.addEventListener(
+      "click",
+      attemptUnlock
+    );
 
 
-  async function tryPurge(){
+    passInput.addEventListener(
+      "keydown",
+      (e) => {
 
-    const now = Date.now();
+        if(
+          e.key === "Enter" &&
+          !e.isComposing
+        ){
 
+          e.preventDefault();
 
-    try{
+          attemptUnlock();
 
-      let shouldPurge = false;
+        }
 
-
-      await runTransaction(
-        db,
-        async (transaction) => {
-
-          const snap =
-            await transaction.get(purgeRef);
-
-
-          const data =
-            snap.exists()
-              ? snap.data()
-              : null;
+      }
+    );
 
 
-          const purgeStart =
-            data &&
-            typeof data.purgeStart === "number"
-              ? data.purgeStart
-              : 0;
+    passInput.addEventListener(
+      "input",
+      () => {
 
+        lockError.textContent = "";
+
+        lockError.style.color =
+          "var(--crimson)";
+
+      }
+    );
+
+
+    /* =========================================================
+       MOBILE KEYBOARD / VISUAL VIEWPORT
+    ========================================================= */
+
+    if(window.visualViewport){
+
+      window.visualViewport.addEventListener(
+        "resize",
+        () => {
 
           if(
-            !purgeStart ||
-            now - purgeStart >= PURGE_MS
+            document.activeElement === msgInput
           ){
 
-            transaction.set(
-              purgeRef,
-              {
-                purgeStart: now
-              },
-              {
-                merge:true
-              }
+            requestAnimationFrame(
+              scrollToBottom
             );
-
-
-            shouldPurge = true;
 
           }
 
-        }
-      );
-
-
-      if(!shouldPurge){
-        return;
-      }
-
-
-      await deleteAllMessagesInBatches();
-
-
-      await pushSystemMessage(
-        "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
-      );
-
-
-    }catch(e){
-
-      console.error(
-        "purge error:",
-        e
+        },
+        { passive:true }
       );
 
     }
 
-  }
 
+    /* =========================================================
+       CLEANUP PRESENCE
+    ========================================================= */
 
-  /* =========================================================
-     PURGE COUNTDOWN
-  ========================================================= */
+    window.addEventListener(
+      "beforeunload",
+      () => {
 
-  let purgeStartTime = null;
-
-
-  function tickPurge(){
-
-    if(typeof purgeStartTime !== "number"){
-      return;
-    }
-
-
-    const now = Date.now();
-
-    const elapsed =
-      now - purgeStartTime;
-
-
-    let remaining =
-      PURGE_MS - elapsed;
-
-
-    if(remaining < 0){
-      remaining = 0;
-    }
-
-
-    const totalSeconds =
-      Math.ceil(
-        remaining / 1000
-      );
-
-
-    const minutes =
-      Math.floor(
-        totalSeconds / 60
-      );
-
-
-    const seconds =
-      totalSeconds % 60;
-
-
-    const footnote =
-      document.querySelector(".footnote");
-
-
-    if(footnote){
-
-      footnote.textContent =
-        `AUTO-WIPE EVERY 10 MIN // NEXT PURGE ${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
-
-    }
-
-
-    /*
-      When countdown reaches zero,
-      immediately try to become the purge client.
-    */
-
-    if(remaining <= 0){
-
-      tryPurge();
-
-    }
-
-  }
-
-
-  function listenToPurge(){
-
-    onSnapshot(
-      purgeRef,
-      (snapshot) => {
-
-        if(!snapshot.exists()){
+        if(chatInitialized){
 
           /*
-            No purge document yet.
-            Create one through transaction.
+            This is best-effort only.
+            Firestore network operations during unload
+            are not guaranteed by browsers.
           */
 
-          tryPurge();
-
-          return;
-
-        }
-
-
-        const data =
-          snapshot.data();
-
-
-        if(
-          data &&
-          typeof data.purgeStart === "number"
-        ){
-
-          purgeStartTime =
-            data.purgeStart;
+          deleteDoc(
+            doc(
+              presenceCol,
+              myId
+            )
+          ).catch(
+            () => {}
+          );
 
         }
-
-
-        tickPurge();
-
-      },
-      (err) => {
-
-        console.error(
-          "purge listener error:",
-          err
-        );
 
       }
     );
 
-  }
-
-
-  /* =========================================================
-     AUTH
-  ========================================================= */
-
-  async function authenticate(){
-
-    try{
-
-      await signInAnonymously(auth);
-
-      return true;
-
-    }catch(e){
-
-      console.error(
-        "anonymous auth error:",
-        e
-      );
-
-      return false;
-
-    }
-
-  }
-
-
-  /* =========================================================
-     INIT CHAT
-  ========================================================= */
-
-  async function initChat(){
-
-    if(chatInitialized){
-      return;
-    }
-
-    chatInitialized = true;
-
-
-    listenToMessages();
-
-    listenToPresence();
-
-    listenToPurge();
-
 
     /*
-      Presence heartbeat.
+      If the tab is hidden, immediately stop our own typing
+      state so other users don't see a stale indicator.
     */
 
-    await heartbeat();
+    document.addEventListener(
+      "visibilitychange",
+      () => {
 
+        if(document.hidden){
 
-    setInterval(
-      heartbeat,
-      5000
-    );
-
-
-    /*
-      Refresh presence/typing UI every second.
-
-      This is important because a typing timestamp can
-      become stale even if no new Firestore snapshot arrives.
-    */
-
-    setInterval(
-      refreshPresenceUI,
-      1000
-    );
-
-
-    /*
-      Purge countdown.
-    */
-
-    setInterval(
-      tickPurge,
-      1000
-    );
-
-
-    /*
-      Try purge immediately.
-    */
-
-    tryPurge();
-
-
-    /*
-      Join message.
-    */
-
-    await pushSystemMessage(
-      `[ ${myName} HAS JOINED THE NODE ]`
-    );
-
-
-    /*
-      Focus input after startup.
-    */
-
-    requestAnimationFrame(() => {
-
-      try{
-
-        msgInput.focus({
-          preventScroll:true
-        });
-
-      }catch{
-
-        msgInput.focus();
-
-      }
-
-    });
-
-  }
-
-
-  /* =========================================================
-     CLEANUP
-  ========================================================= */
-
-  async function cleanupPresence(){
-
-    try{
-
-      /*
-        Stop typing first.
-      */
-
-      await stopTyping();
-
-
-      /*
-        Remove presence document completely.
-      */
-
-      await deleteDoc(
-        doc(
-          presenceCol,
-          myId
-        )
-      );
-
-    }catch(e){
-
-      console.error(
-        "presence cleanup error:",
-        e
-      );
-
-    }
-
-  }
-
-
-  window.addEventListener(
-    "beforeunload",
-    () => {
-
-      /*
-        Fire-and-forget.
-        Browser may terminate network requests during unload.
-      */
-
-      cleanupPresence();
-
-    }
-  );
-
-
-  document.addEventListener(
-    "visibilitychange",
-    () => {
-
-      if(document.visibilityState === "visible"){
-
-        heartbeat();
-
-
-        if(
-          msgInput.value.trim()
-        ){
-
-          startTyping();
+          stopTyping();
 
         }
 
-      }else{
-
-        /*
-          Don't leave a false typing indicator
-          when the tab goes to background.
-        */
-
-        stopTyping();
-
       }
+    );
 
-    }
-  );
-
-
-  /* =========================================================
-     START
-  ========================================================= */
-
-  const authenticated =
-    await authenticate();
-
-
-  if(authenticated){
-
-    await initChat();
-
-  }else{
-
-    messageList.innerHTML = "";
-
-    const error = document.createElement("div");
-
-    error.className = "system";
-
-    const text = document.createElement("div");
-
-    text.className = "system-text";
-
-    text.textContent =
-      "[ AUTHENTICATION FAILED — CHECK FIREBASE CONFIG / AUTH ]";
-
-    error.appendChild(text);
-
-    messageList.appendChild(error);
-
-  }
-
-</script>
+  </script>
 
 </body>
 </html>
