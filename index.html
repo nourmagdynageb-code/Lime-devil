@@ -606,8 +606,6 @@
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<!-- ============ LOCK SCREEN ============ -->
-
 <div id="lockScreen" class="flicker">
 
   <div class="lock-box">
@@ -651,8 +649,6 @@
   </div>
 
 </div>
-
-<!-- ============ MAIN APP ============ -->
 
 <div id="app">
 
@@ -698,9 +694,7 @@
 
   <main id="feed"></main>
 
-  <!-- TYPING INDICATOR -->
-
-  <div
+    <div
     id="typingIndicator"
     aria-live="polite"
   ></div>
@@ -1829,6 +1823,7 @@ msgInput.addEventListener(
 
 let chatInitialized =
   false;
+let lastMessageCount = 0; // للتحقق من وصول رسالة جديدة وتفعيل الـ Vibration
 
 
 function initChat(){
@@ -1844,6 +1839,18 @@ function initChat(){
   onSnapshot(
     messagesQuery,
     (snapshot) => {
+      
+      // فحص الرسائل الجديدة لتشغيل الـ Vibration عند وصول رسالة تخص طرف آخر
+      if (lastMessageCount > 0 && snapshot.docs.length > lastMessageCount) {
+        const newestDoc = snapshot.docs[snapshot.docs.length - 1].data();
+        // التحقق أن الرسالة ليست رسالة نظام وليست مرسلة بواسطة نفس المستخدم الحالي
+        if (newestDoc && newestDoc.type !== 'system' && newestDoc.userId !== myId) {
+          if ("vibrate" in navigator) {
+            navigator.vibrate([100, 50, 100]); // نبضة اهتزاز خفيفة ومتناسقة
+          }
+        }
+      }
+      lastMessageCount = snapshot.docs.length;
 
       feed.innerHTML =
         '';
@@ -2165,37 +2172,39 @@ passInput.addEventListener(
 );
 
 
-/* ================= CLEANUP PRESENCE + TYPING ================= */
+/* ================= CLEANUP PRESENCE + TYPING (MOBILE & DESKTOP STABILITY) ================= */
 
-window.addEventListener(
-  'beforeunload',
-  () => {
+function handleUserExit() {
+  if(chatInitialized){
+    deleteDoc(
+      doc(
+        presenceCol,
+        myId
+      )
+    ).catch(
+      () => {}
+    );
 
-    if(chatInitialized){
-
-      deleteDoc(
-        doc(
-          presenceCol,
-          myId
-        )
-      ).catch(
-        () => {}
-      );
-
-
-      deleteDoc(
-        doc(
-          typingCol,
-          myId
-        )
-      ).catch(
-        () => {}
-      );
-
-    }
-
+    deleteDoc(
+      doc(
+        typingCol,
+        myId
+      )
+    ).catch(
+      () => {}
+    );
   }
-);
+}
+
+// حل مشكلة beforeunload في الموبايل باستخدام الأحداث المتعددة
+window.addEventListener('beforeunload', handleUserExit);
+window.addEventListener('pagehide', handleUserExit);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    handleUserExit();
+  }
+});
 
 </script>
 
