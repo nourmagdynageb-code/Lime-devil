@@ -280,12 +280,10 @@
       opacity:1;
       filter:blur(0) brightness(1);
     }
-
     40%{
       opacity:0.7;
       filter:blur(2px) brightness(3) hue-rotate(30deg);
     }
-
     100%{
       opacity:0;
       filter:blur(10px) brightness(0.2);
@@ -331,6 +329,7 @@
     align-items:center;
     gap:16px;
     font-size:12px;
+    flex-wrap:wrap;
   }
 
   .stat-chip{
@@ -443,7 +442,6 @@
       opacity:0;
       transform:translateY(8px);
     }
-
     to{
       opacity:1;
       transform:translateY(0);
@@ -478,6 +476,42 @@
     word-break:break-word;
     line-height:1.4;
     color:#dfffe0;
+  }
+
+  /* ================= TYPING INDICATOR ================= */
+
+  #typingIndicator{
+    min-height:20px;
+    padding:0 16px 4px;
+    color:var(--lime-dim);
+    font-size:10px;
+    letter-spacing:1px;
+    text-align:left;
+    text-shadow:0 0 7px rgba(57,255,20,0.35);
+    pointer-events:none;
+  }
+
+  #typingIndicator:empty{
+    min-height:0;
+    padding:0;
+  }
+
+  .typing-user{
+    color:var(--lime-glow);
+    font-weight:700;
+  }
+
+  .typing-dots{
+    display:inline-block;
+    width:18px;
+    overflow:hidden;
+    vertical-align:bottom;
+    animation:typingDots 1.2s steps(4,end) infinite;
+  }
+
+  @keyframes typingDots{
+    0%{ width:0; }
+    100%{ width:18px; }
   }
 
   form#composer{
@@ -540,7 +574,7 @@
     letter-spacing:1px;
   }
 
-  @media (max-width: 640px){
+  @media (max-width:640px){
     .logo{
       font-size:18px;
     }
@@ -556,6 +590,11 @@
 
     .lock-box{
       padding:26px 18px 22px;
+    }
+
+    #emergencyBtn{
+      padding:6px 10px;
+      font-size:10px;
     }
   }
 </style>
@@ -636,7 +675,7 @@
 
       <div class="stat-chip">
         SYSTEM PURGE IN:
-        <span id="purgeTimer">30:00</span>
+        <span id="purgeTimer">10:00</span>
       </div>
 
       <div
@@ -646,7 +685,6 @@
         YOU: —
       </div>
 
-      <!-- ONLY NEW BUTTON -->
       <button
         id="emergencyBtn"
         type="button"
@@ -659,6 +697,13 @@
   </header>
 
   <main id="feed"></main>
+
+  <!-- TYPING INDICATOR -->
+
+  <div
+    id="typingIndicator"
+    aria-live="polite"
+  ></div>
 
   <form
     id="composer"
@@ -682,764 +727,611 @@
   </form>
 
   <div class="footnote">
-    ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 30 MIN
+    ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 10 MIN
   </div>
 
 </div>
 
 <script type="module">
 
-  /* ================= FIREBASE SETUP ================= */
+/* ================= FIREBASE SETUP ================= */
 
-  import {
-    initializeApp
-  } from
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  initializeApp
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-  import {
-    getFirestore,
-    collection,
-    addDoc,
-    doc,
-    setDoc,
-    deleteDoc,
-    onSnapshot,
-    query,
-    orderBy,
-    runTransaction,
-    getDocs,
-    writeBatch
-  } from
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  runTransaction,
+  getDocs,
+  writeBatch
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  import {
-    getAuth,
-    signInAnonymously
-  } from
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-
-  const firebaseConfig = {
-
-    apiKey:
-      "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
-
-    authDomain:
-      "limedevil-d3725.firebaseapp.com",
-
-    projectId:
-      "limedevil-d3725",
-
-    storageBucket:
-      "limedevil-d3725.firebasestorage.app",
-
-    messagingSenderId:
-      "678313318556",
-
-    appId:
-      "1:678313318556:web:b0d4207b086319c05cf559",
-
-    measurementId:
-      "G-BHJ50N5NNZ"
-
-  };
+import {
+  getAuth,
+  signInAnonymously
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-  const fbApp =
-    initializeApp(firebaseConfig);
+const firebaseConfig = {
 
-  const db =
-    getFirestore(fbApp);
+  apiKey:
+    "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
 
-  const auth =
-    getAuth(fbApp);
+  authDomain:
+    "limedevil-d3725.firebaseapp.com",
 
+  projectId:
+    "limedevil-d3725",
 
-  const messagesCol =
-    collection(db, "messages");
+  storageBucket:
+    "limedevil-d3725.firebasestorage.app",
 
-  const presenceCol =
-    collection(db, "presence");
+  messagingSenderId:
+    "678313318556",
 
-  const purgeRef =
-    doc(db, "meta", "purge");
+  appId:
+    "1:678313318556:web:b0d4207b086319c05cf559",
 
+  measurementId:
+    "G-BHJ50N5NNZ"
 
-  /* ================= MATRIX DUST BACKGROUND ================= */
-
-  const canvas =
-    document.getElementById(
-      'matrixCanvas'
-    );
-
-  const ctx =
-    canvas.getContext('2d');
-
-  let cols;
-  let drops;
+};
 
 
-  function resizeCanvas(){
+const fbApp =
+  initializeApp(firebaseConfig);
 
-    canvas.width =
-      window.innerWidth;
+const db =
+  getFirestore(fbApp);
 
-    canvas.height =
-      window.innerHeight;
-
-    cols =
-      Math.floor(
-        canvas.width / 16
-      );
-
-    drops =
-      new Array(cols)
-        .fill(0)
-        .map(
-          () => Math.random() * -100
-        );
-
-  }
+const auth =
+  getAuth(fbApp);
 
 
-  window.addEventListener(
-    'resize',
-    resizeCanvas
+const messagesCol =
+  collection(db, "messages");
+
+const presenceCol =
+  collection(db, "presence");
+
+const typingCol =
+  collection(db, "typing");
+
+const purgeRef =
+  doc(db, "meta", "purge");
+
+
+/* ================= MATRIX DUST BACKGROUND ================= */
+
+const canvas =
+  document.getElementById(
+    'matrixCanvas'
   );
 
-  resizeCanvas();
+const ctx =
+  canvas.getContext('2d');
+
+let cols;
+let drops;
 
 
-  const chars =
-    "01LIMEDEVIL01ΞΔ01";
+function resizeCanvas(){
 
+  canvas.width =
+    window.innerWidth;
 
-  function drawMatrix(){
+  canvas.height =
+    window.innerHeight;
 
-    ctx.fillStyle =
-      "rgba(5,5,5,0.08)";
-
-    ctx.fillRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
+  cols =
+    Math.floor(
+      canvas.width / 16
     );
 
-    ctx.fillStyle =
-      "#39FF14";
-
-    ctx.font =
-      "14px monospace";
-
-
-    for(
-      let i = 0;
-      i < cols;
-      i++
-    ){
-
-      const text =
-        chars[
-          Math.floor(
-            Math.random() *
-            chars.length
-          )
-        ];
-
-      ctx.fillText(
-        text,
-        i * 16,
-        drops[i] * 16
+  drops =
+    new Array(cols)
+      .fill(0)
+      .map(
+        () => Math.random() * -100
       );
 
+}
 
-      if(
-        drops[i] * 16 >
-          canvas.height &&
-        Math.random() > 0.975
-      ){
 
-        drops[i] = 0;
+window.addEventListener(
+  'resize',
+  resizeCanvas
+);
 
-      }
+resizeCanvas();
 
-      drops[i]++;
+
+const chars =
+  "01LIMEDEVIL01ΞΔ01";
+
+
+function drawMatrix(){
+
+  ctx.fillStyle =
+    "rgba(5,5,5,0.08)";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  ctx.fillStyle =
+    "#39FF14";
+
+  ctx.font =
+    "14px monospace";
+
+
+  for(
+    let i = 0;
+    i < cols;
+    i++
+  ){
+
+    const text =
+      chars[
+        Math.floor(
+          Math.random() *
+          chars.length
+        )
+      ];
+
+    ctx.fillText(
+      text,
+      i * 16,
+      drops[i] * 16
+    );
+
+
+    if(
+      drops[i] * 16 >
+        canvas.height &&
+      Math.random() > 0.975
+    ){
+
+      drops[i] = 0;
 
     }
 
-
-    requestAnimationFrame(
-      drawMatrix
-    );
+    drops[i]++;
 
   }
 
 
-  drawMatrix();
+  requestAnimationFrame(
+    drawMatrix
+  );
+
+}
 
 
-  /* ================= CONSTANTS ================= */
+drawMatrix();
 
-  const PASSWORD =
-    "1280";
+
+/* ================= CONSTANTS ================= */
+
+const PASSWORD =
+  "1280";
 
 const PURGE_MS =
   10 * 60 * 1000;
 
-  const PRESENCE_STALE_MS =
-    20000;
+const PRESENCE_STALE_MS =
+  20000;
 
-  const NAME_COLORS = [
-    "#39FF14",
-    "#ff1744",
-    "#00eaff",
-    "#ffd600",
-    "#ff6e40",
-    "#b388ff",
-    "#00FF66",
-    "#ff4081"
-  ];
+const TYPING_STALE_MS =
+  3000;
 
+const TYPING_STOP_DELAY =
+  1500;
 
-  /* ================= EMERGENCY ================= */
-
-  const EMERGENCY_PASSWORD =
-    "101";
-
-
-  /* ================= ANON CODENAME ================= */
-
-  const PREFIXES = [
-    "Devil",
-    "Lime",
-    "Void",
-    "Ghost",
-    "Shadow",
-    "Cipher",
-    "Wraith",
-    "Static",
-    "Toxin",
-    "Nyx",
-    "Fang",
-    "Ash"
-  ];
+const NAME_COLORS = [
+  "#39FF14",
+  "#ff1744",
+  "#00eaff",
+  "#ffd600",
+  "#ff6e40",
+  "#b388ff",
+  "#00FF66",
+  "#ff4081"
+];
 
 
-  const SUFFIXES = [
-    "Ghost",
-    "Shadow",
-    "X",
-    "Prime",
-    "Null",
-    "Zero",
-    "Reaper",
-    "Node",
-    "Vex",
-    "Storm"
-  ];
+/* ================= EMERGENCY ================= */
+
+const EMERGENCY_PASSWORD =
+  "101";
 
 
-  function generateCodename(){
+/* ================= ANON CODENAME ================= */
 
-    const usePrefixOnly =
-      Math.random() > 0.5;
-
-    const p =
-      PREFIXES[
-        Math.floor(
-          Math.random() *
-          PREFIXES.length
-        )
-      ];
-
-    const num =
-      Math.floor(
-        1000 +
-        Math.random() * 8999
-      );
+const PREFIXES = [
+  "Devil",
+  "Lime",
+  "Void",
+  "Ghost",
+  "Shadow",
+  "Cipher",
+  "Wraith",
+  "Static",
+  "Toxin",
+  "Nyx",
+  "Fang",
+  "Ash"
+];
 
 
-    if(usePrefixOnly){
-
-      return `${p}_${num}`;
-
-    }else{
-
-      const s =
-        SUFFIXES[
-          Math.floor(
-            Math.random() *
-            SUFFIXES.length
-          )
-        ];
-
-      return `${p}_${s}_${num % 100}`;
-
-    }
-
-  }
+const SUFFIXES = [
+  "Ghost",
+  "Shadow",
+  "X",
+  "Prime",
+  "Null",
+  "Zero",
+  "Reaper",
+  "Node",
+  "Vex",
+  "Storm"
+];
 
 
-  const myName =
-    generateCodename();
+function generateCodename(){
 
-  const myColor =
-    NAME_COLORS[
+  const usePrefixOnly =
+    Math.random() > 0.5;
+
+  const p =
+    PREFIXES[
       Math.floor(
         Math.random() *
-        NAME_COLORS.length
+        PREFIXES.length
       )
     ];
 
-  const myId =
-    myName +
-    "_" +
-    Math.random()
-      .toString(36)
-      .slice(2,8);
-
-
-  document.getElementById(
-    'myNameChip'
-  ).textContent =
-    "YOU: " + myName;
-
-
-  /* ================= RENDERING ================= */
-
-  const feed =
-    document.getElementById(
-      'feed'
+  const num =
+    Math.floor(
+      1000 +
+      Math.random() * 8999
     );
 
 
-  function fmtTime(ts){
+  if(usePrefixOnly){
 
-    const d =
-      new Date(ts);
+    return `${p}_${num}`;
 
-    return d
-      .toTimeString()
-      .slice(0,8);
+  }else{
 
-  }
+    const s =
+      SUFFIXES[
+        Math.floor(
+          Math.random() *
+          SUFFIXES.length
+        )
+      ];
 
-
-  function escapeHTML(str){
-
-    const d =
-      document.createElement(
-        'div'
-      );
-
-    d.textContent =
-      str;
-
-    return d.innerHTML;
+    return `${p}_${s}_${num % 100}`;
 
   }
 
+}
 
-  function renderMessageDoc(m){
 
-    if(m.type === 'system'){
+const myName =
+  generateCodename();
 
-      const el =
-        document.createElement(
-          'div'
-        );
+const myColor =
+  NAME_COLORS[
+    Math.floor(
+      Math.random() *
+      NAME_COLORS.length
+    )
+  ];
 
-      el.className =
-        'sys-msg';
+const myId =
+  myName +
+  "_" +
+  Math.random()
+    .toString(36)
+    .slice(2,8);
 
-      el.textContent =
-        m.text;
 
-      feed.appendChild(el);
+document.getElementById(
+  'myNameChip'
+).textContent =
+  "YOU: " + myName;
 
-      return;
 
-    }
+/* ================= RENDERING ================= */
 
+const feed =
+  document.getElementById(
+    'feed'
+  );
+
+
+function fmtTime(ts){
+
+  const d =
+    new Date(ts);
+
+  return d
+    .toTimeString()
+    .slice(0,8);
+
+}
+
+
+function escapeHTML(str){
+
+  const d =
+    document.createElement(
+      'div'
+    );
+
+  d.textContent =
+    str;
+
+  return d.innerHTML;
+
+}
+
+
+function renderMessageDoc(m){
+
+  if(m.type === 'system'){
 
     const el =
       document.createElement(
         'div'
       );
 
-
     el.className =
-      'msg' +
-      (
-        m.userId === myId
-          ? ' mine'
-          : ''
-      );
+      'sys-msg';
 
-
-    el.innerHTML = `
-
-      <div class="msg-meta">
-
-        <span
-          class="msg-user"
-          style="color:${m.color}"
-        >
-          ${escapeHTML(m.user)}
-        </span>
-
-        <span class="msg-time">
-          ${fmtTime(m.ts)}
-        </span>
-
-      </div>
-
-      <div class="msg-text"></div>
-
-    `;
-
-
-    el.querySelector(
-      '.msg-text'
-    ).textContent =
+    el.textContent =
       m.text;
-
 
     feed.appendChild(el);
 
-  }
-
-
-  function scrollToBottom(){
-
-    feed.scrollTop =
-      feed.scrollHeight;
+    return;
 
   }
 
 
-  /* ================= FIRESTORE: MESSAGES ================= */
-
-  const messagesQuery =
-    query(
-      messagesCol,
-      orderBy("ts")
+  const el =
+    document.createElement(
+      'div'
     );
 
 
-  async function pushSystemMessage(text){
-
-    try{
-
-      await addDoc(
-        messagesCol,
-        {
-          type:'system',
-          text,
-          ts:Date.now()
-        }
-      );
-
-    }catch(e){
-
-      console.error(e);
-
-    }
-
-  }
-
-
-  async function sendMessage(text){
-
-    text =
-      text.trim();
-
-    if(!text)
-      return;
-
-
-    try{
-
-      await addDoc(
-        messagesCol,
-        {
-          type:'msg',
-          user:myName,
-          userId:myId,
-          color:myColor,
-          text,
-          ts:Date.now()
-        }
-      );
-
-    }catch(e){
-
-      console.error(e);
-
-    }
-
-  }
-
-
-  /* ================= EMERGENCY WIPE ================= */
-
-  const emergencyBtn =
-    document.getElementById(
-      "emergencyBtn"
+  el.className =
+    'msg' +
+    (
+      m.userId === myId
+        ? ' mine'
+        : ''
     );
 
 
-  emergencyBtn.addEventListener(
-    "click",
-    async () => {
+  el.innerHTML = `
 
-      const password =
-        prompt(
-          "EMERGENCY WIPE — ENTER PASSWORD:"
-        );
+    <div class="msg-meta">
 
+      <span
+        class="msg-user"
+        style="color:${m.color}"
+      >
+        ${escapeHTML(m.user)}
+      </span>
 
-      if(
-        password !==
-        EMERGENCY_PASSWORD
-      ){
+      <span class="msg-time">
+        ${fmtTime(m.ts)}
+      </span>
 
-        if(password !== null){
+    </div>
 
-          alert(
-            "ACCESS DENIED"
-          );
+    <div class="msg-text"></div>
 
-        }
-
-        return;
-
-      }
+  `;
 
 
-      const confirmed =
-        confirm(
-          "⚠ EMERGENCY WIPE ⚠\n\nDELETE ALL MESSAGES?"
-        );
+  el.querySelector(
+    '.msg-text'
+  ).textContent =
+    m.text;
 
 
-      if(!confirmed){
+  feed.appendChild(el);
 
-        return;
-
-      }
+}
 
 
-      try{
+function scrollToBottom(){
 
-        emergencyBtn.disabled =
-          true;
+  feed.scrollTop =
+    feed.scrollHeight;
 
-
-        const msgsSnap =
-          await getDocs(
-            messagesCol
-          );
+}
 
 
-        if(
-          !msgsSnap.empty
-        ){
+/* ================= FIRESTORE: MESSAGES ================= */
 
-          const docs =
-            msgsSnap.docs;
-
-
-          for(
-            let i = 0;
-            i < docs.length;
-            i += 450
-          ){
-
-            const batch =
-              writeBatch(db);
-
-
-            docs
-              .slice(
-                i,
-                i + 450
-              )
-              .forEach(
-                d => {
-
-                  batch.delete(
-                    d.ref
-                  );
-
-                }
-              );
-
-
-            await batch.commit();
-
-          }
-
-        }
-
-
-      }catch(e){
-
-        console.error(
-          "emergency wipe error:",
-          e
-        );
-
-        alert(
-          "EMERGENCY WIPE FAILED"
-        );
-
-
-      }finally{
-
-        emergencyBtn.disabled =
-          false;
-
-      }
-
-    }
+const messagesQuery =
+  query(
+    messagesCol,
+    orderBy("ts")
   );
 
 
-  /* ================= FIRESTORE: PRESENCE ================= */
+async function pushSystemMessage(text){
 
-  const userCountEl =
-    document.getElementById(
-      'userCount'
+  try{
+
+    await addDoc(
+      messagesCol,
+      {
+        type:'system',
+        text,
+        ts:Date.now()
+      }
     );
 
+  }catch(e){
 
-  async function heartbeat(){
-
-    try{
-
-      await setDoc(
-        doc(
-          presenceCol,
-          myId
-        ),
-        {
-          lastSeen:
-            Date.now()
-        }
-      );
-
-    }catch(e){
-
-      console.error(e);
-
-    }
+    console.error(e);
 
   }
 
+}
 
-  /* ================= FIRESTORE: PURGE COUNTDOWN ================= */
 
-  const purgeTimerEl =
-    document.getElementById(
-      'purgeTimer'
+async function sendMessage(text){
+
+  text =
+    text.trim();
+
+  if(!text)
+    return;
+
+
+  try{
+
+    await addDoc(
+      messagesCol,
+      {
+        type:'msg',
+        user:myName,
+        userId:myId,
+        color:myColor,
+        text,
+        ts:Date.now()
+      }
     );
 
+  }catch(e){
 
-  let purgeStart =
-    Date.now();
+    console.error(e);
 
-  let purging =
-    false;
+  }
+
+}
 
 
-  async function tryPurge(){
+/* ================= EMERGENCY WIPE ================= */
 
-    if(purging)
+const emergencyBtn =
+  document.getElementById(
+    "emergencyBtn"
+  );
+
+
+emergencyBtn.addEventListener(
+  "click",
+  async () => {
+
+    const password =
+      prompt(
+        "EMERGENCY WIPE — ENTER PASSWORD:"
+      );
+
+
+    if(
+      password !==
+      EMERGENCY_PASSWORD
+    ){
+
+      if(password !== null){
+
+        alert(
+          "ACCESS DENIED"
+        );
+
+      }
+
       return;
 
+    }
 
-    purging =
-      true;
+
+    const confirmed =
+      confirm(
+        "⚠ EMERGENCY WIPE ⚠\n\nDELETE ALL MESSAGES?"
+      );
+
+
+    if(!confirmed){
+
+      return;
+
+    }
 
 
     try{
 
-      const didPurge =
-        await runTransaction(
-          db,
-          async (tx) => {
-
-            const snap =
-              await tx.get(
-                purgeRef
-              );
+      emergencyBtn.disabled =
+        true;
 
 
-            const start =
-              (
-                snap.exists() &&
-                typeof snap.data()
-                  .purgeStart ===
-                  'number'
-              )
-                ? snap.data()
-                    .purgeStart
-                : 0;
-
-
-            if(
-              Date.now() -
-              start >=
-              PURGE_MS
-            ){
-
-              tx.set(
-                purgeRef,
-                {
-                  purgeStart:
-                    Date.now()
-                }
-              );
-
-              return true;
-
-            }
-
-
-            return false;
-
-          }
+      const msgsSnap =
+        await getDocs(
+          messagesCol
         );
 
 
-      if(didPurge){
+      if(!msgsSnap.empty){
 
-        const msgsSnap =
-          await getDocs(
-            messagesCol
-          );
+        const docs =
+          msgsSnap.docs;
 
 
-        const batch =
-          writeBatch(db);
+        for(
+          let i = 0;
+          i < docs.length;
+          i += 450
+        ){
+
+          const batch =
+            writeBatch(db);
 
 
-        msgsSnap.forEach(
-          d =>
-            batch.delete(
-              d.ref
+          docs
+            .slice(
+              i,
+              i + 450
             )
-        );
+            .forEach(
+              d => {
+
+                batch.delete(
+                  d.ref
+                );
+
+              }
+            );
 
 
-        await batch.commit();
+          await batch.commit();
 
-
-        await pushSystemMessage(
-          "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
-        );
+        }
 
       }
 
@@ -1447,461 +1339,863 @@ const PURGE_MS =
     }catch(e){
 
       console.error(
-        "purge error:",
+        "emergency wipe error:",
         e
+      );
+
+      alert(
+        "EMERGENCY WIPE FAILED"
       );
 
 
     }finally{
 
-      purging =
+      emergencyBtn.disabled =
         false;
 
     }
 
   }
+);
 
 
-  function tickPurge(){
+/* ================= FIRESTORE: PRESENCE ================= */
 
-    const remaining =
-      PURGE_MS -
-      (
-        Date.now() -
-        purgeStart
-      );
+const userCountEl =
+  document.getElementById(
+    'userCount'
+  );
 
 
-    if(
-      remaining <= 0
-    ){
+async function heartbeat(){
 
-      purgeTimerEl.textContent =
-        "00:00";
+  try{
 
-      tryPurge();
+    await setDoc(
+      doc(
+        presenceCol,
+        myId
+      ),
+      {
+        lastSeen:
+          Date.now()
+      }
+    );
 
-      return;
+  }catch(e){
 
-    }
+    console.error(e);
 
+  }
 
-    const mins =
-      Math.floor(
-        remaining / 60000
-      );
-
-
-    const secs =
-      Math.floor(
-        (remaining % 60000) /
-        1000
-      );
+}
 
 
-    purgeTimerEl.textContent =
-      `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+/* ================= FIRESTORE: TYPING ================= */
+
+const typingIndicator =
+  document.getElementById(
+    'typingIndicator'
+  );
+
+let typingTimeout = null;
+let currentlyTyping = false;
+
+
+async function setTypingState(isTyping){
+
+  try{
+
+    await setDoc(
+      doc(
+        typingCol,
+        myId
+      ),
+      {
+        user:myName,
+        userId:myId,
+        color:myColor,
+        isTyping,
+        lastSeen:Date.now()
+      }
+    );
+
+  }catch(e){
+
+    console.error(
+      "typing state error:",
+      e
+    );
+
+  }
+
+}
+
+
+function startTyping(){
+
+  if(!currentlyTyping){
+
+    currentlyTyping =
+      true;
+
+    setTypingState(
+      true
+    );
 
   }
 
 
-  /* ================= COMPOSER ================= */
+  clearTimeout(
+    typingTimeout
+  );
 
-  const composer =
-    document.getElementById(
-      'composer'
+
+  typingTimeout =
+    setTimeout(
+      () => {
+
+        stopTyping();
+
+      },
+      TYPING_STOP_DELAY
     );
 
-  const msgInput =
-    document.getElementById(
-      'msgInput'
-    );
+}
 
 
-  composer.addEventListener(
-    'submit',
-    (e) => {
+function stopTyping(){
 
-      e.preventDefault();
+  if(!currentlyTyping)
+    return;
+
+  currentlyTyping =
+    false;
+
+  clearTimeout(
+    typingTimeout
+  );
+
+  typingTimeout =
+    null;
+
+  setTypingState(
+    false
+  );
+
+}
 
 
-      const text =
-        msgInput.value;
+function renderTyping(snapshot){
 
+  const now =
+    Date.now();
 
-      msgInput.value =
-        '';
+  const typers = [];
 
+  snapshot.forEach(
+    docSnap => {
 
-      sendMessage(
-        text
-      );
+      const data =
+        docSnap.data();
 
+      if(!data)
+        return;
 
-      msgInput.focus();
+      if(
+        data.userId === myId
+      )
+        return;
+
+      if(
+        data.isTyping !== true
+      )
+        return;
+
+      if(
+        typeof data.lastSeen !==
+        "number"
+      )
+        return;
+
+      if(
+        now - data.lastSeen >
+        TYPING_STALE_MS
+      )
+        return;
+
+      typers.push(data);
 
     }
   );
 
 
-  /* ================= INIT CHAT ================= */
+  if(!typers.length){
 
-  let chatInitialized =
-    false;
+    typingIndicator.textContent =
+      "";
 
+    return;
 
-  function initChat(){
-
-    if(chatInitialized)
-      return;
+  }
 
 
-    chatInitialized =
-      true;
+  if(typers.length === 1){
+
+    const user =
+      typers[0];
+
+    typingIndicator.innerHTML =
+      `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span> IS TYPING<span class="typing-dots">...</span>`;
+
+    return;
+
+  }
 
 
-    onSnapshot(
-      messagesQuery,
-      (snapshot) => {
+  const names =
+    typers
+      .slice(0,3)
+      .map(
+        user =>
+          `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span>`
+      )
+      .join(", ");
 
-        feed.innerHTML =
-          '';
+
+  typingIndicator.innerHTML =
+    `${names} ARE TYPING<span class="typing-dots">...</span>`;
+
+}
 
 
-        snapshot.forEach(
-          docSnap =>
-            renderMessageDoc(
-              docSnap.data()
+function initTypingListener(){
+
+  onSnapshot(
+    typingCol,
+    renderTyping,
+    (err) => {
+
+      console.error(
+        "typing listener error:",
+        err
+      );
+
+    }
+  );
+
+}
+
+
+/* ================= FIRESTORE: PURGE COUNTDOWN ================= */
+
+const purgeTimerEl =
+  document.getElementById(
+    'purgeTimer'
+  );
+
+
+let purgeStart =
+  Date.now();
+
+let purging =
+  false;
+
+
+async function tryPurge(){
+
+  if(purging)
+    return;
+
+
+  purging =
+    true;
+
+
+  try{
+
+    const didPurge =
+      await runTransaction(
+        db,
+        async (tx) => {
+
+          const snap =
+            await tx.get(
+              purgeRef
+            );
+
+
+          const start =
+            (
+              snap.exists() &&
+              typeof snap.data()
+                .purgeStart ===
+                'number'
             )
-        );
+              ? snap.data()
+                  .purgeStart
+              : 0;
 
 
-        scrollToBottom();
+          if(
+            Date.now() -
+            start >=
+            PURGE_MS
+          ){
 
-      },
-      (err) => {
+            tx.set(
+              purgeRef,
+              {
+                purgeStart:
+                  Date.now()
+              }
+            );
 
-        console.error(
-          "messages listener error:",
-          err
-        );
-
-
-        feed.innerHTML =
-          '<div class="sys-msg">[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]</div>';
-
-      }
-    );
-
-
-    onSnapshot(
-      presenceCol,
-      (snapshot) => {
-
-        const now =
-          Date.now();
-
-        let active =
-          0;
-
-
-        snapshot.forEach(
-          docSnap => {
-
-            const data =
-              docSnap.data();
-
-
-            if(
-              data &&
-              typeof data.lastSeen ===
-                'number' &&
-              (
-                now -
-                data.lastSeen
-              ) <
-                PRESENCE_STALE_MS
-            ){
-
-              active++;
-
-            }
+            return true;
 
           }
+
+
+          return false;
+
+        }
+      );
+
+
+    if(didPurge){
+
+      const msgsSnap =
+        await getDocs(
+          messagesCol
         );
 
 
-        userCountEl.textContent =
-          Math.max(
-            1,
-            active
-          );
+      const batch =
+        writeBatch(db);
 
-      },
-      (err) =>
-        console.error(
-          "presence listener error:",
-          err
-        )
+
+      msgsSnap.forEach(
+        d =>
+          batch.delete(
+            d.ref
+          )
+      );
+
+
+      await batch.commit();
+
+
+      await pushSystemMessage(
+        "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
+      );
+
+    }
+
+
+  }catch(e){
+
+    console.error(
+      "purge error:",
+      e
     );
 
 
-    onSnapshot(
-      purgeRef,
-      (snap) => {
+  }finally{
 
-        if(
-          snap.exists() &&
-          typeof snap.data()
-            .purgeStart ===
-            'number'
-        ){
+    purging =
+      false;
 
-          purgeStart =
-            snap.data()
-              .purgeStart;
+  }
 
-        }else{
+}
 
-          setDoc(
-            purgeRef,
-            {
-              purgeStart:
-                Date.now()
-            }
-          ).catch(
-            e =>
-              console.error(e)
-          );
 
-        }
+function tickPurge(){
 
-      },
-      (err) =>
-        console.error(
-          "purge listener error:",
-          err
-        )
+  const remaining =
+    PURGE_MS -
+    (
+      Date.now() -
+      purgeStart
     );
 
 
-    setInterval(
-      tickPurge,
+  if(
+    remaining <= 0
+  ){
+
+    purgeTimerEl.textContent =
+      "00:00";
+
+    tryPurge();
+
+    return;
+
+  }
+
+
+  const mins =
+    Math.floor(
+      remaining / 60000
+    );
+
+
+  const secs =
+    Math.floor(
+      (remaining % 60000) /
       1000
     );
 
 
-    tickPurge();
+  purgeTimerEl.textContent =
+    `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+}
 
 
-    heartbeat();
+/* ================= COMPOSER ================= */
+
+const composer =
+  document.getElementById(
+    'composer'
+  );
+
+const msgInput =
+  document.getElementById(
+    'msgInput'
+  );
 
 
-    setInterval(
-      heartbeat,
-      5000
-    );
-
-
-    pushSystemMessage(
-      `[ ${myName} HAS JOINED THE NODE ]`
-    );
-
-  }
-
-
-  /* ================= LOCK SCREEN LOGIC ================= */
-
-  const lockScreen =
-    document.getElementById(
-      'lockScreen'
-    );
-
-  const passInput =
-    document.getElementById(
-      'passInput'
-    );
-
-  const unlockBtn =
-    document.getElementById(
-      'unlockBtn'
-    );
-
-  const lockError =
-    document.getElementById(
-      'lockError'
-    );
-
-  const lockBox =
-    document.querySelector(
-      '.lock-box'
-    );
-
-  const appEl =
-    document.getElementById(
-      'app'
-    );
-
-
-  async function attemptUnlock(){
+msgInput.addEventListener(
+  'input',
+  () => {
 
     if(
-      passInput.value.trim() !==
-      PASSWORD
+      msgInput.value.trim()
     ){
 
-      lockError.textContent =
-        "ACCESS DENIED — INVALID CLEARANCE CODE";
+      startTyping();
 
+    }else{
 
-      lockBox.classList.remove(
-        'shake'
-      );
-
-
-      void lockBox.offsetWidth;
-
-
-      lockBox.classList.add(
-        'shake'
-      );
-
-
-      passInput.value =
-        '';
-
-
-      return;
+      stopTyping();
 
     }
-
-
-    unlockBtn.disabled =
-      true;
-
-
-    lockError.textContent =
-      "AUTHENTICATING NODE";
-
-
-    lockError.style.color =
-      "var(--lime-glow)";
-
-
-    try{
-
-      await signInAnonymously(
-        auth
-      );
-
-    }catch(e){
-
-      console.error(
-        "auth error:",
-        e
-      );
-
-
-      lockError.textContent =
-        "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
-
-
-      lockError.style.color =
-        "var(--crimson)";
-
-
-      unlockBtn.disabled =
-        false;
-
-
-      return;
-
-    }
-
-
-    lockScreen.classList.add(
-      'lock-dissolve'
-    );
-
-
-    setTimeout(
-      () => {
-
-        lockScreen.style.display =
-          'none';
-
-        appEl.style.display =
-          'flex';
-
-        initChat();
-
-        msgInput.focus();
-
-      },
-      680
-    );
 
   }
+);
 
 
-  unlockBtn.addEventListener(
-    'click',
-    attemptUnlock
-  );
+composer.addEventListener(
+  'submit',
+  (e) => {
+
+    e.preventDefault();
 
 
-  passInput.addEventListener(
-    'keydown',
-    (e) => {
-
-      if(
-        e.key ===
-        'Enter'
-      ){
-
-        attemptUnlock();
-
-      }
-
-    }
-  );
+    const text =
+      msgInput.value;
 
 
-  passInput.addEventListener(
-    'input',
-    () => {
+    msgInput.value =
+      '';
 
-      lockError.textContent =
+
+    stopTyping();
+
+
+    sendMessage(
+      text
+    );
+
+
+    msgInput.focus();
+
+  }
+);
+
+
+msgInput.addEventListener(
+  'blur',
+  () => {
+
+    stopTyping();
+
+  }
+);
+
+
+/* ================= INIT CHAT ================= */
+
+let chatInitialized =
+  false;
+
+
+function initChat(){
+
+  if(chatInitialized)
+    return;
+
+
+  chatInitialized =
+    true;
+
+
+  onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+
+      feed.innerHTML =
         '';
 
-      lockError.style.color =
-        "var(--crimson)";
+
+      snapshot.forEach(
+        docSnap =>
+          renderMessageDoc(
+            docSnap.data()
+          )
+      );
+
+
+      scrollToBottom();
+
+    },
+    (err) => {
+
+      console.error(
+        "messages listener error:",
+        err
+      );
+
+
+      feed.innerHTML =
+        '<div class="sys-msg">[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]</div>';
 
     }
   );
 
 
-  /* ================= CLEANUP PRESENCE ================= */
+  onSnapshot(
+    presenceCol,
+    (snapshot) => {
 
-  window.addEventListener(
-    'beforeunload',
-    () => {
+      const now =
+        Date.now();
 
-      if(chatInitialized){
+      let active =
+        0;
 
-        deleteDoc(
-          doc(
-            presenceCol,
-            myId
-          )
+
+      snapshot.forEach(
+        docSnap => {
+
+          const data =
+            docSnap.data();
+
+
+          if(
+            data &&
+            typeof data.lastSeen ===
+              'number' &&
+            (
+              now -
+              data.lastSeen
+            ) <
+            PRESENCE_STALE_MS
+          ){
+
+            active++;
+
+          }
+
+        }
+      );
+
+
+      userCountEl.textContent =
+        Math.max(
+          1,
+          active
+        );
+
+    },
+    (err) =>
+      console.error(
+        "presence listener error:",
+        err
+      )
+  );
+
+
+  initTypingListener();
+
+
+  onSnapshot(
+    purgeRef,
+    (snap) => {
+
+      if(
+        snap.exists() &&
+        typeof snap.data()
+          .purgeStart ===
+          'number'
+      ){
+
+        purgeStart =
+          snap.data()
+            .purgeStart;
+
+      }else{
+
+        setDoc(
+          purgeRef,
+          {
+            purgeStart:
+              Date.now()
+          }
         ).catch(
-          () => {}
+          e =>
+            console.error(e)
         );
 
       }
 
-    }
+    },
+    (err) =>
+      console.error(
+        "purge listener error:",
+        err
+      )
   );
+
+
+  setInterval(
+    tickPurge,
+    1000
+  );
+
+
+  tickPurge();
+
+
+  heartbeat();
+
+
+  setInterval(
+    heartbeat,
+    5000
+  );
+
+
+  pushSystemMessage(
+    `[ ${myName} HAS JOINED THE NODE ]`
+  );
+
+}
+
+
+/* ================= LOCK SCREEN LOGIC ================= */
+
+const lockScreen =
+  document.getElementById(
+    'lockScreen'
+  );
+
+const passInput =
+  document.getElementById(
+    'passInput'
+  );
+
+const unlockBtn =
+  document.getElementById(
+    'unlockBtn'
+  );
+
+const lockError =
+  document.getElementById(
+    'lockError'
+  );
+
+const lockBox =
+  document.querySelector(
+    '.lock-box'
+  );
+
+const appEl =
+  document.getElementById(
+    'app'
+  );
+
+
+async function attemptUnlock(){
+
+  if(
+    passInput.value.trim() !==
+    PASSWORD
+  ){
+
+    lockError.textContent =
+      "ACCESS DENIED — INVALID CLEARANCE CODE";
+
+
+    lockBox.classList.remove(
+      'shake'
+    );
+
+
+    void lockBox.offsetWidth;
+
+
+    lockBox.classList.add(
+      'shake'
+    );
+
+
+    passInput.value =
+      '';
+
+
+    return;
+
+  }
+
+
+  unlockBtn.disabled =
+    true;
+
+
+  lockError.textContent =
+    "AUTHENTICATING NODE";
+
+
+  lockError.style.color =
+    "var(--lime-glow)";
+
+
+  try{
+
+    await signInAnonymously(
+      auth
+    );
+
+  }catch(e){
+
+    console.error(
+      "auth error:",
+      e
+    );
+
+
+    lockError.textContent =
+      "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
+
+
+    lockError.style.color =
+      "var(--crimson)";
+
+
+    unlockBtn.disabled =
+      false;
+
+
+    return;
+
+  }
+
+
+  lockScreen.classList.add(
+    'lock-dissolve'
+  );
+
+
+  setTimeout(
+    () => {
+
+      lockScreen.style.display =
+        'none';
+
+      appEl.style.display =
+        'flex';
+
+      initChat();
+
+      msgInput.focus();
+
+    },
+    680
+  );
+
+}
+
+
+unlockBtn.addEventListener(
+  'click',
+  attemptUnlock
+);
+
+
+passInput.addEventListener(
+  'keydown',
+  (e) => {
+
+    if(
+      e.key ===
+      'Enter'
+    ){
+
+      attemptUnlock();
+
+    }
+
+  }
+);
+
+
+passInput.addEventListener(
+  'input',
+  () => {
+
+    lockError.textContent =
+      '';
+
+    lockError.style.color =
+      "var(--crimson)";
+
+  }
+);
+
+
+/* ================= CLEANUP PRESENCE + TYPING ================= */
+
+window.addEventListener(
+  'beforeunload',
+  () => {
+
+    if(chatInitialized){
+
+      deleteDoc(
+        doc(
+          presenceCol,
+          myId
+        )
+      ).catch(
+        () => {}
+      );
+
+
+      deleteDoc(
+        doc(
+          typingCol,
+          myId
+        )
+      ).catch(
+        () => {}
+      );
+
+    }
+
+  }
+);
 
 </script>
 
