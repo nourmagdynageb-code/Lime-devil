@@ -343,6 +343,16 @@
     letter-spacing:1px;
   }
 
+  /* جعل زر الـ Online قابل للضغط لفتح القائمة */
+  .stat-chip.clickable {
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .stat-chip.clickable:hover {
+    border-color: var(--lime-glow);
+    box-shadow: 0 0 10px rgba(0,255,102,0.3);
+  }
+
   .dot{
     width:7px;
     height:7px;
@@ -478,6 +488,16 @@
     color:#dfffe0;
   }
 
+  /* عرض الصور أو الملفات المرفقة */
+  .msg-img {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 4px;
+    margin-top: 6px;
+    border: 1px solid var(--lime-dim);
+    display: block;
+  }
+
   /* ================= TYPING INDICATOR ================= */
 
   #typingIndicator{
@@ -544,6 +564,24 @@
     color:#3d4d3d;
   }
 
+  /* زر رفع الملفات */
+  #fileUploadBtn {
+    background: var(--panel-2);
+    border: 1px solid var(--lime-dim);
+    color: var(--lime-glow);
+    font-family: var(--mono);
+    font-weight: 800;
+    padding: 0 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  #fileUploadBtn:hover {
+    box-shadow: 0 0 12px rgba(57,255,20,0.4);
+    border-color: var(--lime-glow);
+  }
+
   #sendBtn{
     background:var(--lime);
     border:none;
@@ -572,6 +610,63 @@
     color:#33452f;
     padding:4px 0 8px;
     letter-spacing:1px;
+  }
+
+  /* نافذة منبثقة لقائمة المتصلين */
+  #usersModal {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .users-modal-box {
+    width: min(90vw, 380px);
+    background: linear-gradient(180deg, var(--panel), #08090a);
+    border: 1px solid var(--lime-dim);
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(57,255,20,0.2);
+  }
+  .users-modal-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--lime-glow);
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+    border-bottom: 1px dashed var(--lime-dim);
+    padding-bottom: 6px;
+  }
+  #onlineUsersList {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  .online-user-item {
+    background: var(--panel-2);
+    padding: 6px 10px;
+    border-radius: 4px;
+    border-left: 2px solid var(--lime-dim);
+  }
+  .close-modal-btn {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--lime-dim);
+    color: var(--text);
+    font-family: var(--mono);
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .close-modal-btn:hover {
+    border-color: var(--lime-glow);
+    color: var(--lime-glow);
   }
 
   @media (max-width:640px){
@@ -606,64 +701,33 @@
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<div id="lockScreen" class="flicker">
-
-  <div class="lock-box">
-
-    <div
-      class="lock-title glitch"
-      data-text="LIME DEVIL"
-    >
-      LIME DEVIL
-    </div>
-
-    <div class="lock-sub">
-      // encrypted node access required
-    </div>
-
-    <div class="hint-line">
-      [ CLEARANCE CODE REQUIRED — UNAUTHORIZED ACCESS WILL BE LOGGED ]
-    </div>
-
-    <div class="pass-row">
-
-      <input
-        type="password"
-        id="passInput"
-        maxlength="8"
-        placeholder="••••"
-        autocomplete="off"
-      >
-
-      <button id="unlockBtn">
-        UNLOCK
-      </button>
-
-    </div>
-
-    <div
-      class="lock-error"
-      id="lockError"
-    ></div>
-
+<!-- نافذة قائمة المتصلين المنبثقة -->
+<div id="usersModal">
+  <div class="users-modal-box">
+    <div class="users-modal-title">// ACTIVE NODES IN NETWORK</div>
+    <div id="onlineUsersList"></div>
+    <button class="close-modal-btn" id="closeUsersModal">CLOSE [X]</button>
   </div>
+</div>
 
+<div id="lockScreen" class="flicker">
+  <div class="lock-box">
+    <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
+    <div class="lock-sub">// encrypted node access required</div>
+    <div class="hint-line">[ CLEARANCE CODE REQUIRED — UNAUTHORIZED ACCESS WILL BE LOGGED ]</div>
+    <div class="pass-row">
+      <input type="password" id="passInput" maxlength="8" placeholder="••••" autocomplete="off">
+      <button id="unlockBtn">UNLOCK</button>
+    </div>
+    <div class="lock-error" id="lockError"></div>
+  </div>
 </div>
 
 <div id="app">
-
   <header>
-
-    <div
-      class="logo glitch"
-      data-text="LIME DEVIL"
-    >
-      LIME DEVIL
-    </div>
-
+    <div class="logo glitch" data-text="LIME DEVIL">LIME DEVIL</div>
     <div class="header-stats">
-
-      <div class="stat-chip">
+      <div class="stat-chip clickable" id="openUsersModalBtn" title="Click to view active users">
         <span class="dot"></span>
         <span id="userCount">1</span>
         ONLINE
@@ -674,1532 +738,591 @@
         <span id="purgeTimer">10:00</span>
       </div>
 
-      <div
-        class="stat-chip"
-        id="myNameChip"
-      >
+      <div class="stat-chip" id="myNameChip">
         YOU: —
       </div>
 
-      <button
-        id="emergencyBtn"
-        type="button"
-      >
-        EMERGENCY
-      </button>
-
+      <button id="emergencyBtn" type="button">EMERGENCY</button>
     </div>
-
   </header>
 
   <main id="feed"></main>
 
-    <div
-    id="typingIndicator"
-    aria-live="polite"
-  ></div>
+  <div id="typingIndicator" aria-live="polite"></div>
 
-  <form
-    id="composer"
-    autocomplete="off"
-  >
+  <form id="composer" autocomplete="off">
+    <!-- زر رفع الملفات الخفي -->
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+    <button type="button" id="fileUploadBtn" title="Attach Image/File">📁</button>
 
-    <input
-      type="text"
-      id="msgInput"
-      placeholder="transmit a message... [ENTER to send]"
-      maxlength="500"
-    >
-
-    <button
-      type="submit"
-      id="sendBtn"
-    >
-      SEND ▶
-    </button>
-
+    <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
+    <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
 
   <div class="footnote">
     ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 10 MIN
   </div>
-
 </div>
 
 <script type="module">
 
 /* ================= FIREBASE SETUP ================= */
 
-import {
-  initializeApp
-} from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  runTransaction,
-  getDocs,
-  writeBatch
-} from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import {
-  getAuth,
-  signInAnonymously
-} from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
-
-  apiKey:
-    "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
-
-  authDomain:
-    "limedevil-d3725.firebaseapp.com",
-
-  projectId:
-    "limedevil-d3725",
-
-  storageBucket:
-    "limedevil-d3725.firebasestorage.app",
-
-  messagingSenderId:
-    "678313318556",
-
-  appId:
-    "1:678313318556:web:b0d4207b086319c05cf559",
-
-  measurementId:
-    "G-BHJ50N5NNZ"
-
+  apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
+  authDomain: "limedevil-d3725.firebaseapp.com",
+  projectId: "limedevil-d3725",
+  storageBucket: "limedevil-d3725.firebasestorage.app",
+  messagingSenderId: "678313318556",
+  appId: "1:678313318556:web:b0d4207b086319c05cf559",
+  measurementId: "G-BHJ50N5NNZ"
 };
 
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
+const storage = getStorage(fbApp);
 
-const fbApp =
-  initializeApp(firebaseConfig);
+const messagesCol = collection(db, "messages");
+const presenceCol = collection(db, "presence");
+const typingCol = collection(db, "typing");
+const purgeRef = doc(db, "meta", "purge");
 
-const db =
-  getFirestore(fbApp);
+/* ================= AUDIO SYNTHESIZER (MECHANIC KEYBOARD & ALERTS) ================= */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-const auth =
-  getAuth(fbApp);
+function playKeyClickSound() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(120 + Math.random() * 40, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.04);
+}
 
-
-const messagesCol =
-  collection(db, "messages");
-
-const presenceCol =
-  collection(db, "presence");
-
-const typingCol =
-  collection(db, "typing");
-
-const purgeRef =
-  doc(db, "meta", "purge");
-
+function playNotificationSound() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
 
 /* ================= MATRIX DUST BACKGROUND ================= */
 
-const canvas =
-  document.getElementById(
-    'matrixCanvas'
-  );
-
-const ctx =
-  canvas.getContext('2d');
-
-let cols;
-let drops;
-
+const canvas = document.getElementById('matrixCanvas');
+const ctx = canvas.getContext('2d');
+let cols, drops;
 
 function resizeCanvas(){
-
-  canvas.width =
-    window.innerWidth;
-
-  canvas.height =
-    window.innerHeight;
-
-  cols =
-    Math.floor(
-      canvas.width / 16
-    );
-
-  drops =
-    new Array(cols)
-      .fill(0)
-      .map(
-        () => Math.random() * -100
-      );
-
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  cols = Math.floor(canvas.width / 16);
+  drops = new Array(cols).fill(0).map(() => Math.random() * -100);
 }
 
-
-window.addEventListener(
-  'resize',
-  resizeCanvas
-);
-
+window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-
-const chars =
-  "01LIMEDEVIL01ΞΔ01";
-
+const chars = "01LIMEDEVIL01ΞΔ01";
 
 function drawMatrix(){
+  ctx.fillStyle = "rgba(5,5,5,0.08)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#39FF14";
+  ctx.font = "14px monospace";
 
-  ctx.fillStyle =
-    "rgba(5,5,5,0.08)";
-
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-  ctx.fillStyle =
-    "#39FF14";
-
-  ctx.font =
-    "14px monospace";
-
-
-  for(
-    let i = 0;
-    i < cols;
-    i++
-  ){
-
-    const text =
-      chars[
-        Math.floor(
-          Math.random() *
-          chars.length
-        )
-      ];
-
-    ctx.fillText(
-      text,
-      i * 16,
-      drops[i] * 16
-    );
-
-
-    if(
-      drops[i] * 16 >
-        canvas.height &&
-      Math.random() > 0.975
-    ){
-
+  for(let i = 0; i < cols; i++){
+    const text = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(text, i * 16, drops[i] * 16);
+    if(drops[i] * 16 > canvas.height && Math.random() > 0.975){
       drops[i] = 0;
-
     }
-
     drops[i]++;
-
   }
-
-
-  requestAnimationFrame(
-    drawMatrix
-  );
-
+  requestAnimationFrame(drawMatrix);
 }
-
-
 drawMatrix();
-
 
 /* ================= CONSTANTS ================= */
 
-const PASSWORD =
-  "1280";
-
-const PURGE_MS =
-  10 * 60 * 1000;
-
-const PRESENCE_STALE_MS =
-  20000;
-
-const TYPING_STALE_MS =
-  3000;
-
-const TYPING_STOP_DELAY =
-  1500;
+const PASSWORD = "1280";
+const PURGE_MS = 10 * 60 * 1000;
+const PRESENCE_STALE_MS = 20000;
+const TYPING_STALE_MS = 3000;
+const TYPING_STOP_DELAY = 1500;
 
 const NAME_COLORS = [
-  "#39FF14",
-  "#ff1744",
-  "#00eaff",
-  "#ffd600",
-  "#ff6e40",
-  "#b388ff",
-  "#00FF66",
-  "#ff4081"
+  "#39FF14", "#ff1744", "#00eaff", "#ffd600",
+  "#ff6e40", "#b388ff", "#00FF66", "#ff4081"
 ];
 
-
-/* ================= EMERGENCY ================= */
-
-const EMERGENCY_PASSWORD =
-  "101";
-
+const EMERGENCY_PASSWORD = "101";
 
 /* ================= ANON CODENAME ================= */
 
-const PREFIXES = [
-  "Devil",
-  "Lime",
-  "Void",
-  "Ghost",
-  "Shadow",
-  "Cipher",
-  "Wraith",
-  "Static",
-  "Toxin",
-  "Nyx",
-  "Fang",
-  "Ash"
-];
-
-
-const SUFFIXES = [
-  "Ghost",
-  "Shadow",
-  "X",
-  "Prime",
-  "Null",
-  "Zero",
-  "Reaper",
-  "Node",
-  "Vex",
-  "Storm"
-];
-
+const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static", "Toxin", "Nyx", "Fang", "Ash"];
+const SUFFIXES = ["Ghost", "Shadow", "X", "Prime", "Null", "Zero", "Reaper", "Node", "Vex", "Storm"];
 
 function generateCodename(){
-
-  const usePrefixOnly =
-    Math.random() > 0.5;
-
-  const p =
-    PREFIXES[
-      Math.floor(
-        Math.random() *
-        PREFIXES.length
-      )
-    ];
-
-  const num =
-    Math.floor(
-      1000 +
-      Math.random() * 8999
-    );
-
-
+  const usePrefixOnly = Math.random() > 0.5;
+  const p = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
+  const num = Math.floor(1000 + Math.random() * 8999);
   if(usePrefixOnly){
-
     return `${p}_${num}`;
-
   }else{
-
-    const s =
-      SUFFIXES[
-        Math.floor(
-          Math.random() *
-          SUFFIXES.length
-        )
-      ];
-
+    const s = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
     return `${p}_${s}_${num % 100}`;
-
   }
-
 }
 
+const myName = generateCodename();
+const myColor = NAME_COLORS[Math.floor(Math.random() * NAME_COLORS.length)];
+const myId = myName + "_" + Math.random().toString(36).slice(2,8);
 
-const myName =
-  generateCodename();
-
-const myColor =
-  NAME_COLORS[
-    Math.floor(
-      Math.random() *
-      NAME_COLORS.length
-    )
-  ];
-
-const myId =
-  myName +
-  "_" +
-  Math.random()
-    .toString(36)
-    .slice(2,8);
-
-
-document.getElementById(
-  'myNameChip'
-).textContent =
-  "YOU: " + myName;
-
+document.getElementById('myNameChip').textContent = "YOU: " + myName;
 
 /* ================= RENDERING ================= */
 
-const feed =
-  document.getElementById(
-    'feed'
-  );
-
+const feed = document.getElementById('feed');
 
 function fmtTime(ts){
-
-  const d =
-    new Date(ts);
-
-  return d
-    .toTimeString()
-    .slice(0,8);
-
+  const d = new Date(ts);
+  return d.toTimeString().slice(0,8);
 }
-
 
 function escapeHTML(str){
-
-  const d =
-    document.createElement(
-      'div'
-    );
-
-  d.textContent =
-    str;
-
+  const d = document.createElement('div');
+  d.textContent = str;
   return d.innerHTML;
-
 }
-
 
 function renderMessageDoc(m){
-
   if(m.type === 'system'){
-
-    const el =
-      document.createElement(
-        'div'
-      );
-
-    el.className =
-      'sys-msg';
-
-    el.textContent =
-      m.text;
-
+    const el = document.createElement('div');
+    el.className = 'sys-msg';
+    el.textContent = m.text;
     feed.appendChild(el);
-
     return;
-
   }
 
+  const el = document.createElement('div');
+  el.className = 'msg' + (m.userId === myId ? ' mine' : '');
 
-  const el =
-    document.createElement(
-      'div'
-    );
-
-
-  el.className =
-    'msg' +
-    (
-      m.userId === myId
-        ? ' mine'
-        : ''
-    );
-
+  let contentHtml = `<div class="msg-text"></div>`;
+  if(m.fileUrl){
+    contentHtml += `<img src="${escapeHTML(m.fileUrl)}" class="msg-img" alt="attachment">`;
+  }
 
   el.innerHTML = `
-
     <div class="msg-meta">
-
-      <span
-        class="msg-user"
-        style="color:${m.color}"
-      >
-        ${escapeHTML(m.user)}
-      </span>
-
-      <span class="msg-time">
-        ${fmtTime(m.ts)}
-      </span>
-
+      <span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span>
+      <span class="msg-time">${fmtTime(m.ts)}</span>
     </div>
-
-    <div class="msg-text"></div>
-
+    ${contentHtml}
   `;
 
-
-  el.querySelector(
-    '.msg-text'
-  ).textContent =
-    m.text;
-
-
+  el.querySelector('.msg-text').textContent = m.text;
   feed.appendChild(el);
-
 }
-
 
 function scrollToBottom(){
-
-  feed.scrollTop =
-    feed.scrollHeight;
-
+  feed.scrollTop = feed.scrollHeight;
 }
-
 
 /* ================= FIRESTORE: MESSAGES ================= */
 
-const messagesQuery =
-  query(
-    messagesCol,
-    orderBy("ts")
-  );
-
+const messagesQuery = query(messagesCol, orderBy("ts"));
 
 async function pushSystemMessage(text){
-
   try{
-
-    await addDoc(
-      messagesCol,
-      {
-        type:'system',
-        text,
-        ts:Date.now()
-      }
-    );
-
+    await addDoc(messagesCol, { type:'system', text, ts:Date.now() });
   }catch(e){
-
     console.error(e);
-
   }
-
 }
 
-
-async function sendMessage(text){
-
-  text =
-    text.trim();
-
-  if(!text)
-    return;
-
+async function sendMessage(text, fileUrl = null){
+  text = text.trim();
+  if(!text && !fileUrl) return;
 
   try{
-
-    await addDoc(
-      messagesCol,
-      {
-        type:'msg',
-        user:myName,
-        userId:myId,
-        color:myColor,
-        text,
-        ts:Date.now()
-      }
-    );
-
+    await addDoc(messagesCol, {
+      type:'msg',
+      user:myName,
+      userId:myId,
+      color:myColor,
+      text,
+      fileUrl,
+      ts:Date.now()
+    });
   }catch(e){
-
     console.error(e);
-
   }
-
 }
-
 
 /* ================= EMERGENCY WIPE ================= */
 
-const emergencyBtn =
-  document.getElementById(
-    "emergencyBtn"
-  );
+const emergencyBtn = document.getElementById("emergencyBtn");
 
-
-emergencyBtn.addEventListener(
-  "click",
-  async () => {
-
-    const password =
-      prompt(
-        "EMERGENCY WIPE — ENTER PASSWORD:"
-      );
-
-
-    if(
-      password !==
-      EMERGENCY_PASSWORD
-    ){
-
-      if(password !== null){
-
-        alert(
-          "ACCESS DENIED"
-        );
-
-      }
-
-      return;
-
-    }
-
-
-    const confirmed =
-      confirm(
-        "⚠ EMERGENCY WIPE ⚠\n\nDELETE ALL MESSAGES?"
-      );
-
-
-    if(!confirmed){
-
-      return;
-
-    }
-
-
-    try{
-
-      emergencyBtn.disabled =
-        true;
-
-
-      const msgsSnap =
-        await getDocs(
-          messagesCol
-        );
-
-
-      if(!msgsSnap.empty){
-
-        const docs =
-          msgsSnap.docs;
-
-
-        for(
-          let i = 0;
-          i < docs.length;
-          i += 450
-        ){
-
-          const batch =
-            writeBatch(db);
-
-
-          docs
-            .slice(
-              i,
-              i + 450
-            )
-            .forEach(
-              d => {
-
-                batch.delete(
-                  d.ref
-                );
-
-              }
-            );
-
-
-          await batch.commit();
-
-        }
-
-      }
-
-
-    }catch(e){
-
-      console.error(
-        "emergency wipe error:",
-        e
-      );
-
-      alert(
-        "EMERGENCY WIPE FAILED"
-      );
-
-
-    }finally{
-
-      emergencyBtn.disabled =
-        false;
-
-    }
-
+emergencyBtn.addEventListener("click", async () => {
+  const password = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
+  if(password !== EMERGENCY_PASSWORD){
+    if(password !== null) alert("ACCESS DENIED");
+    return;
   }
-);
+  const confirmed = confirm("⚠ EMERGENCY WIPE ⚠\n\nDELETE ALL MESSAGES?");
+  if(!confirmed) return;
 
+  try{
+    emergencyBtn.disabled = true;
+    const msgsSnap = await getDocs(messagesCol);
+    if(!msgsSnap.empty){
+      const docs = msgsSnap.docs;
+      for(let i = 0; i < docs.length; i += 450){
+        const batch = writeBatch(db);
+        docs.slice(i, i + 450).forEach(d => { batch.delete(d.ref); });
+        await batch.commit();
+      }
+    }
+  }catch(e){
+    console.error("emergency wipe error:", e);
+    alert("EMERGENCY WIPE FAILED");
+  }finally{
+    emergencyBtn.disabled = false;
+  }
+});
 
 /* ================= FIRESTORE: PRESENCE ================= */
 
-const userCountEl =
-  document.getElementById(
-    'userCount'
-  );
+const userCountEl = document.getElementById('userCount');
+const onlineUsersList = document.getElementById('onlineUsersList');
+const usersModal = document.getElementById('usersModal');
+const openUsersModalBtn = document.getElementById('openUsersModalBtn');
+const closeUsersModal = document.getElementById('closeUsersModal');
 
+openUsersModalBtn.addEventListener('click', () => { usersModal.style.display = 'flex'; });
+closeUsersModal.addEventListener('click', () => { usersModal.style.display = 'none'; });
 
 async function heartbeat(){
-
   try{
-
-    await setDoc(
-      doc(
-        presenceCol,
-        myId
-      ),
-      {
-        lastSeen:
-          Date.now()
-      }
-    );
-
+    await setDoc(doc(presenceCol, myId), { user: myName, color: myColor, lastSeen: Date.now() });
   }catch(e){
-
     console.error(e);
-
   }
-
 }
-
 
 /* ================= FIRESTORE: TYPING ================= */
 
-const typingIndicator =
-  document.getElementById(
-    'typingIndicator'
-  );
-
+const typingIndicator = document.getElementById('typingIndicator');
 let typingTimeout = null;
 let currentlyTyping = false;
 
-
 async function setTypingState(isTyping){
-
   try{
-
-    await setDoc(
-      doc(
-        typingCol,
-        myId
-      ),
-      {
-        user:myName,
-        userId:myId,
-        color:myColor,
-        isTyping,
-        lastSeen:Date.now()
-      }
-    );
-
+    await setDoc(doc(typingCol, myId), {
+      user:myName,
+      userId:myId,
+      color:myColor,
+      isTyping,
+      lastSeen:Date.now()
+    });
   }catch(e){
-
-    console.error(
-      "typing state error:",
-      e
-    );
-
+    console.error("typing state error:", e);
   }
-
 }
-
 
 function startTyping(){
-
   if(!currentlyTyping){
-
-    currentlyTyping =
-      true;
-
-    setTypingState(
-      true
-    );
-
+    currentlyTyping = true;
+    setTypingState(true);
   }
-
-
-  clearTimeout(
-    typingTimeout
-  );
-
-
-  typingTimeout =
-    setTimeout(
-      () => {
-
-        stopTyping();
-
-      },
-      TYPING_STOP_DELAY
-    );
-
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => { stopTyping(); }, TYPING_STOP_DELAY);
 }
-
 
 function stopTyping(){
-
-  if(!currentlyTyping)
-    return;
-
-  currentlyTyping =
-    false;
-
-  clearTimeout(
-    typingTimeout
-  );
-
-  typingTimeout =
-    null;
-
-  setTypingState(
-    false
-  );
-
+  if(!currentlyTyping) return;
+  currentlyTyping = false;
+  clearTimeout(typingTimeout);
+  typingTimeout = null;
+  setTypingState(false);
 }
-
 
 function renderTyping(snapshot){
-
-  const now =
-    Date.now();
-
+  const now = Date.now();
   const typers = [];
 
-  snapshot.forEach(
-    docSnap => {
-
-      const data =
-        docSnap.data();
-
-      if(!data)
-        return;
-
-      if(
-        data.userId === myId
-      )
-        return;
-
-      if(
-        data.isTyping !== true
-      )
-        return;
-
-      if(
-        typeof data.lastSeen !==
-        "number"
-      )
-        return;
-
-      if(
-        now - data.lastSeen >
-        TYPING_STALE_MS
-      )
-        return;
-
-      typers.push(data);
-
-    }
-  );
-
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    if(!data || data.userId === myId || data.isTyping !== true || typeof data.lastSeen !== "number") return;
+    if(now - data.lastSeen > TYPING_STALE_MS) return;
+    typers.push(data);
+  });
 
   if(!typers.length){
-
-    typingIndicator.textContent =
-      "";
-
+    typingIndicator.textContent = "";
     return;
-
   }
-
 
   if(typers.length === 1){
-
-    const user =
-      typers[0];
-
-    typingIndicator.innerHTML =
-      `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span> IS TYPING<span class="typing-dots">...</span>`;
-
+    const user = typers[0];
+    typingIndicator.innerHTML = `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span> IS TYPING<span class="typing-dots">...</span>`;
     return;
-
   }
 
-
-  const names =
-    typers
-      .slice(0,3)
-      .map(
-        user =>
-          `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span>`
-      )
-      .join(", ");
-
-
-  typingIndicator.innerHTML =
-    `${names} ARE TYPING<span class="typing-dots">...</span>`;
-
+  const names = typers.slice(0,3).map(user => `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span>`).join(", ");
+  typingIndicator.innerHTML = `${names} ARE TYPING<span class="typing-dots">...</span>`;
 }
-
 
 function initTypingListener(){
-
-  onSnapshot(
-    typingCol,
-    renderTyping,
-    (err) => {
-
-      console.error(
-        "typing listener error:",
-        err
-      );
-
-    }
-  );
-
+  onSnapshot(typingCol, renderTyping, (err) => { console.error("typing listener error:", err); });
 }
-
 
 /* ================= FIRESTORE: PURGE COUNTDOWN ================= */
 
-const purgeTimerEl =
-  document.getElementById(
-    'purgeTimer'
-  );
-
-
-let purgeStart =
-  Date.now();
-
-let purging =
-  false;
-
+const purgeTimerEl = document.getElementById('purgeTimer');
+let purgeStart = Date.now();
+let purging = false;
 
 async function tryPurge(){
-
-  if(purging)
-    return;
-
-
-  purging =
-    true;
-
+  if(purging) return;
+  purging = true;
 
   try{
-
-    const didPurge =
-      await runTransaction(
-        db,
-        async (tx) => {
-
-          const snap =
-            await tx.get(
-              purgeRef
-            );
-
-
-          const start =
-            (
-              snap.exists() &&
-              typeof snap.data()
-                .purgeStart ===
-                'number'
-            )
-              ? snap.data()
-                  .purgeStart
-              : 0;
-
-
-          if(
-            Date.now() -
-            start >=
-            PURGE_MS
-          ){
-
-            tx.set(
-              purgeRef,
-              {
-                purgeStart:
-                  Date.now()
-              }
-            );
-
-            return true;
-
-          }
-
-
-          return false;
-
-        }
-      );
-
+    const didPurge = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(purgeRef);
+      const start = (snap.exists() && typeof snap.data().purgeStart === 'number') ? snap.data().purgeStart : 0;
+      if(Date.now() - start >= PURGE_MS){
+        tx.set(purgeRef, { purgeStart: Date.now() });
+        return true;
+      }
+      return false;
+    });
 
     if(didPurge){
-
-      const msgsSnap =
-        await getDocs(
-          messagesCol
-        );
-
-
-      const batch =
-        writeBatch(db);
-
-
-      msgsSnap.forEach(
-        d =>
-          batch.delete(
-            d.ref
-          )
-      );
-
-
+      const msgsSnap = await getDocs(messagesCol);
+      const batch = writeBatch(db);
+      msgsSnap.forEach(d => batch.delete(d.ref));
       await batch.commit();
-
-
-      await pushSystemMessage(
-        "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
-      );
-
+      await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]");
     }
-
-
   }catch(e){
-
-    console.error(
-      "purge error:",
-      e
-    );
-
-
+    console.error("purge error:", e);
   }finally{
-
-    purging =
-      false;
-
+    purging = false;
   }
-
 }
-
 
 function tickPurge(){
-
-  const remaining =
-    PURGE_MS -
-    (
-      Date.now() -
-      purgeStart
-    );
-
-
-  if(
-    remaining <= 0
-  ){
-
-    purgeTimerEl.textContent =
-      "00:00";
-
+  const remaining = PURGE_MS - (Date.now() - purgeStart);
+  if(remaining <= 0){
+    purgeTimerEl.textContent = "00:00";
     tryPurge();
-
     return;
-
   }
-
-
-  const mins =
-    Math.floor(
-      remaining / 60000
-    );
-
-
-  const secs =
-    Math.floor(
-      (remaining % 60000) /
-      1000
-    );
-
-
-  purgeTimerEl.textContent =
-    `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 }
-
 
 /* ================= COMPOSER ================= */
 
-const composer =
-  document.getElementById(
-    'composer'
-  );
+const composer = document.getElementById('composer');
+const msgInput = document.getElementById('msgInput');
+const fileUploadBtn = document.getElementById('fileUploadBtn');
+const fileInput = document.getElementById('fileInput');
 
-const msgInput =
-  document.getElementById(
-    'msgInput'
-  );
-
-
-msgInput.addEventListener(
-  'input',
-  () => {
-
-    if(
-      msgInput.value.trim()
-    ){
-
-      startTyping();
-
-    }else{
-
-      stopTyping();
-
-    }
-
-  }
-);
-
-
-composer.addEventListener(
-  'submit',
-  (e) => {
-
-    e.preventDefault();
-
-
-    const text =
-      msgInput.value;
-
-
-    msgInput.value =
-      '';
-
-
+// تشغيل صوت ضغطات الكيبورد وأحداث الكتابة
+msgInput.addEventListener('input', () => {
+  playKeyClickSound();
+  if(msgInput.value.trim()){
+    startTyping();
+  }else{
     stopTyping();
-
-
-    sendMessage(
-      text
-    );
-
-
-    msgInput.focus();
-
   }
-);
+});
 
+fileUploadBtn.addEventListener('click', () => { fileInput.click(); });
 
-msgInput.addEventListener(
-  'blur',
-  () => {
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files[0];
+  if(!file) return;
 
-    stopTyping();
-
+  try{
+    fileUploadBtn.textContent = "⌛";
+    const fileRef = sRef(storage, `uploads/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const downloadUrl = await getDownloadURL(fileRef);
+    await sendMessage(file.name, downloadUrl);
+    fileInput.value = '';
+  }catch(e){
+    console.error("Upload error:", e);
+    alert("FILE UPLOAD FAILED");
+  }finally{
+    fileUploadBtn.textContent = "📁";
   }
-);
+});
 
+composer.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = msgInput.value;
+  msgInput.value = '';
+  stopTyping();
+  sendMessage(text);
+  msgInput.focus();
+});
+
+msgInput.addEventListener('blur', () => { stopTyping(); });
 
 /* ================= INIT CHAT ================= */
 
-let chatInitialized =
-  false;
-let lastMessageCount = 0; // للتحقق من وصول رسالة جديدة وتفعيل الـ Vibration
-
+let chatInitialized = false;
+let lastMessageCount = 0;
 
 function initChat(){
+  if(chatInitialized) return;
+  chatInitialized = true;
 
-  if(chatInitialized)
-    return;
+  // طلب إذن إشعارات المتصفح
+  if("Notification" in window && Notification.permission !== "granted"){
+    Notification.requestPermission();
+  }
 
-
-  chatInitialized =
-    true;
-
-
-  onSnapshot(
-    messagesQuery,
-    (snapshot) => {
-      
-      // فحص الرسائل الجديدة لتشغيل الـ Vibration عند وصول رسالة تخص طرف آخر
-      if (lastMessageCount > 0 && snapshot.docs.length > lastMessageCount) {
-        const newestDoc = snapshot.docs[snapshot.docs.length - 1].data();
-        // التحقق أن الرسالة ليست رسالة نظام وليست مرسلة بواسطة نفس المستخدم الحالي
-        if (newestDoc && newestDoc.type !== 'system' && newestDoc.userId !== myId) {
-          if ("vibrate" in navigator) {
-            navigator.vibrate([100, 50, 100]); // نبضة اهتزاز خفيفة ومتناسقة
-          }
+  onSnapshot(messagesQuery, (snapshot) => {
+    if (lastMessageCount > 0 && snapshot.docs.length > lastMessageCount) {
+      const newestDoc = snapshot.docs[snapshot.docs.length - 1].data();
+      if (newestDoc && newestDoc.type !== 'system' && newestDoc.userId !== myId) {
+        playNotificationSound();
+        if ("vibrate" in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
+        if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+          new Notification(`LIME DEVIL // ${newestDoc.user}`, {
+            body: newestDoc.text || "New encrypted transmission received.",
+            icon: ""
+          });
         }
       }
-      lastMessageCount = snapshot.docs.length;
-
-      feed.innerHTML =
-        '';
-
-
-      snapshot.forEach(
-        docSnap =>
-          renderMessageDoc(
-            docSnap.data()
-          )
-      );
-
-
-      scrollToBottom();
-
-    },
-    (err) => {
-
-      console.error(
-        "messages listener error:",
-        err
-      );
-
-
-      feed.innerHTML =
-        '<div class="sys-msg">[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]</div>';
-
     }
-  );
+    lastMessageCount = snapshot.docs.length;
 
+    feed.innerHTML = '';
+    snapshot.forEach(docSnap => renderMessageDoc(docSnap.data()));
+    scrollToBottom();
+  }, (err) => {
+    console.error("messages listener error:", err);
+    feed.innerHTML = '<div class="sys-msg">[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]</div>';
+  });
 
-  onSnapshot(
-    presenceCol,
-    (snapshot) => {
+  onSnapshot(presenceCol, (snapshot) => {
+    const now = Date.now();
+    let active = 0;
+    let onlineUsersHTML = '';
 
-      const now =
-        Date.now();
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if(data && typeof data.lastSeen === 'number' && (now - data.lastSeen) < PRESENCE_STALE_MS){
+        active++;
+        onlineUsersHTML += `<div class="online-user-item" style="color: ${data.color || '#39FF14'}">◈ ${escapeHTML(data.user || 'UNKNOWN')}</div>`;
+      }
+    });
 
-      let active =
-        0;
-
-
-      snapshot.forEach(
-        docSnap => {
-
-          const data =
-            docSnap.data();
-
-
-          if(
-            data &&
-            typeof data.lastSeen ===
-              'number' &&
-            (
-              now -
-              data.lastSeen
-            ) <
-            PRESENCE_STALE_MS
-          ){
-
-            active++;
-
-          }
-
-        }
-      );
-
-
-      userCountEl.textContent =
-        Math.max(
-          1,
-          active
-        );
-
-    },
-    (err) =>
-      console.error(
-        "presence listener error:",
-        err
-      )
-  );
-
+    userCountEl.textContent = Math.max(1, active);
+    onlineUsersList.innerHTML = onlineUsersHTML || '<div class="online-user-item">No other nodes active.</div>';
+  }, (err) => console.error("presence listener error:", err));
 
   initTypingListener();
 
+  onSnapshot(purgeRef, (snap) => {
+    if(snap.exists() && typeof snap.data().purgeStart === 'number'){
+      purgeStart = snap.data().purgeStart;
+    }else{
+      setDoc(purgeRef, { purgeStart: Date.now() }).catch(e => console.error(e));
+    }
+  }, (err) => console.error("purge listener error:", err));
 
-  onSnapshot(
-    purgeRef,
-    (snap) => {
-
-      if(
-        snap.exists() &&
-        typeof snap.data()
-          .purgeStart ===
-          'number'
-      ){
-
-        purgeStart =
-          snap.data()
-            .purgeStart;
-
-      }else{
-
-        setDoc(
-          purgeRef,
-          {
-            purgeStart:
-              Date.now()
-          }
-        ).catch(
-          e =>
-            console.error(e)
-        );
-
-      }
-
-    },
-    (err) =>
-      console.error(
-        "purge listener error:",
-        err
-      )
-  );
-
-
-  setInterval(
-    tickPurge,
-    1000
-  );
-
-
+  setInterval(tickPurge, 1000);
   tickPurge();
-
-
   heartbeat();
-
-
-  setInterval(
-    heartbeat,
-    5000
-  );
-
-
-  pushSystemMessage(
-    `[ ${myName} HAS JOINED THE NODE ]`
-  );
-
+  setInterval(heartbeat, 5000);
+  pushSystemMessage(`[ ${myName} HAS JOINED THE NODE ]`);
 }
-
 
 /* ================= LOCK SCREEN LOGIC ================= */
 
-const lockScreen =
-  document.getElementById(
-    'lockScreen'
-  );
-
-const passInput =
-  document.getElementById(
-    'passInput'
-  );
-
-const unlockBtn =
-  document.getElementById(
-    'unlockBtn'
-  );
-
-const lockError =
-  document.getElementById(
-    'lockError'
-  );
-
-const lockBox =
-  document.querySelector(
-    '.lock-box'
-  );
-
-const appEl =
-  document.getElementById(
-    'app'
-  );
-
+const lockScreen = document.getElementById('lockScreen');
+const passInput = document.getElementById('passInput');
+const unlockBtn = document.getElementById('unlockBtn');
+const lockError = document.getElementById('lockError');
+const lockBox = document.querySelector('.lock-box');
+const appEl = document.getElementById('app');
 
 async function attemptUnlock(){
-
-  if(
-    passInput.value.trim() !==
-    PASSWORD
-  ){
-
-    lockError.textContent =
-      "ACCESS DENIED — INVALID CLEARANCE CODE";
-
-
-    lockBox.classList.remove(
-      'shake'
-    );
-
-
+  if(passInput.value.trim() !== PASSWORD){
+    lockError.textContent = "ACCESS DENIED — INVALID CLEARANCE CODE";
+    lockBox.classList.remove('shake');
     void lockBox.offsetWidth;
-
-
-    lockBox.classList.add(
-      'shake'
-    );
-
-
-    passInput.value =
-      '';
-
-
+    lockBox.classList.add('shake');
+    passInput.value = '';
     return;
-
   }
 
-
-  unlockBtn.disabled =
-    true;
-
-
-  lockError.textContent =
-    "AUTHENTICATING NODE";
-
-
-  lockError.style.color =
-    "var(--lime-glow)";
-
+  unlockBtn.disabled = true;
+  lockError.textContent = "AUTHENTICATING NODE";
+  lockError.style.color = "var(--lime-glow)";
 
   try{
-
-    await signInAnonymously(
-      auth
-    );
-
+    await signInAnonymously(auth);
   }catch(e){
-
-    console.error(
-      "auth error:",
-      e
-    );
-
-
-    lockError.textContent =
-      "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
-
-
-    lockError.style.color =
-      "var(--crimson)";
-
-
-    unlockBtn.disabled =
-      false;
-
-
+    console.error("auth error:", e);
+    lockError.textContent = "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
+    lockError.style.color = "var(--crimson)";
+    unlockBtn.disabled = false;
     return;
-
   }
 
-
-  lockScreen.classList.add(
-    'lock-dissolve'
-  );
-
-
-  setTimeout(
-    () => {
-
-      lockScreen.style.display =
-        'none';
-
-      appEl.style.display =
-        'flex';
-
-      initChat();
-
-      msgInput.focus();
-
-    },
-    680
-  );
-
+  lockScreen.classList.add('lock-dissolve');
+  setTimeout(() => {
+    lockScreen.style.display = 'none';
+    appEl.style.display = 'flex';
+    initChat();
+    msgInput.focus();
+  }, 680);
 }
 
+unlockBtn.addEventListener('click', attemptUnlock);
+passInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attemptUnlock(); });
+passInput.addEventListener('input', () => { lockError.textContent = ''; lockError.style.color = "var(--crimson)"; });
 
-unlockBtn.addEventListener(
-  'click',
-  attemptUnlock
-);
-
-
-passInput.addEventListener(
-  'keydown',
-  (e) => {
-
-    if(
-      e.key ===
-      'Enter'
-    ){
-
-      attemptUnlock();
-
-    }
-
-  }
-);
-
-
-passInput.addEventListener(
-  'input',
-  () => {
-
-    lockError.textContent =
-      '';
-
-    lockError.style.color =
-      "var(--crimson)";
-
-  }
-);
-
-
-/* ================= CLEANUP PRESENCE + TYPING (MOBILE & DESKTOP STABILITY) ================= */
+/* ================= CLEANUP PRESENCE + TYPING ================= */
 
 function handleUserExit() {
   if(chatInitialized){
-    deleteDoc(
-      doc(
-        presenceCol,
-        myId
-      )
-    ).catch(
-      () => {}
-    );
-
-    deleteDoc(
-      doc(
-        typingCol,
-        myId
-      )
-    ).catch(
-      () => {}
-    );
+    deleteDoc(doc(presenceCol, myId)).catch(() => {});
+    deleteDoc(doc(typingCol, myId)).catch(() => {});
   }
 }
 
-// حل مشكلة beforeunload في الموبايل باستخدام الأحداث المتعددة
 window.addEventListener('beforeunload', handleUserExit);
 window.addEventListener('pagehide', handleUserExit);
-
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     handleUserExit();
@@ -2207,6 +1330,5 @@ document.addEventListener('visibilitychange', () => {
 });
 
 </script>
-
 </body>
 </html>
