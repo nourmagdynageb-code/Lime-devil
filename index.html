@@ -488,16 +488,6 @@
     color:#dfffe0;
   }
 
-  /* عرض الصور أو الملفات المرفقة */
-  .msg-img {
-    max-width: 100%;
-    max-height: 220px;
-    border-radius: 4px;
-    margin-top: 6px;
-    border: 1px solid var(--lime-dim);
-    display: block;
-  }
-
   /* ================= TYPING INDICATOR ================= */
 
   #typingIndicator{
@@ -562,24 +552,6 @@
 
   #msgInput::placeholder{
     color:#3d4d3d;
-  }
-
-  /* زر رفع الملفات */
-  #fileUploadBtn {
-    background: var(--panel-2);
-    border: 1px solid var(--lime-dim);
-    color: var(--lime-glow);
-    font-family: var(--mono);
-    font-weight: 800;
-    padding: 0 14px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: transform 0.1s, box-shadow 0.15s;
-  }
-  #fileUploadBtn:hover {
-    box-shadow: 0 0 12px rgba(57,255,20,0.4);
-    border-color: var(--lime-glow);
   }
 
   #sendBtn{
@@ -751,10 +723,6 @@
   <div id="typingIndicator" aria-live="polite"></div>
 
   <form id="composer" autocomplete="off">
-    <!-- زر رفع الملفات الخفي -->
-    <input type="file" id="fileInput" accept="image/*" style="display:none;">
-    <button type="button" id="fileUploadBtn" title="Attach Image/File">📁</button>
-
     <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
     <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
@@ -771,7 +739,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
@@ -786,7 +753,6 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
-const storage = getStorage(fbApp);
 
 const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
@@ -926,17 +892,12 @@ function renderMessageDoc(m){
   const el = document.createElement('div');
   el.className = 'msg' + (m.userId === myId ? ' mine' : '');
 
-  let contentHtml = `<div class="msg-text"></div>`;
-  if(m.fileUrl){
-    contentHtml += `<img src="${escapeHTML(m.fileUrl)}" class="msg-img" alt="attachment">`;
-  }
-
   el.innerHTML = `
     <div class="msg-meta">
       <span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span>
       <span class="msg-time">${fmtTime(m.ts)}</span>
     </div>
-    ${contentHtml}
+    <div class="msg-text"></div>
   `;
 
   el.querySelector('.msg-text').textContent = m.text;
@@ -959,9 +920,9 @@ async function pushSystemMessage(text){
   }
 }
 
-async function sendMessage(text, fileUrl = null){
+async function sendMessage(text){
   text = text.trim();
-  if(!text && !fileUrl) return;
+  if(!text) return;
 
   try{
     await addDoc(messagesCol, {
@@ -970,7 +931,6 @@ async function sendMessage(text, fileUrl = null){
       userId:myId,
       color:myColor,
       text,
-      fileUrl,
       ts:Date.now()
     });
   }catch(e){
@@ -1147,8 +1107,6 @@ function tickPurge(){
 
 const composer = document.getElementById('composer');
 const msgInput = document.getElementById('msgInput');
-const fileUploadBtn = document.getElementById('fileUploadBtn');
-const fileInput = document.getElementById('fileInput');
 
 // تشغيل صوت ضغطات الكيبورد وأحداث الكتابة
 msgInput.addEventListener('input', () => {
@@ -1157,27 +1115,6 @@ msgInput.addEventListener('input', () => {
     startTyping();
   }else{
     stopTyping();
-  }
-});
-
-fileUploadBtn.addEventListener('click', () => { fileInput.click(); });
-
-fileInput.addEventListener('change', async () => {
-  const file = fileInput.files[0];
-  if(!file) return;
-
-  try{
-    fileUploadBtn.textContent = "⌛";
-    const fileRef = sRef(storage, `uploads/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    const downloadUrl = await getDownloadURL(fileRef);
-    await sendMessage(file.name, downloadUrl);
-    fileInput.value = '';
-  }catch(e){
-    console.error("Upload error:", e);
-    alert("FILE UPLOAD FAILED");
-  }finally{
-    fileUploadBtn.textContent = "📁";
   }
 });
 
