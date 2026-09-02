@@ -1,37 +1,46 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto">
 <head>
-  <meta charset="UTF-8">
-
+  <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
-  >
-
-  <meta name="theme-color" content="#050505">
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
 
   <title>LIME DEVIL // encrypted terminal</title>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&display=swap');
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
     :root{
-      --void:#050505;
-      --panel:#0c0f0c;
-      --panel-2:#111511;
+      --bg:#030503;
+      --panel:#071007;
+      --panel2:#0a120a;
+
       --lime:#39FF14;
-      --lime-dim:#1c8a0c;
-      --lime-glow:#00FF66;
-      --crimson:#ff1744;
-      --crimson-dim:#7a0a1d;
-      --text:#c9ffcf;
-      --mono:'JetBrains Mono','Share Tech Mono','Courier New',monospace;
+      --lime-dim:#1ca00c;
+      --lime-soft:#79ff62;
+
+      --red:#ff1744;
+      --cyan:#00eaff;
+
+      --text:#d8ffd1;
+      --muted:#557653;
+
+      --border:rgba(57,255,20,.25);
+      --border-strong:rgba(57,255,20,.55);
+
+      --shadow:0 0 20px rgba(57,255,20,.08);
     }
 
     *{
       box-sizing:border-box;
-      margin:0;
-      padding:0;
       -webkit-tap-highlight-color:transparent;
     }
 
@@ -39,17 +48,15 @@
     body{
       width:100%;
       height:100%;
-      min-height:100%;
-      background:var(--void);
+      margin:0;
+      padding:0;
+      background:var(--bg);
       color:var(--text);
-      font-family:var(--mono);
       overflow:hidden;
     }
 
     body{
-      overscroll-behavior:none;
-      -webkit-text-size-adjust:100%;
-      text-size-adjust:100%;
+      font-family:"JetBrains Mono",monospace;
     }
 
     button,
@@ -57,786 +64,446 @@
       font:inherit;
     }
 
-    button{
-      -webkit-appearance:none;
-      appearance:none;
-      touch-action:manipulation;
-    }
-
-    input{
-      -webkit-appearance:none;
-      appearance:none;
-    }
-
-    /* ---------- background ---------- */
-
-    #matrixCanvas{
-      position:fixed;
-      inset:0;
+    #app{
       width:100%;
-      height:100%;
-      z-index:0;
-      opacity:0.10;
-      pointer-events:none;
-    }
+      height:100dvh;
+      min-height:100dvh;
 
-    /* ---------- CRT ---------- */
-
-    .crt-overlay{
-      position:fixed;
-      inset:0;
-      z-index:9998;
-      pointer-events:none;
-      background:repeating-linear-gradient(
-        to bottom,
-        rgba(0,0,0,0) 0px,
-        rgba(0,0,0,0) 1px,
-        rgba(0,0,0,0.18) 2px,
-        rgba(0,0,0,0.18) 3px
-      );
-      mix-blend-mode:overlay;
-    }
-
-    .crt-vignette{
-      position:fixed;
-      inset:0;
-      z-index:9997;
-      pointer-events:none;
-      background:radial-gradient(
-        ellipse at center,
-        rgba(0,0,0,0) 40%,
-        rgba(0,0,0,0.65) 100%
-      );
-    }
-
-    .flicker{
-      animation:flicker 6s infinite;
-    }
-
-    @keyframes flicker{
-      0%,19%,21%,23%,25%,54%,56%,100%{
-        opacity:1;
-      }
-
-      20%,22%,24%,55%{
-        opacity:0.86;
-      }
-    }
-
-    /* ---------- glitch ---------- */
-
-    .glitch{
-      position:relative;
-      color:var(--lime-glow);
-      text-shadow:
-        0 0 6px var(--lime-glow),
-        0 0 18px rgba(0,255,102,0.5);
-      letter-spacing:2px;
-    }
-
-    .glitch::before,
-    .glitch::after{
-      content:attr(data-text);
-      position:absolute;
-      left:0;
-      top:0;
-      width:100%;
-      overflow:hidden;
-      background:transparent;
-      pointer-events:none;
-    }
-
-    .glitch::before{
-      color:var(--crimson);
-      left:2px;
-      animation:glitchTop 3.2s infinite linear alternate-reverse;
-      clip-path:inset(0 0 60% 0);
-    }
-
-    .glitch::after{
-      color:#00eaff;
-      left:-2px;
-      animation:glitchBottom 2.6s infinite linear alternate-reverse;
-      clip-path:inset(60% 0 0 0);
-    }
-
-    @keyframes glitchTop{
-      0%{transform:translate(0,0);}
-      20%{transform:translate(-2px,-1px);}
-      40%{transform:translate(2px,1px);}
-      60%{transform:translate(-1px,1px);}
-      80%{transform:translate(1px,-1px);}
-      100%{transform:translate(0,0);}
-    }
-
-    @keyframes glitchBottom{
-      0%{transform:translate(0,0);}
-      25%{transform:translate(2px,1px);}
-      50%{transform:translate(-2px,-1px);}
-      75%{transform:translate(1px,1px);}
-      100%{transform:translate(0,0);}
-    }
-
-    /* ================= LOCK SCREEN ================= */
-
-    #lockScreen{
-      position:fixed;
-      inset:0;
-      z-index:20;
-
-      display:flex;
-      align-items:center;
-      justify-content:center;
-
-      padding:
-        max(20px, env(safe-area-inset-top))
-        max(20px, env(safe-area-inset-right))
-        max(20px, env(safe-area-inset-bottom))
-        max(20px, env(safe-area-inset-left));
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto auto;
 
       background:
         radial-gradient(
-          ellipse at 50% 20%,
-          rgba(57,255,20,0.06),
-          transparent 60%
+          circle at 50% -20%,
+          rgba(57,255,20,.08),
+          transparent 45%
         ),
-        var(--void);
-    }
-
-    .lock-box{
-      width:min(92vw,460px);
-
-      background:linear-gradient(
-        180deg,
-        var(--panel),
-        #08090a
-      );
-
-      border:1px solid var(--lime-dim);
-      border-radius:6px;
-
-      padding:34px 30px 30px;
-
-      box-shadow:
-        0 0 40px rgba(57,255,20,0.12),
-        inset 0 0 30px rgba(0,0,0,0.6);
+        var(--bg);
 
       position:relative;
+      overflow:hidden;
     }
 
-    .lock-box::before{
-      content:'';
+    #app::before{
+      content:"";
       position:absolute;
-      inset:-1px;
-      border-radius:6px;
-      padding:1px;
+      inset:0;
+
+      pointer-events:none;
 
       background:
-        linear-gradient(
-          135deg,
-          var(--lime),
-          transparent 40%,
-          var(--crimson-dim)
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.018) 0,
+          rgba(255,255,255,.018) 1px,
+          transparent 1px,
+          transparent 4px
         );
 
-      -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-
-      -webkit-mask-composite:xor;
-      mask-composite:exclude;
-
-      opacity:0.5;
-      pointer-events:none;
-    }
-
-    .lock-title{
-      font-size:clamp(28px,6vw,40px);
-      font-weight:800;
-      text-align:center;
-      margin-bottom:6px;
-    }
-
-    .lock-sub{
-      text-align:center;
-      color:var(--lime-dim);
-      font-size:12px;
-      letter-spacing:3px;
-      margin-bottom:22px;
-      text-transform:uppercase;
-    }
-
-    .hint-line{
-      background:rgba(255,23,68,0.06);
-      border:1px dashed var(--crimson-dim);
-      color:var(--crimson);
-      font-size:12px;
-      padding:8px 10px;
-      border-radius:4px;
-      margin-bottom:20px;
-      text-align:center;
-      letter-spacing:1px;
-      animation:pulseHint 2.4s infinite;
-    }
-
-    @keyframes pulseHint{
-      0%,100%{
-        box-shadow:0 0 0 rgba(255,23,68,0);
-      }
-
-      50%{
-        box-shadow:0 0 14px rgba(255,23,68,0.35);
-      }
-    }
-
-    .pass-row{
-      display:flex;
-      gap:8px;
-    }
-
-    #passInput{
-      flex:1;
-      min-width:0;
-
-      background:#050805;
-      border:1px solid var(--lime-dim);
-      border-radius:4px;
-
-      color:var(--lime-glow);
-      font-family:var(--mono);
-      font-size:18px;
-
-      letter-spacing:6px;
-      text-align:center;
-
-      padding:14px 10px;
-
-      outline:none;
-
-      transition:
-        box-shadow 0.15s,
-        border-color 0.15s;
-    }
-
-    #passInput:focus{
-      border-color:var(--lime-glow);
-      box-shadow:0 0 16px rgba(0,255,102,0.5);
-    }
-
-    #unlockBtn{
-      background:var(--lime);
-      border:none;
-      color:#031403;
-
-      font-family:var(--mono);
-      font-weight:800;
-
-      padding:0 18px;
-      border-radius:4px;
-
-      cursor:pointer;
-      letter-spacing:1px;
-
-      transition:
-        transform 0.1s,
-        box-shadow 0.15s;
-    }
-
-    #unlockBtn:disabled{
-      opacity:0.55;
-      cursor:not-allowed;
-    }
-
-    #unlockBtn:hover{
-      box-shadow:0 0 18px rgba(57,255,20,0.6);
-      transform:translateY(-1px);
-    }
-
-    .lock-error{
-      margin-top:12px;
-      text-align:center;
-      color:var(--crimson);
-      font-size:12px;
-      min-height:16px;
-      letter-spacing:1px;
-    }
-
-    .shake{
-      animation:shake 0.35s;
-    }
-
-    @keyframes shake{
-      0%,100%{transform:translateX(0);}
-      20%{transform:translateX(-8px);}
-      40%{transform:translateX(8px);}
-      60%{transform:translateX(-5px);}
-      80%{transform:translateX(5px);}
-    }
-
-    .lock-dissolve{
-      animation:dissolveOut 0.7s forwards;
-    }
-
-    @keyframes dissolveOut{
-      0%{
-        opacity:1;
-        filter:blur(0) brightness(1);
-      }
-
-      40%{
-        opacity:0.7;
-        filter:blur(2px) brightness(3) hue-rotate(30deg);
-      }
-
-      100%{
-        opacity:0;
-        filter:blur(10px) brightness(0.2);
-        transform:scale(1.04);
-      }
-    }
-
-    /* ================= APP ================= */
-
-    #app{
-      position:relative;
-      z-index:1;
-
-      display:none;
-      flex-direction:column;
-
-      width:100%;
-      height:100vh;
-      height:100dvh;
-
-      min-height:0;
-
-      animation:fadeIn 0.6s ease;
-    }
-
-    @keyframes fadeIn{
-      from{opacity:0;}
-      to{opacity:1;}
+      opacity:.35;
+      z-index:20;
     }
 
     header{
-      flex:0 0 auto;
+      position:relative;
+      z-index:2;
 
       display:flex;
       align-items:center;
       justify-content:space-between;
-
       gap:12px;
 
       padding:
-        calc(12px + env(safe-area-inset-top))
-        max(18px, env(safe-area-inset-right))
-        12px
-        max(18px, env(safe-area-inset-left));
+        calc(10px + env(safe-area-inset-top))
+        14px
+        10px;
 
-      background:linear-gradient(
-        180deg,
-        #0a0c0a,
-        #060706
-      );
+      border-bottom:1px solid var(--border);
 
-      border-bottom:1px solid var(--lime-dim);
-
-      flex-wrap:wrap;
+      background:rgba(3,5,3,.92);
+      box-shadow:var(--shadow);
     }
 
-    .logo{
-      font-size:22px;
-      font-weight:800;
+    .brand{
+      min-width:0;
+    }
+
+    .title{
+      color:var(--lime);
+      font-family:"Share Tech Mono",monospace;
+      font-size:clamp(18px,5vw,27px);
       letter-spacing:2px;
-    }
+      line-height:1;
+      text-shadow:0 0 10px rgba(57,255,20,.35);
 
-    .header-stats{
-      display:flex;
-      align-items:center;
-      gap:16px;
-      font-size:12px;
-    }
-
-    .stat-chip{
-      background:var(--panel-2);
-      border:1px solid var(--lime-dim);
-      border-radius:20px;
-
-      padding:6px 12px;
-
-      display:flex;
-      align-items:center;
-      gap:6px;
-
-      letter-spacing:1px;
       white-space:nowrap;
     }
 
-    .dot{
-      width:7px;
-      height:7px;
-      flex:0 0 7px;
-
-      border-radius:50%;
-
-      background:var(--lime-glow);
-      box-shadow:0 0 8px var(--lime-glow);
-
-      animation:blink 1.6s infinite;
+    .subtitle{
+      margin-top:5px;
+      color:var(--muted);
+      font-size:9px;
+      letter-spacing:1.4px;
+      white-space:nowrap;
     }
 
-    @keyframes blink{
-      50%{opacity:0.25;}
+    .status{
+      flex:none;
+
+      color:var(--lime);
+      border:1px solid var(--border);
+      padding:7px 9px;
+
+      font-size:9px;
+      letter-spacing:1px;
+
+      text-align:center;
+
+      background:rgba(57,255,20,.025);
     }
 
-    #purgeTimer{
-      color:var(--crimson);
-
-      text-shadow:
-        0 0 8px rgba(255,23,68,0.7);
-
+    #userCount{
+      color:var(--lime-soft);
       font-weight:700;
     }
 
-    /* ================= FEED ================= */
-
-    main{
-      flex:1 1 auto;
+    #feed{
+      position:relative;
+      z-index:1;
 
       min-height:0;
-
       overflow-y:auto;
       overflow-x:hidden;
 
-      padding:18px 14px 10px;
-
       display:flex;
       flex-direction:column;
-      gap:10px;
+      gap:8px;
 
-      scroll-behavior:smooth;
-
-      -webkit-overflow-scrolling:touch;
+      padding:14px 12px 10px;
 
       overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+
+      scrollbar-width:thin;
+      scrollbar-color:var(--lime-dim) transparent;
     }
 
-    main::-webkit-scrollbar{
-      width:8px;
+    #feed::-webkit-scrollbar{
+      width:5px;
     }
 
-    main::-webkit-scrollbar-thumb{
-      background:var(--lime-dim);
-      border-radius:4px;
-    }
-
-    main::-webkit-scrollbar-track{
+    #feed::-webkit-scrollbar-track{
       background:transparent;
     }
 
-    .sys-msg{
-      align-self:center;
-
-      color:var(--lime-dim);
-      font-size:11px;
-
-      letter-spacing:1px;
-
-      border:1px dashed var(--lime-dim);
-
-      padding:4px 12px;
-
-      border-radius:20px;
-
-      background:rgba(57,255,20,0.03);
-
-      direction:auto;
-      unicode-bidi:plaintext;
-      text-align:center;
+    #feed::-webkit-scrollbar-thumb{
+      background:var(--lime-dim);
     }
 
-    .msg{
-      max-width:78%;
-
-      background:var(--panel-2);
-
-      border:1px solid #1c231c;
-      border-left:3px solid var(--lime-dim);
-
-      border-radius:4px;
-
-      padding:8px 12px;
-
-      animation:msgIn 0.25s ease;
-
-      direction:auto;
-      unicode-bidi:plaintext;
+    #messageList{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      width:100%;
     }
 
-    @keyframes msgIn{
+    .message{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+
+      animation:messageIn .16s ease-out;
+    }
+
+    @keyframes messageIn{
       from{
         opacity:0;
-        transform:translateY(8px);
+        transform:translateY(3px);
       }
 
       to{
         opacity:1;
-        transform:translateY(0);
+        transform:none;
       }
     }
 
-    .msg.mine{
-      align-self:flex-end;
-
-      border-left:3px solid var(--crimson);
-
-      background:#12100f;
-    }
-
-    .msg-meta{
+    .message-head{
       display:flex;
-      justify-content:space-between;
-      gap:12px;
+      align-items:center;
+      gap:7px;
 
-      font-size:11px;
-      margin-bottom:3px;
-
-      letter-spacing:0.5px;
+      font-size:9px;
+      color:var(--muted);
     }
 
-    .msg-user{
+    .message-name{
       font-weight:700;
-      unicode-bidi:plaintext;
+      letter-spacing:.7px;
     }
 
-    .msg-time{
-      color:#5a6a5a;
-      direction:ltr;
-      unicode-bidi:isolate;
-      flex-shrink:0;
+    .message-time{
+      opacity:.65;
     }
 
-    .msg-text{
-      font-size:14px;
+    .message-body{
+      width:fit-content;
+      max-width:min(90%,760px);
 
-      line-height:1.5;
+      padding:8px 10px;
 
-      color:#dfffe0;
-
-      white-space:pre-wrap;
-
-      overflow-wrap:anywhere;
-      word-break:normal;
-
-      direction:auto;
-      unicode-bidi:plaintext;
-
-      text-align:start;
-
-      -webkit-user-select:text;
-      user-select:text;
-    }
-
-    /* ================= COMPOSER ================= */
-
-    form#composer{
-      flex:0 0 auto;
-
-      display:flex;
-      align-items:stretch;
-
-      gap:10px;
-
-      padding:
-        14px
-        max(14px, env(safe-area-inset-right))
-        calc(14px + env(safe-area-inset-bottom))
-        max(14px, env(safe-area-inset-left));
-
-      background:#080a08;
-
-      border-top:1px solid var(--lime-dim);
-
-      position:relative;
-      z-index:5;
-    }
-
-    #msgInput{
-      flex:1;
-      min-width:0;
-
-      background:#0b0e0b;
-
-      border:1px solid var(--lime-dim);
-      border-radius:5px;
+      border:1px solid var(--border);
+      background:rgba(57,255,20,.025);
 
       color:var(--text);
 
-      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.55;
 
-      font-size:16px;
-
-      line-height:1.4;
-
-      padding:12px 14px;
-
-      outline:none;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+      word-break:break-word;
 
       direction:auto;
       unicode-bidi:plaintext;
-
       text-align:start;
 
-      transition:
-        box-shadow 0.15s,
-        border-color 0.15s;
-
-      -webkit-user-select:text;
-      user-select:text;
-
-      /* Important for Android keyboards */
-      ime-mode:auto;
+      box-shadow:0 0 12px rgba(57,255,20,.025);
     }
 
-    #msgInput:focus{
-      border-color:var(--lime-glow);
+    .system{
+      align-self:center;
+
+      width:100%;
+      text-align:center;
+
+      color:var(--muted);
+
+      font-size:9px;
+      letter-spacing:1px;
+
+      direction:auto;
+      unicode-bidi:plaintext;
+    }
+
+    .system-text{
+      display:inline-block;
+
+      padding:4px 9px;
+
+      border:1px dashed rgba(57,255,20,.18);
+
+      background:rgba(57,255,20,.015);
+    }
+
+    .typing-indicator{
+      flex:none;
+
+      align-self:center;
+
+      color:var(--lime-dim);
+
+      font-size:9px;
+      letter-spacing:1px;
+
+      border:1px dashed rgba(57,255,20,.3);
+
+      padding:5px 12px;
+      margin:0 0 4px;
+
+      background:rgba(57,255,20,.025);
+
+      direction:auto;
+      unicode-bidi:plaintext;
+      text-align:center;
+
+      animation:typingPulse 1.2s infinite;
+    }
+
+    @keyframes typingPulse{
+      0%,
+      100%{
+        opacity:1;
+      }
+
+      50%{
+        opacity:.4;
+      }
+    }
+
+    .typing-dots::after{
+      content:"";
+      animation:typingDots 1.2s steps(4,end) infinite;
+    }
+
+    @keyframes typingDots{
+      0%{content:"";}
+      25%{content:".";}
+      50%{content:"..";}
+      75%{content:"...";}
+      100%{content:"";}
+    }
+
+    #composer{
+      position:relative;
+      z-index:3;
+
+      display:flex;
+      gap:8px;
+
+      padding:
+        8px
+        10px
+        calc(8px + env(safe-area-inset-bottom));
+
+      border-top:1px solid var(--border);
+
+      background:rgba(3,5,3,.96);
+    }
+
+    #msgInput{
+      min-width:0;
+      flex:1;
+
+      height:44px;
+
+      border:1px solid var(--border-strong);
+      outline:none;
+
+      border-radius:0;
+
+      background:var(--panel);
+      color:var(--text);
+
+      padding:0 11px;
+
+      font-size:16px;
+      line-height:44px;
+
+      direction:auto;
+      unicode-bidi:plaintext;
+      text-align:start;
+
+      caret-color:var(--lime);
 
       box-shadow:
-        0 0 14px rgba(0,255,102,0.35);
+        inset 0 0 12px rgba(57,255,20,.025);
     }
 
     #msgInput::placeholder{
-      color:#3d4d3d;
+      color:#426140;
       opacity:1;
     }
 
-    #sendBtn{
-      flex:0 0 auto;
+    #msgInput:focus{
+      border-color:var(--lime);
 
+      box-shadow:
+        0 0 12px rgba(57,255,20,.08),
+        inset 0 0 12px rgba(57,255,20,.025);
+    }
+
+    #sendBtn{
+      flex:none;
+
+      height:44px;
       min-width:88px;
 
-      background:var(--lime);
+      border:1px solid var(--lime);
 
-      border:none;
-
-      color:#031403;
-
-      font-family:var(--mono);
-
-      font-weight:800;
-
-      padding:0 20px;
-
-      border-radius:5px;
+      background:rgba(57,255,20,.06);
+      color:var(--lime);
 
       cursor:pointer;
 
+      font-family:"Share Tech Mono",monospace;
+      font-size:13px;
       letter-spacing:1px;
 
       transition:
-        transform 0.1s,
-        box-shadow 0.15s,
-        opacity 0.15s;
+        background .12s ease,
+        color .12s ease,
+        opacity .12s ease;
     }
 
     #sendBtn:hover{
-      box-shadow:0 0 16px rgba(57,255,20,0.6);
-      transform:translateY(-1px);
+      background:var(--lime);
+      color:#000;
     }
 
     #sendBtn:active{
-      transform:translateY(0);
+      transform:translateY(1px);
     }
 
     #sendBtn:disabled{
-      opacity:0.45;
+      opacity:.45;
       cursor:not-allowed;
-      transform:none;
-      box-shadow:none;
     }
 
     .footnote{
-      flex:0 0 auto;
+      position:relative;
+      z-index:2;
+
+      padding:
+        0
+        10px
+        calc(5px + env(safe-area-inset-bottom));
+
+      color:#355633;
+
+      font-size:8px;
+      letter-spacing:1px;
 
       text-align:center;
 
-      font-size:10px;
-
-      color:#33452f;
-
-      padding:4px 0 8px;
-
-      letter-spacing:1px;
-
-      background:#080a08;
-
-      padding-bottom:
-        max(8px, env(safe-area-inset-bottom));
+      background:rgba(3,5,3,.96);
     }
 
-    /* ================= MOBILE ================= */
-
-    @media (max-width:640px){
-
-      .logo{
-        font-size:18px;
+    @media(max-width:600px){
+      header{
+        padding-left:10px;
+        padding-right:10px;
       }
 
-      .header-stats{
-        width:100%;
-        font-size:9px;
-        gap:6px;
-        overflow-x:auto;
-        scrollbar-width:none;
-      }
-
-      .header-stats::-webkit-scrollbar{
+      .subtitle{
         display:none;
       }
 
-      .stat-chip{
-        padding:5px 8px;
+      .status{
+        font-size:8px;
+        padding:6px 7px;
       }
 
-      .msg{
-        max-width:92%;
+      #feed{
+        padding:10px 8px 8px;
       }
 
-      .lock-box{
-        padding:26px 18px 22px;
+      .message-body{
+        max-width:94%;
+        font-size:13px;
       }
 
-      form#composer{
-        gap:8px;
-        padding-top:10px;
-      }
-
-      #msgInput{
-        font-size:16px;
-        padding:12px;
+      #composer{
+        gap:6px;
+        padding-left:7px;
+        padding-right:7px;
       }
 
       #sendBtn{
-        min-width:72px;
-        padding:0 12px;
-      }
-
-      .footnote{
-        font-size:8px;
-        padding-left:8px;
-        padding-right:8px;
+        min-width:78px;
+        font-size:12px;
       }
     }
 
-    @media (max-width:380px){
-
-      .header-stats{
-        font-size:8px;
+    @media(max-width:380px){
+      .title{
+        font-size:17px;
+        letter-spacing:1px;
       }
 
       #sendBtn{
-        min-width:64px;
-        padding:0 8px;
+        min-width:68px;
+        padding:0 7px;
       }
     }
   </style>
@@ -844,1532 +511,907 @@
 
 <body>
 
-  <canvas id="matrixCanvas"></canvas>
+<div id="app">
 
-  <div class="crt-overlay"></div>
-  <div class="crt-vignette"></div>
-
-  <!-- ================= LOCK SCREEN ================= -->
-
-  <div id="lockScreen" class="flicker">
-
-    <div class="lock-box">
-
-      <div
-        class="lock-title glitch"
-        data-text="LIME DEVIL"
-      >
-        LIME DEVIL
-      </div>
-
-      <div class="lock-sub">
-        // encrypted node access required
-      </div>
-
-      <div class="hint-line">
-        [ CLEARANCE CODE REQUIRED — UNAUTHORIZED ACCESS WILL BE LOGGED ]
-      </div>
-
-      <div class="pass-row">
-
-        <input
-          type="password"
-          id="passInput"
-          maxlength="8"
-          placeholder="••••"
-          autocomplete="off"
-          autocapitalize="none"
-          autocorrect="off"
-          spellcheck="false"
-          inputmode="numeric"
-          enterkeyhint="go"
-        >
-
-        <button
-          id="unlockBtn"
-          type="button"
-        >
-          UNLOCK
-        </button>
-
-      </div>
-
-      <div
-        class="lock-error"
-        id="lockError"
-      ></div>
-
+  <header>
+    <div class="brand">
+      <div class="title">LIME DEVIL</div>
+      <div class="subtitle">// ENCRYPTED TERMINAL</div>
     </div>
-  </div>
 
-  <!-- ================= MAIN APP ================= -->
+    <div class="status">
+      <span id="userCount">1</span> ONLINE
+    </div>
+  </header>
 
-  <div id="app">
+  <main id="feed">
+    <div id="messageList"></div>
 
-    <header>
+    <div
+      id="typingIndicator"
+      class="typing-indicator"
+      hidden
+      aria-live="polite"
+    ></div>
+  </main>
 
-      <div
-        class="logo glitch"
-        data-text="LIME DEVIL"
-      >
-        LIME DEVIL
-      </div>
-
-      <div class="header-stats">
-
-        <div class="stat-chip">
-          <span class="dot"></span>
-          <span id="userCount">1</span>
-          ONLINE
-        </div>
-
-        <div class="stat-chip">
-          SYSTEM PURGE IN:
-          <span id="purgeTimer">10:00</span>
-        </div>
-
-        <div
-          class="stat-chip"
-          id="myNameChip"
-        >
-          YOU: —
-        </div>
-
-      </div>
-
-    </header>
-
-    <main id="feed"></main>
-
-    <form
-      id="composer"
+  <form
+    id="composer"
+    autocomplete="off"
+    novalidate
+  >
+    <input
+      type="text"
+      id="msgInput"
+      placeholder="transmit a message... [ENTER to send]"
+      maxlength="500"
       autocomplete="off"
-      novalidate
+      autocapitalize="sentences"
+      autocorrect="on"
+      spellcheck="true"
+      enterkeyhint="send"
+      inputmode="text"
+      dir="auto"
+      aria-label="Message"
     >
 
-      <input
-        type="text"
-        id="msgInput"
+    <button
+      type="submit"
+      id="sendBtn"
+    >
+      SEND ▶
+    </button>
+  </form>
 
-        placeholder="transmit a message... [ENTER to send]"
-
-        maxlength="500"
-
-        autocomplete="off"
-        autocapitalize="sentences"
-        autocorrect="on"
-        spellcheck="true"
-
-        enterkeyhint="send"
-
-        inputmode="text"
-
-        dir="auto"
-
-        aria-label="Message"
-      >
-
-      <button
-        type="submit"
-        id="sendBtn"
-      >
-        SEND ▶
-      </button>
-
-    </form>
-
-    <div class="footnote">
-      ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 10 MIN
-    </div>
-
+  <div class="footnote">
+    AUTO-WIPE EVERY 10 MIN // CLIENT PURGE NODE ACTIVE
   </div>
 
+</div>
 
-  <script type="module">
+<script type="module">
 
-    /* =========================================================
-       FIREBASE SETUP
-    ========================================================= */
+  import {
+    initializeApp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-    import { initializeApp }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    doc,
+    setDoc,
+    deleteDoc,
+    onSnapshot,
+    query,
+    orderBy,
+    runTransaction,
+    getDocs,
+    writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      doc,
-      setDoc,
-      deleteDoc,
-      onSnapshot,
-      query,
-      orderBy,
-      runTransaction,
-      getDocs,
-      writeBatch
-    }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    import {
-      getAuth,
-      signInAnonymously
-    }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getAuth,
+    signInAnonymously
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-    const firebaseConfig = {
+  /* =========================================================
+     FIREBASE
+  ========================================================= */
 
-      apiKey:
-        "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
+  const firebaseConfig = {
+    apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
+    authDomain: "limedevil-d3725.firebaseapp.com",
+    projectId: "limedevil-d3725",
+    storageBucket: "limedevil-d3725.firebasestorage.app",
+    messagingSenderId: "678313318556",
+    appId: "1:678313318556:web:b0d4207b086319c05cf559",
+    measurementId: "G-BHJ50N5NNZ"
+  };
 
-      authDomain:
-        "limedevil-d3725.firebaseapp.com",
-
-      projectId:
-        "limedevil-d3725",
-
-      storageBucket:
-        "limedevil-d3725.firebasestorage.app",
-
-      messagingSenderId:
-        "678313318556",
-
-      appId:
-        "1:678313318556:web:b0d4207b086319c05cf559",
-
-      measurementId:
-        "G-BHJ50N5NNZ"
-    };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
 
 
-    const fbApp = initializeApp(firebaseConfig);
+  /* =========================================================
+     COLLECTIONS
+  ========================================================= */
 
-    const db = getFirestore(fbApp);
-
-    const auth = getAuth(fbApp);
-
-
-    const messagesCol =
-      collection(db, "messages");
-
-    const presenceCol =
-      collection(db, "presence");
-
-    const purgeRef =
-      doc(db, "meta", "purge");
+  const messagesCol = collection(db, "messages");
+  const presenceCol = collection(db, "presence");
+  const purgeRef = doc(db, "meta", "purge");
 
 
-    /* =========================================================
-       MATRIX BACKGROUND
-    ========================================================= */
+  /* =========================================================
+     CONFIG
+  ========================================================= */
 
-    const canvas =
-      document.getElementById("matrixCanvas");
+  const PASSWORD = "1280";
 
-    const ctx =
-      canvas.getContext("2d");
+  // IMPORTANT:
+  // 10 MINUTES — DO NOT CHANGE TO 30.
+  const PURGE_MS = 10 * 60 * 1000;
 
-    let cols = 0;
-    let drops = [];
+  const PRESENCE_STALE_MS = 20000;
+  const TYPING_STALE_MS = 4000;
 
-
-    function resizeCanvas(){
-
-      canvas.width =
-        window.innerWidth;
-
-      canvas.height =
-        window.innerHeight;
-
-      cols =
-        Math.floor(canvas.width / 16);
-
-      drops =
-        new Array(cols)
-          .fill(0)
-          .map(() => Math.random() * -100);
-    }
+  const NAME_COLORS = [
+    "#39FF14",
+    "#ff1744",
+    "#00eaff",
+    "#ffd600",
+    "#ff6e40",
+    "#b388ff",
+    "#00FF66",
+    "#ff4081"
+  ];
 
 
-    window.addEventListener(
-      "resize",
-      resizeCanvas,
-      { passive:true }
-    );
+  /* =========================================================
+     DOM
+  ========================================================= */
+
+  const feed = document.getElementById("feed");
+  const messageList = document.getElementById("messageList");
+  const typingIndicator = document.getElementById("typingIndicator");
+
+  const composer = document.getElementById("composer");
+  const msgInput = document.getElementById("msgInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  const userCountEl = document.getElementById("userCount");
 
 
-    resizeCanvas();
+  /* =========================================================
+     IDENTITY
+  ========================================================= */
 
+  const PREFIXES = [
+    "LIME",
+    "VOID",
+    "CYBER",
+    "NEON",
+    "GHOST",
+    "DARK",
+    "ZERO",
+    "NOVA",
+    "RUST",
+    "BYTE",
+    "GLITCH",
+    "SHADOW"
+  ];
 
-    const chars =
-      "01LIMEDEVIL01ΞΔ01";
+  const SUFFIXES = [
+    "DEVIL",
+    "WOLF",
+    "CORE",
+    "NODE",
+    "FOX",
+    "BYTE",
+    "X",
+    "404",
+    "ZERO",
+    "GHOST",
+    "LORD",
+    "UNIT"
+  ];
 
+  function randomItem(arr){
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
-    function drawMatrix(){
+  function randomHex(length = 6){
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
 
-      ctx.fillStyle =
-        "rgba(5,5,5,0.08)";
-
-      ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-
-      ctx.fillStyle =
-        "#39FF14";
-
-      ctx.font =
-        "14px monospace";
-
-
-      for(let i = 0; i < cols; i++){
-
-        const text =
-          chars[
-            Math.floor(
-              Math.random() * chars.length
-            )
-          ];
-
-
-        ctx.fillText(
-          text,
-          i * 16,
-          drops[i] * 16
-        );
-
-
-        if(
-          drops[i] * 16 >
-          canvas.height &&
-          Math.random() > 0.975
-        ){
-
-          drops[i] = 0;
-
-        }
-
-
-        drops[i]++;
-      }
-
-
-      requestAnimationFrame(drawMatrix);
+    for(let i = 0; i < length; i++){
+      result += chars[Math.floor(Math.random() * chars.length)];
     }
 
+    return result;
+  }
 
-    drawMatrix();
+  const myName =
+    `${randomItem(PREFIXES)}_${randomItem(SUFFIXES)}_${randomHex(2)}`;
 
+  const myColor = randomItem(NAME_COLORS);
 
-    /* =========================================================
-       CONSTANTS
-    ========================================================= */
-
-    const PASSWORD = "1280";
-
-    const PURGE_MS =
-      10 * 60 * 1000;
-
-    const PRESENCE_STALE_MS =
-      20000;
+  const myId =
+    `${myName}_${randomHex(8)}`;
 
 
-    const NAME_COLORS = [
-      "#39FF14",
-      "#ff1744",
-      "#00eaff",
-      "#ffd600",
-      "#ff6e40",
-      "#b388ff",
-      "#00FF66",
-      "#ff4081"
-    ];
+  /* =========================================================
+     STATE
+  ========================================================= */
+
+  let sendingMessage = false;
+
+  let isComposing = false;
+  let compositionJustEndedAt = 0;
+
+  let chatInitialized = false;
+
+  let typingActive = false;
+  let typingStopTimer = null;
+  let typingPulseTimer = null;
+
+  let presenceCache = new Map();
 
 
-    /* =========================================================
-       CODENAME
-    ========================================================= */
+  /* =========================================================
+     TEXT
+  ========================================================= */
 
-    const PREFIXES = [
-      "Devil",
-      "Lime",
-      "Void",
-      "Ghost",
-      "Shadow",
-      "Cipher",
-      "Wraith",
-      "Static",
-      "Toxin",
-      "Nyx",
-      "Fang",
-      "Ash"
-    ];
+  function normalizeMessage(value){
+
+    if(typeof value !== "string"){
+      return "";
+    }
+
+    return value
+      .normalize("NFC")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n");
+  }
 
 
-    const SUFFIXES = [
-      "Ghost",
-      "Shadow",
-      "X",
-      "Prime",
-      "Null",
-      "Zero",
-      "Reaper",
-      "Node",
-      "Vex",
-      "Storm"
-    ];
+  /* =========================================================
+     SCROLL
+  ========================================================= */
+
+  function scrollToBottom(){
+
+    requestAnimationFrame(() => {
+
+      feed.scrollTop = feed.scrollHeight;
+
+    });
+
+  }
 
 
-    function generateCodename(){
+  /* =========================================================
+     MESSAGE RENDER
+  ========================================================= */
 
-      const usePrefixOnly =
-        Math.random() > 0.5;
+  function renderMessageDoc(m){
 
+    if(!m){
+      return;
+    }
 
-      const p =
-        PREFIXES[
-          Math.floor(
-            Math.random() * PREFIXES.length
-          )
-        ];
+    const type = m.type || "msg";
 
+    if(type === "system"){
 
-      const num =
-        Math.floor(
-          1000 +
-          Math.random() * 8999
-        );
+      const wrapper = document.createElement("div");
 
+      wrapper.className = "system";
 
-      if(usePrefixOnly){
+      const text = document.createElement("div");
 
-        return `${p}_${num}`;
+      text.className = "system-text";
 
-      }
+      text.textContent = m.text || "";
 
+      wrapper.appendChild(text);
 
-      const s =
-        SUFFIXES[
-          Math.floor(
-            Math.random() * SUFFIXES.length
-          )
-        ];
+      messageList.appendChild(wrapper);
 
-
-      return `${p}_${s}_${num % 100}`;
+      return;
     }
 
 
-    const myName =
-      generateCodename();
+    const message = document.createElement("div");
+
+    message.className = "message";
 
 
-    const myColor =
-      NAME_COLORS[
-        Math.floor(
-          Math.random() *
-          NAME_COLORS.length
-        )
-      ];
+    const head = document.createElement("div");
+
+    head.className = "message-head";
 
 
-    const myId =
-      myName +
-      "_" +
-      Math.random()
-        .toString(36)
-        .slice(2,8);
+    const name = document.createElement("span");
 
+    name.className = "message-name";
 
-    document.getElementById(
-      "myNameChip"
-    ).textContent =
-      "YOU: " + myName;
+    name.textContent = m.user || "UNKNOWN";
 
-
-    /* =========================================================
-       DOM
-    ========================================================= */
-
-    const feed =
-      document.getElementById("feed");
-
-    const userCountEl =
-      document.getElementById("userCount");
-
-    const purgeTimerEl =
-      document.getElementById("purgeTimer");
-
-    const composer =
-      document.getElementById("composer");
-
-    const msgInput =
-      document.getElementById("msgInput");
-
-    const sendBtn =
-      document.getElementById("sendBtn");
-
-    const lockScreen =
-      document.getElementById("lockScreen");
-
-    const passInput =
-      document.getElementById("passInput");
-
-    const unlockBtn =
-      document.getElementById("unlockBtn");
-
-    const lockError =
-      document.getElementById("lockError");
-
-    const lockBox =
-      document.querySelector(".lock-box");
-
-    const appEl =
-      document.getElementById("app");
-
-
-    /* =========================================================
-       TEXT HELPERS
-    ========================================================= */
-
-    function normalizeMessage(value){
-
-      if(typeof value !== "string"){
-        return "";
-      }
-
-      /*
-        NFC normalization prevents some Unicode
-        inconsistencies, especially with Arabic text.
-      */
-
-      return value
-        .normalize("NFC")
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n");
+    if(m.color){
+      name.style.color = m.color;
     }
 
 
-    function fmtTime(ts){
+    const time = document.createElement("span");
 
-      const d =
-        new Date(ts);
+    time.className = "message-time";
 
-
-      return d
-        .toTimeString()
-        .slice(0,8);
-    }
-
-
-    /* =========================================================
-       RENDER MESSAGE
-    ========================================================= */
-
-    function renderMessageDoc(m){
-
-      if(!m){
-        return;
-      }
-
-
-      if(m.type === "system"){
-
-        const el =
-          document.createElement("div");
-
-        el.className =
-          "sys-msg";
-
-        el.dir =
-          "auto";
-
-        el.textContent =
-          typeof m.text === "string"
-            ? m.text
-            : "";
-
-        feed.appendChild(el);
-
-        return;
-      }
-
-
-      const el =
-        document.createElement("div");
-
-
-      el.className =
-        "msg" +
-        (m.userId === myId
-          ? " mine"
-          : "");
-
-
-      el.dir = "auto";
-
-
-      const meta =
-        document.createElement("div");
-
-      meta.className =
-        "msg-meta";
-
-
-      const user =
-        document.createElement("span");
-
-      user.className =
-        "msg-user";
-
-      user.dir =
-        "auto";
-
-      user.style.color =
-        m.color || "#39FF14";
-
-      user.textContent =
-        m.user || "UNKNOWN";
-
-
-      const time =
-        document.createElement("span");
-
-      time.className =
-        "msg-time";
-
-      time.textContent =
-        fmtTime(m.ts);
-
-
-      meta.appendChild(user);
-      meta.appendChild(time);
-
-
-      const text =
-        document.createElement("div");
-
-      text.className =
-        "msg-text";
-
-      text.dir =
-        "auto";
-
-      /*
-        textContent is intentional.
-        This prevents HTML injection and preserves
-        the exact Unicode text.
-      */
-
-      text.textContent =
-        normalizeMessage(
-          typeof m.text === "string"
-            ? m.text
-            : ""
-        );
-
-
-      el.appendChild(meta);
-      el.appendChild(text);
-
-
-      feed.appendChild(el);
-    }
-
-
-    function scrollToBottom(){
-
-      requestAnimationFrame(() => {
-
-        feed.scrollTop =
-          feed.scrollHeight;
-
-      });
-    }
-
-
-    /* =========================================================
-       FIRESTORE MESSAGES
-    ========================================================= */
-
-    const messagesQuery =
-      query(
-        messagesCol,
-        orderBy("ts")
-      );
-
-
-    async function pushSystemMessage(text){
+    if(typeof m.ts === "number"){
 
       try{
 
-        const now =
-          Date.now();
+        time.textContent =
+          new Date(m.ts).toLocaleTimeString([], {
+            hour:"2-digit",
+            minute:"2-digit"
+          });
 
-
-        await addDoc(
-          messagesCol,
-          {
-            type:"system",
-
-            text:normalizeMessage(text),
-
-            ts:now,
-
-            expiresAt:
-              new Date(
-                now + PURGE_MS
-              )
-          }
-        );
-
-      }catch(e){
-
-        console.error(
-          "system message error:",
-          e
-        );
-
+      }catch{
+        time.textContent = "";
       }
+
     }
 
 
-    /* =========================================================
-       SEND MESSAGE
-    ========================================================= */
-
-    let sendingMessage = false;
+    head.appendChild(name);
+    head.appendChild(time);
 
 
-    async function sendMessage(rawText){
+    const body = document.createElement("div");
+
+    body.className = "message-body";
+
+    body.textContent = normalizeMessage(m.text || "");
+
+
+    message.appendChild(head);
+    message.appendChild(body);
+
+    messageList.appendChild(message);
+  }
+
+
+  /* =========================================================
+     SYSTEM MESSAGE
+  ========================================================= */
+
+  async function pushSystemMessage(text){
+
+    const now = Date.now();
+
+    try{
+
+      await addDoc(messagesCol, {
+        type: "system",
+        text: normalizeMessage(text),
+        ts: now,
+        expiresAt: new Date(now + PURGE_MS)
+      });
+
+    }catch(e){
+
+      console.error("system message error:", e);
+
+    }
+
+  }
+
+
+  /* =========================================================
+     SEND MESSAGE
+  ========================================================= */
+
+  async function sendMessage(rawText){
+
+    if(sendingMessage){
+      return false;
+    }
+
+    const text = normalizeMessage(rawText).trim();
+
+    if(!text){
+      return false;
+    }
+
+
+    sendingMessage = true;
+
+    sendBtn.disabled = true;
+
+
+    const now = Date.now();
+
+
+    try{
+
+      await addDoc(messagesCol, {
+
+        type: "msg",
+
+        user: myName,
+        userId: myId,
+        color: myColor,
+
+        text,
+
+        ts: now,
+
+        expiresAt: new Date(now + PURGE_MS)
+
+      });
+
+
+      return true;
+
+    }catch(e){
+
+      console.error("send message error:", e);
+
+      return false;
+
+    }finally{
+
+      sendingMessage = false;
+
+      sendBtn.disabled = false;
+
+    }
+
+  }
+
+
+  /* =========================================================
+     PRESENCE
+  ========================================================= */
+
+  async function heartbeat(){
+
+    try{
 
       /*
-        Important:
-        Do not read/clear the input during Android
-        composition events.
+        IMPORTANT:
+
+        merge:true prevents heartbeat from deleting
+        typing / name / color fields.
       */
 
-      const text =
-        normalizeMessage(rawText)
-          .trim();
+      await setDoc(
+        doc(presenceCol, myId),
+        {
+          lastSeen: Date.now(),
+          name: myName,
+          color: myColor
+        },
+        {
+          merge: true
+        }
+      );
+
+    }catch(e){
+
+      console.error("heartbeat error:", e);
+
+    }
+
+  }
 
 
-      if(!text){
-        return false;
+  /* =========================================================
+     TYPING STATE
+  ========================================================= */
+
+  async function writeTypingState(typing){
+
+    if(!myId){
+      return;
+    }
+
+    const now = Date.now();
+
+    try{
+
+      await setDoc(
+        doc(presenceCol, myId),
+        {
+          lastSeen: now,
+
+          name: myName,
+          color: myColor,
+
+          typing: !!typing,
+
+          typingAt: typing ? now : 0
+
+        },
+        {
+          merge: true
+        }
+      );
+
+    }catch(e){
+
+      console.error("typing state error:", e);
+
+    }
+
+  }
+
+
+  function startTyping(){
+
+    if(!typingActive){
+
+      typingActive = true;
+
+      writeTypingState(true);
+
+    }
+
+
+    clearTimeout(typingStopTimer);
+
+
+    /*
+      If the user continues typing for a long time,
+      keep refreshing typingAt so other clients know
+      the indicator is still alive.
+    */
+
+    if(!typingPulseTimer){
+
+      typingPulseTimer = setInterval(() => {
+
+        if(typingActive){
+
+          writeTypingState(true);
+
+        }
+
+      }, 1500);
+
+    }
+
+
+    typingStopTimer = setTimeout(() => {
+
+      stopTyping();
+
+    }, 2500);
+
+  }
+
+
+  async function stopTyping(){
+
+    clearTimeout(typingStopTimer);
+
+    typingStopTimer = null;
+
+
+    if(typingPulseTimer){
+
+      clearInterval(typingPulseTimer);
+
+      typingPulseTimer = null;
+
+    }
+
+
+    if(!typingActive){
+      return;
+    }
+
+
+    typingActive = false;
+
+    await writeTypingState(false);
+
+  }
+
+
+  /* =========================================================
+     TYPING UI
+  ========================================================= */
+
+  function refreshPresenceUI(){
+
+    const now = Date.now();
+
+    let active = 0;
+
+    const typingNames = [];
+
+
+    presenceCache.forEach((data, id) => {
+
+      if(!data){
+        return;
+      }
+
+
+      const lastSeen = data.lastSeen;
+
+      const activeNow =
+        typeof lastSeen === "number" &&
+        now - lastSeen < PRESENCE_STALE_MS;
+
+
+      if(activeNow){
+
+        active++;
+
+      }
+
+
+      const typingNow =
+        id !== myId &&
+
+        activeNow &&
+
+        data.typing === true &&
+
+        typeof data.typingAt === "number" &&
+
+        now - data.typingAt < TYPING_STALE_MS;
+
+
+      if(typingNow){
+
+        typingNames.push(
+          typeof data.name === "string"
+            ? data.name
+            : "UNKNOWN"
+        );
+
+      }
+
+    });
+
+
+    /*
+      Keep at least 1 because the current client
+      is online even if its snapshot has not arrived yet.
+    */
+
+    userCountEl.textContent =
+      Math.max(1, active);
+
+
+    renderTypingIndicator(typingNames);
+
+  }
+
+
+  function renderTypingIndicator(names){
+
+    if(!names.length){
+
+      typingIndicator.hidden = true;
+
+      typingIndicator.textContent = "";
+
+      return;
+
+    }
+
+
+    let text;
+
+
+    if(names.length === 1){
+
+      text =
+        `[ ${names[0]} IS TYPING`;
+
+    }else{
+
+      const visibleNames =
+        names.slice(0, 3);
+
+      text =
+        `[ ${visibleNames.join(", ")} ARE TYPING`;
+
+      if(names.length > 3){
+
+        text += ` +${names.length - 3}`;
+
+      }
+
+    }
+
+
+    typingIndicator.textContent = text;
+
+
+    const dots = document.createElement("span");
+
+    dots.className = "typing-dots";
+
+    typingIndicator.appendChild(dots);
+
+
+    typingIndicator.appendChild(
+      document.createTextNode(" ]")
+    );
+
+
+    typingIndicator.hidden = false;
+
+  }
+
+
+  /* =========================================================
+     INPUT / ANDROID IME
+  ========================================================= */
+
+  msgInput.addEventListener(
+    "compositionstart",
+    () => {
+
+      isComposing = true;
+
+    }
+  );
+
+
+  msgInput.addEventListener(
+    "compositionend",
+    () => {
+
+      isComposing = false;
+
+      compositionJustEndedAt = Date.now();
+
+    }
+  );
+
+
+  /*
+    Do NOT force isComposing=true from beforeinput.
+
+    Android keyboards can emit composition events in
+    different orders. The combination of:
+      - composition events
+      - e.isComposing
+      - keyCode 229
+    is safer.
+  */
+
+
+  msgInput.addEventListener(
+    "keydown",
+    (e) => {
+
+      if(e.key !== "Enter"){
+        return;
+      }
+
+
+      /*
+        Android IME may send Enter as keyCode 229
+        while composition is still active.
+      */
+
+      if(
+        isComposing ||
+        e.isComposing ||
+        e.keyCode === 229
+      ){
+
+        return;
+
+      }
+
+
+      /*
+        Tiny protection against an Enter event arriving
+        immediately after compositionend.
+      */
+
+      if(
+        Date.now() - compositionJustEndedAt < 120
+      ){
+
+        return;
+
+      }
+
+
+      e.preventDefault();
+
+
+      if(
+        !sendingMessage &&
+        msgInput.value.trim()
+      ){
+
+        composer.requestSubmit();
+
+      }
+
+    }
+  );
+
+
+  msgInput.addEventListener(
+    "input",
+    () => {
+
+      /*
+        Let the browser decide Arabic/LTR direction
+        automatically.
+      */
+
+      msgInput.dir = "auto";
+
+
+      /*
+        Actual typing detection.
+      */
+
+      if(msgInput.value.trim()){
+
+        startTyping();
+
+      }else{
+
+        stopTyping();
+
+      }
+
+    }
+  );
+
+
+  /* =========================================================
+     COMPOSER
+  ========================================================= */
+
+  composer.addEventListener(
+    "submit",
+    async (e) => {
+
+      e.preventDefault();
+
+
+      if(isComposing){
+        return;
       }
 
 
       if(sendingMessage){
-        return false;
+        return;
       }
 
 
-      sendingMessage = true;
-
-      sendBtn.disabled = true;
+      const text = msgInput.value;
 
 
-      try{
+      if(!text.trim()){
 
-        const now =
-          Date.now();
+        stopTyping();
 
-
-        await addDoc(
-          messagesCol,
-          {
-            type:"msg",
-
-            user:myName,
-
-            userId:myId,
-
-            color:myColor,
-
-            /*
-              Store the normalized original text.
-            */
-            text:text,
-
-            ts:now,
-
-            expiresAt:
-              new Date(
-                now + PURGE_MS
-              )
-          }
-        );
-
-
-        return true;
-
-      }catch(e){
-
-        console.error(
-          "send message error:",
-          e
-        );
-
-        return false;
-
-      }finally{
-
-        sendingMessage = false;
-
-        sendBtn.disabled = false;
+        return;
 
       }
-    }
 
 
-    /* =========================================================
-       ANDROID / MOBILE INPUT HANDLING
-    ========================================================= */
-
-    let isComposing = false;
+      const success =
+        await sendMessage(text);
 
 
-    msgInput.addEventListener(
-      "compositionstart",
-      () => {
-
-        isComposing = true;
-
-      }
-    );
-
-
-    msgInput.addEventListener(
-      "compositionend",
-      () => {
+      if(success){
 
         /*
-          Android may fire compositionend immediately
-          before input/keydown finishes.
+          Clear ONLY after Firebase accepted the message.
         */
 
-        setTimeout(() => {
-
-          isComposing = false;
-
-        }, 0);
-
-      }
-    );
-
-
-    /*
-      Important:
-      Never manually send on keydown while Android IME
-      is composing text.
-    */
-
-    msgInput.addEventListener(
-      "keydown",
-      (e) => {
-
-        if(e.key !== "Enter"){
-          return;
-        }
-
-
-        if(
-          isComposing ||
-          e.isComposing ||
-          e.keyCode === 229
-        ){
-
-          return;
-
-        }
-
-
-        /*
-          On mobile, allow the form's submit event
-          to handle the actual sending.
-        */
-
-        e.preventDefault();
-
-
-        if(
-          !sendingMessage &&
-          msgInput.value.trim()
-        ){
-
-          composer.requestSubmit();
-
-        }
-
-      }
-    );
-
-
-    /*
-      Some Android keyboards trigger beforeinput
-      with composition information.
-    */
-
-    msgInput.addEventListener(
-      "beforeinput",
-      (e) => {
-
-        if(
-          e.inputType ===
-          "insertCompositionText"
-        ){
-
-          isComposing = true;
-
-        }
-
-      }
-    );
-
-
-    /*
-      Keep the field direction automatic.
-      This helps Arabic/English mixed messages.
-    */
-
-    msgInput.addEventListener(
-      "input",
-      () => {
+        msgInput.value = "";
 
         msgInput.dir = "auto";
 
-      }
-    );
-
-
-    /* =========================================================
-       COMPOSER SUBMIT
-    ========================================================= */
-
-    composer.addEventListener(
-      "submit",
-      async (e) => {
-
-        e.preventDefault();
-
 
         /*
-          Android IME can sometimes submit before
-          composition is completely finished.
+          Stop typing indicator after successful send.
         */
 
-        if(isComposing){
+        stopTyping();
 
-          return;
 
-        }
-
-
-        if(sendingMessage){
-          return;
-        }
-
-
-        const text =
-          msgInput.value;
-
-
-        if(!text.trim()){
-          return;
-        }
-
-
-        /*
-          Do NOT clear before Firebase succeeds.
-          This prevents text loss on mobile/network issues.
-        */
-
-        const success =
-          await sendMessage(text);
-
-
-        if(success){
-
-          /*
-            Only clear exactly after successful upload.
-          */
-
-          msgInput.value = "";
-
-          msgInput.dir = "auto";
-
-
-          /*
-            Restore focus without forcing the keyboard
-            open repeatedly.
-          */
-
-          requestAnimationFrame(() => {
-
-            try{
-              msgInput.focus({
-                preventScroll:true
-              });
-            }catch{
-              msgInput.focus();
-            }
-
-          });
-
-        }
-
-      }
-    );
-
-
-    /* =========================================================
-       PRESENCE
-    ========================================================= */
-
-    async function heartbeat(){
-
-      try{
-
-        await setDoc(
-          doc(
-            presenceCol,
-            myId
-          ),
-          {
-            lastSeen:Date.now()
-          }
-        );
-
-      }catch(e){
-
-        console.error(
-          "heartbeat error:",
-          e
-        );
-
-      }
-    }
-
-
-    /* =========================================================
-       PURGE
-    ========================================================= */
-
-    let purgeStart = null;
-
-    let purging = false;
-
-
-    async function deleteAllMessagesInBatches(){
-
-      const msgsSnap =
-        await getDocs(
-          messagesCol
-        );
-
-
-      if(msgsSnap.empty){
-        return 0;
-      }
-
-
-      const docs =
-        msgsSnap.docs;
-
-
-      let deleted = 0;
-
-
-      for(
-        let i = 0;
-        i < docs.length;
-        i += 450
-      ){
-
-        const batch =
-          writeBatch(db);
-
-
-        docs
-          .slice(i, i + 450)
-          .forEach(d => {
-
-            batch.delete(
-              d.ref
-            );
-
-          });
-
-
-        await batch.commit();
-
-
-        deleted +=
-          Math.min(
-            450,
-            docs.length - i
-          );
-      }
-
-
-      return deleted;
-    }
-
-
-    async function tryPurge(){
-
-      if(
-        purging ||
-        typeof purgeStart !== "number"
-      ){
-
-        return;
-
-      }
-
-
-      purging = true;
-
-
-      try{
-
-        const now =
-          Date.now();
-
-
-        const didPurge =
-          await runTransaction(
-            db,
-            async(tx) => {
-
-              const snap =
-                await tx.get(
-                  purgeRef
-                );
-
-
-              const start =
-                (
-                  snap.exists() &&
-                  typeof snap.data().purgeStart === "number"
-                )
-                  ? snap.data().purgeStart
-                  : now;
-
-
-              if(
-                now - start >= PURGE_MS
-              ){
-
-                tx.set(
-                  purgeRef,
-                  {
-                    purgeStart:now
-                  }
-                );
-
-                return true;
-              }
-
-
-              return false;
-
-            }
-          );
-
-
-        if(didPurge){
-
-          await deleteAllMessagesInBatches();
-
-
-          await pushSystemMessage(
-            "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
-          );
-
-        }
-
-      }catch(e){
-
-        console.error(
-          "purge error:",
-          e
-        );
-
-      }finally{
-
-        purging = false;
-
-      }
-    }
-
-
-    function tickPurge(){
-
-      if(
-        typeof purgeStart !== "number"
-      ){
-
-        purgeTimerEl.textContent =
-          "10:00";
-
-        return;
-      }
-
-
-      const remaining =
-        PURGE_MS -
-        (
-          Date.now() -
-          purgeStart
-        );
-
-
-      if(remaining <= 0){
-
-        purgeTimerEl.textContent =
-          "00:00";
-
-        tryPurge();
-
-        return;
-      }
-
-
-      const mins =
-        Math.floor(
-          remaining / 60000
-        );
-
-
-      const secs =
-        Math.floor(
-          (remaining % 60000) /
-          1000
-        );
-
-
-      purgeTimerEl.textContent =
-        `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
-    }
-
-
-    /* =========================================================
-       CHAT INITIALIZATION
-    ========================================================= */
-
-    let chatInitialized = false;
-
-
-    function initChat(){
-
-      if(chatInitialized){
-        return;
-      }
-
-
-      chatInitialized = true;
-
-
-      /* ---------- messages ---------- */
-
-      onSnapshot(
-        messagesQuery,
-
-        (snapshot) => {
-
-          feed.innerHTML = "";
-
-
-          snapshot.forEach(
-            docSnap => {
-
-              renderMessageDoc(
-                docSnap.data()
-              );
-
-            }
-          );
-
-
-          scrollToBottom();
-
-        },
-
-        (err) => {
-
-          console.error(
-            "messages listener error:",
-            err
-          );
-
-
-          feed.innerHTML = "";
-
-
-          const errorEl =
-            document.createElement("div");
-
-
-          errorEl.className =
-            "sys-msg";
-
-
-          errorEl.textContent =
-            "[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]";
-
-
-          feed.appendChild(
-            errorEl
-          );
-
-        }
-      );
-
-
-      /* ---------- presence ---------- */
-
-      onSnapshot(
-        presenceCol,
-
-        (snapshot) => {
-
-          const now =
-            Date.now();
-
-
-          let active = 0;
-
-
-          snapshot.forEach(
-            docSnap => {
-
-              const data =
-                docSnap.data();
-
-
-              if(
-                data &&
-                typeof data.lastSeen === "number" &&
-                (
-                  now -
-                  data.lastSeen
-                ) < PRESENCE_STALE_MS
-              ){
-
-                active++;
-
-              }
-
-            }
-          );
-
-
-          userCountEl.textContent =
-            Math.max(
-              1,
-              active
-            );
-
-        },
-
-        (err) => {
-
-          console.error(
-            "presence listener error:",
-            err
-          );
-
-        }
-      );
-
-
-      /* ---------- purge ---------- */
-
-      onSnapshot(
-        purgeRef,
-
-        (snap) => {
-
-          if(
-            snap.exists() &&
-            typeof snap.data().purgeStart === "number"
-          ){
-
-            purgeStart =
-              snap.data().purgeStart;
-
-          }else{
-
-            const start =
-              Date.now();
-
-
-            purgeStart =
-              start;
-
-
-            setDoc(
-              purgeRef,
-              {
-                purgeStart:start
-              },
-              {
-                merge:true
-              }
-            ).catch(
-              e =>
-                console.error(
-                  "purge init error:",
-                  e
-                )
-            );
-
-          }
-
-
-          tickPurge();
-
-        },
-
-        (err) => {
-
-          console.error(
-            "purge listener error:",
-            err
-          );
-
-        }
-      );
-
-
-      setInterval(
-        tickPurge,
-        1000
-      );
-
-
-      tickPurge();
-
-
-      /* ---------- heartbeat ---------- */
-
-      heartbeat();
-
-
-      setInterval(
-        heartbeat,
-        5000
-      );
-
-
-      pushSystemMessage(
-        `[ ${myName} HAS JOINED THE NODE ]`
-      );
-
-    }
-
-
-    /* =========================================================
-       LOCK SCREEN
-    ========================================================= */
-
-    async function attemptUnlock(){
-
-      if(
-        passInput.value.trim() !== PASSWORD
-      ){
-
-        lockError.textContent =
-          "ACCESS DENIED — INVALID CLEARANCE CODE";
-
-
-        lockBox.classList.remove(
-          "shake"
-        );
-
-
-        void lockBox.offsetWidth;
-
-
-        lockBox.classList.add(
-          "shake"
-        );
-
-
-        passInput.value = "";
-
-
-        return;
-      }
-
-
-      unlockBtn.disabled = true;
-
-
-      lockError.textContent =
-        "AUTHENTICATING NODE...";
-
-
-      lockError.style.color =
-        "var(--lime-glow)";
-
-
-      try{
-
-        await signInAnonymously(
-          auth
-        );
-
-      }catch(e){
-
-        console.error(
-          "auth error:",
-          e
-        );
-
-
-        lockError.textContent =
-          "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
-
-
-        lockError.style.color =
-          "var(--crimson)";
-
-
-        unlockBtn.disabled = false;
-
-
-        return;
-      }
-
-
-      lockScreen.classList.add(
-        "lock-dissolve"
-      );
-
-
-      setTimeout(() => {
-
-        lockScreen.style.display =
-          "none";
-
-
-        appEl.style.display =
-          "flex";
-
-
-        initChat();
-
-
-        /*
-          Focus only after app is visible.
-        */
-
-        setTimeout(() => {
+        requestAnimationFrame(() => {
 
           try{
 
@@ -2383,108 +1425,621 @@
 
           }
 
-        }, 100);
+        });
 
-      }, 680);
+      }
 
     }
+  );
 
 
-    unlockBtn.addEventListener(
-      "click",
-      attemptUnlock
+  /* =========================================================
+     MESSAGES LISTENER
+  ========================================================= */
+
+  const messagesQuery =
+    query(
+      messagesCol,
+      orderBy("ts")
     );
 
 
-    passInput.addEventListener(
-      "keydown",
-      (e) => {
+  function listenToMessages(){
 
-        if(
-          e.key === "Enter" &&
-          !e.isComposing
-        ){
+    onSnapshot(
+      messagesQuery,
+      (snapshot) => {
 
-          e.preventDefault();
+        /*
+          IMPORTANT:
 
-          attemptUnlock();
+          Only clear messageList.
+          Do NOT clear feed because typingIndicator
+          lives inside feed.
+        */
 
-        }
-
-      }
-    );
+        messageList.innerHTML = "";
 
 
-    passInput.addEventListener(
-      "input",
-      () => {
+        snapshot.forEach(
+          (docSnap) => {
 
-        lockError.textContent = "";
-
-        lockError.style.color =
-          "var(--crimson)";
-
-      }
-    );
-
-
-    /* =========================================================
-       MOBILE KEYBOARD / VISUAL VIEWPORT
-    ========================================================= */
-
-    if(window.visualViewport){
-
-      window.visualViewport.addEventListener(
-        "resize",
-        () => {
-
-          /*
-            Let the browser handle the keyboard naturally.
-            We only ensure the latest messages remain visible.
-          */
-
-          if(
-            document.activeElement === msgInput
-          ){
-
-            requestAnimationFrame(
-              scrollToBottom
+            renderMessageDoc(
+              docSnap.data()
             );
 
           }
+        );
 
-        },
-        { passive:true }
+
+        scrollToBottom();
+
+      },
+      (err) => {
+
+        console.error(
+          "messages listener error:",
+          err
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =========================================================
+     PRESENCE LISTENER
+  ========================================================= */
+
+  function listenToPresence(){
+
+    onSnapshot(
+      presenceCol,
+      (snapshot) => {
+
+        presenceCache = new Map();
+
+
+        snapshot.forEach(
+          (docSnap) => {
+
+            presenceCache.set(
+              docSnap.id,
+              docSnap.data()
+            );
+
+          }
+        );
+
+
+        refreshPresenceUI();
+
+      },
+      (err) => {
+
+        console.error(
+          "presence listener error:",
+          err
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =========================================================
+     PURGE
+  ========================================================= */
+
+  async function deleteAllMessagesInBatches(){
+
+    try{
+
+      const snapshot =
+        await getDocs(messagesCol);
+
+
+      if(snapshot.empty){
+        return;
+      }
+
+
+      const docs =
+        snapshot.docs;
+
+
+      /*
+        Firestore batch limit is 500.
+        Stay below it.
+      */
+
+      const CHUNK_SIZE = 450;
+
+
+      for(
+        let i = 0;
+        i < docs.length;
+        i += CHUNK_SIZE
+      ){
+
+        const batch = writeBatch(db);
+
+        const chunk =
+          docs.slice(
+            i,
+            i + CHUNK_SIZE
+          );
+
+
+        chunk.forEach(
+          (docSnap) => {
+
+            batch.delete(docSnap.ref);
+
+          }
+        );
+
+
+        await batch.commit();
+
+      }
+
+    }catch(e){
+
+      console.error(
+        "delete messages error:",
+        e
       );
 
     }
 
+  }
 
-    /* =========================================================
-       CLEANUP PRESENCE
-    ========================================================= */
 
-    window.addEventListener(
-      "beforeunload",
-      () => {
+  async function tryPurge(){
 
-        if(chatInitialized){
+    const now = Date.now();
 
-          deleteDoc(
-            doc(
-              presenceCol,
-              myId
-            )
-          ).catch(
-            () => {}
-          );
+
+    try{
+
+      let shouldPurge = false;
+
+
+      await runTransaction(
+        db,
+        async (transaction) => {
+
+          const snap =
+            await transaction.get(purgeRef);
+
+
+          const data =
+            snap.exists()
+              ? snap.data()
+              : null;
+
+
+          const purgeStart =
+            data &&
+            typeof data.purgeStart === "number"
+              ? data.purgeStart
+              : 0;
+
+
+          if(
+            !purgeStart ||
+            now - purgeStart >= PURGE_MS
+          ){
+
+            transaction.set(
+              purgeRef,
+              {
+                purgeStart: now
+              },
+              {
+                merge:true
+              }
+            );
+
+
+            shouldPurge = true;
+
+          }
 
         }
+      );
+
+
+      if(!shouldPurge){
+        return;
+      }
+
+
+      await deleteAllMessagesInBatches();
+
+
+      await pushSystemMessage(
+        "[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]"
+      );
+
+
+    }catch(e){
+
+      console.error(
+        "purge error:",
+        e
+      );
+
+    }
+
+  }
+
+
+  /* =========================================================
+     PURGE COUNTDOWN
+  ========================================================= */
+
+  let purgeStartTime = null;
+
+
+  function tickPurge(){
+
+    if(typeof purgeStartTime !== "number"){
+      return;
+    }
+
+
+    const now = Date.now();
+
+    const elapsed =
+      now - purgeStartTime;
+
+
+    let remaining =
+      PURGE_MS - elapsed;
+
+
+    if(remaining < 0){
+      remaining = 0;
+    }
+
+
+    const totalSeconds =
+      Math.ceil(
+        remaining / 1000
+      );
+
+
+    const minutes =
+      Math.floor(
+        totalSeconds / 60
+      );
+
+
+    const seconds =
+      totalSeconds % 60;
+
+
+    const footnote =
+      document.querySelector(".footnote");
+
+
+    if(footnote){
+
+      footnote.textContent =
+        `AUTO-WIPE EVERY 10 MIN // NEXT PURGE ${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
+
+    }
+
+
+    /*
+      When countdown reaches zero,
+      immediately try to become the purge client.
+    */
+
+    if(remaining <= 0){
+
+      tryPurge();
+
+    }
+
+  }
+
+
+  function listenToPurge(){
+
+    onSnapshot(
+      purgeRef,
+      (snapshot) => {
+
+        if(!snapshot.exists()){
+
+          /*
+            No purge document yet.
+            Create one through transaction.
+          */
+
+          tryPurge();
+
+          return;
+
+        }
+
+
+        const data =
+          snapshot.data();
+
+
+        if(
+          data &&
+          typeof data.purgeStart === "number"
+        ){
+
+          purgeStartTime =
+            data.purgeStart;
+
+        }
+
+
+        tickPurge();
+
+      },
+      (err) => {
+
+        console.error(
+          "purge listener error:",
+          err
+        );
 
       }
     );
 
-  </script>
+  }
+
+
+  /* =========================================================
+     AUTH
+  ========================================================= */
+
+  async function authenticate(){
+
+    try{
+
+      await signInAnonymously(auth);
+
+      return true;
+
+    }catch(e){
+
+      console.error(
+        "anonymous auth error:",
+        e
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+  /* =========================================================
+     INIT CHAT
+  ========================================================= */
+
+  async function initChat(){
+
+    if(chatInitialized){
+      return;
+    }
+
+    chatInitialized = true;
+
+
+    listenToMessages();
+
+    listenToPresence();
+
+    listenToPurge();
+
+
+    /*
+      Presence heartbeat.
+    */
+
+    await heartbeat();
+
+
+    setInterval(
+      heartbeat,
+      5000
+    );
+
+
+    /*
+      Refresh presence/typing UI every second.
+
+      This is important because a typing timestamp can
+      become stale even if no new Firestore snapshot arrives.
+    */
+
+    setInterval(
+      refreshPresenceUI,
+      1000
+    );
+
+
+    /*
+      Purge countdown.
+    */
+
+    setInterval(
+      tickPurge,
+      1000
+    );
+
+
+    /*
+      Try purge immediately.
+    */
+
+    tryPurge();
+
+
+    /*
+      Join message.
+    */
+
+    await pushSystemMessage(
+      `[ ${myName} HAS JOINED THE NODE ]`
+    );
+
+
+    /*
+      Focus input after startup.
+    */
+
+    requestAnimationFrame(() => {
+
+      try{
+
+        msgInput.focus({
+          preventScroll:true
+        });
+
+      }catch{
+
+        msgInput.focus();
+
+      }
+
+    });
+
+  }
+
+
+  /* =========================================================
+     CLEANUP
+  ========================================================= */
+
+  async function cleanupPresence(){
+
+    try{
+
+      /*
+        Stop typing first.
+      */
+
+      await stopTyping();
+
+
+      /*
+        Remove presence document completely.
+      */
+
+      await deleteDoc(
+        doc(
+          presenceCol,
+          myId
+        )
+      );
+
+    }catch(e){
+
+      console.error(
+        "presence cleanup error:",
+        e
+      );
+
+    }
+
+  }
+
+
+  window.addEventListener(
+    "beforeunload",
+    () => {
+
+      /*
+        Fire-and-forget.
+        Browser may terminate network requests during unload.
+      */
+
+      cleanupPresence();
+
+    }
+  );
+
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+
+      if(document.visibilityState === "visible"){
+
+        heartbeat();
+
+
+        if(
+          msgInput.value.trim()
+        ){
+
+          startTyping();
+
+        }
+
+      }else{
+
+        /*
+          Don't leave a false typing indicator
+          when the tab goes to background.
+        */
+
+        stopTyping();
+
+      }
+
+    }
+  );
+
+
+  /* =========================================================
+     START
+  ========================================================= */
+
+  const authenticated =
+    await authenticate();
+
+
+  if(authenticated){
+
+    await initChat();
+
+  }else{
+
+    messageList.innerHTML = "";
+
+    const error = document.createElement("div");
+
+    error.className = "system";
+
+    const text = document.createElement("div");
+
+    text.className = "system-text";
+
+    text.textContent =
+      "[ AUTHENTICATION FAILED — CHECK FIREBASE CONFIG / AUTH ]";
+
+    error.appendChild(text);
+
+    messageList.appendChild(error);
+
+  }
+
+</script>
 
 </body>
 </html>
