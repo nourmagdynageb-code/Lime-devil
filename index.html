@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LIME DEVIL // encrypted terminal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&display=swap');
+
+  :root{
+    --void:#050505;
+    --panel:#0c0f0c;
+    --panel-2:#111511;
+    --lime:#39FF14;
+    --lime-dim:#1c8a0c;
+    --lime-glow:#00FF66;
+    --crimson:#ff1744;
+    --crimson-dim:#7a0a1d;
+    --text:#c9ffcf;
+    --mono:'JetBrains Mono','Share Tech Mono','Courier New',monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    height:100%;
+    background:var(--void);
+    color:var(--text);
+    font-family:var(--mono);
+    overflow:hidden;
+  }
+
+  /* ---------- background dust / matrix ---------- */
+  #matrixCanvas{
+    position:fixed; inset:0; z-index:0;
+    opacity:0.10;
+    pointer-events:none;
+  }
+
+  /* ---------- CRT scanlines + flicker ---------- */
+  .crt-overlay{
+    position:fixed; inset:0; z-index:9998;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    mix-blend-mode:overlay;
+  }
+  .crt-vignette{
+    position:fixed; inset:0; z-index:9997;
+    pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%);
+  }
+  .flicker{
+    animation:flicker 6s infinite;
+  }
+  @keyframes flicker{
+    0%,19%,21%,23%,25%,54%,56%,100%{ opacity:1; }
+    20%,22%,24%,55%{ opacity:0.86; }
+  }
+
+  /* ---------- glitch text ---------- */
+  .glitch{
+    position:relative;
+    color:var(--lime-glow);
+    text-shadow:0 0 6px var(--lime-glow), 0 0 18px rgba(0,255,102,0.5);
+    letter-spacing:2px;
+  }
+  .glitch::before, .glitch::after{
+    content:attr(data-text);
+    position:absolute; left:0; top:0;
+    width:100%; overflow:hidden;
+    background:transparent;
+  }
+  .glitch::before{
+    color:var(--crimson);
+    left:2px;
+    animation:glitchTop 3.2s infinite linear alternate-reverse;
+    clip-path:inset(0 0 60% 0);
+  }
+  .glitch::after{
+    color:#00eaff;
+    left:-2px;
+    animation:glitchBottom 2.6s infinite linear alternate-reverse;
+    clip-path:inset(60% 0 0 0);
+  }
+  @keyframes glitchTop{
+    0%{ transform:translate(0,0); }
+    20%{ transform:translate(-2px,-1px); }
+    40%{ transform:translate(2px,1px); }
+    60%{ transform:translate(-1px,1px); }
+    80%{ transform:translate(1px,-1px); }
+    100%{ transform:translate(0,0); }
+  }
+  @keyframes glitchBottom{
+    0%{ transform:translate(0,0); }
+    25%{ transform:translate(2px,1px); }
+    50%{ transform:translate(-2px,-1px); }
+    75%{ transform:translate(1px,1px); }
+    100%{ transform:translate(0,0); }
+  }
+
+  /* ================= LOCK SCREEN ================= */
+  #lockScreen{
+    position:fixed; inset:0; z-index:20;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(57,255,20,0.06), transparent 60%),
+      var(--void);
+  }
+  .lock-box{
+    width:min(92vw, 460px);
+    background:linear-gradient(180deg, var(--panel), #08090a);
+    border:1px solid var(--lime-dim);
+    border-radius:6px;
+    padding:34px 30px 30px;
+    box-shadow:0 0 40px rgba(57,255,20,0.12), inset 0 0 30px rgba(0,0,0,0.6);
+    position:relative;
+  }
+  .lock-box::before{
+    content:'';
+    position:absolute; inset:-1px;
+    border-radius:6px;
+    padding:1px;
+    background:linear-gradient(135deg, var(--lime), transparent 40%, var(--crimson-dim));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    opacity:0.5;
+    pointer-events:none;
+  }
+  .lock-title{
+    font-size:clamp(28px,6vw,40px);
+    font-weight:800;
+    text-align:center;
+    margin-bottom:6px;
+  }
+  .lock-sub{
+    text-align:center;
+    color:var(--lime-dim);
+    font-size:12px;
+    letter-spacing:3px;
+    margin-bottom:22px;
+    text-transform:uppercase;
+  }
+  .hint-line{
+    background:rgba(255,23,68,0.06);
+    border:1px dashed var(--crimson-dim);
+    color:var(--crimson);
+    font-size:12px;
+    padding:8px 10px;
+    border-radius:4px;
+    margin-bottom:20px;
+    text-align:center;
+    letter-spacing:1px;
+    animation:pulseHint 2.4s infinite;
+  }
+  @keyframes pulseHint{
+    0%,100%{ box-shadow:0 0 0 rgba(255,23,68,0); }
+    50%{ box-shadow:0 0 14px rgba(255,23,68,0.35); }
+  }
+  .pass-row{
+    display:flex; gap:8px;
+  }
+  #passInput{
+    flex:1;
+    background:#050805;
+    border:1px solid var(--lime-dim);
+    border-radius:4px;
+    color:var(--lime-glow);
+    font-family:var(--mono);
+    font-size:18px;
+    letter-spacing:6px;
+    text-align:center;
+    padding:14px 10px;
+    outline:none;
+    transition:box-shadow 0.15s, border-color 0.15s;
+  }
+  #passInput:focus{
+    border-color:var(--lime-glow);
+    box-shadow:0 0 16px rgba(0,255,102,0.5);
+  }
+  #unlockBtn{
+    background:var(--lime);
+    border:none;
+    color:#031403;
+    font-family:var(--mono);
+    font-weight:800;
+    padding:0 18px;
+    border-radius:4px;
+    cursor:pointer;
+    letter-spacing:1px;
+    transition:transform 0.1s, box-shadow 0.15s;
+  }
+  #unlockBtn:hover{
+    box-shadow:0 0 18px rgba(57,255,20,0.6);
+    transform:translateY(-1px);
+  }
+  .lock-error{
+    margin-top:12px;
+    text-align:center;
+    color:var(--crimson);
+    font-size:12px;
+    min-height:16px;
+    letter-spacing:1px;
+  }
+  .shake{ animation:shake 0.35s; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-8px); }
+    40%{ transform:translateX(8px); }
+    60%{ transform:translateX(-5px); }
+    80%{ transform:translateX(5px); }
+  }
+
+  .lock-dissolve{
+    animation:dissolveOut 0.7s forwards;
+  }
+  @keyframes dissolveOut{
+    0%{ opacity:1; filter:blur(0) brightness(1); }
+    40%{ opacity:0.7; filter:blur(2px) brightness(3) hue-rotate(30deg); }
+    100%{ opacity:0; filter:blur(10px) brightness(0.2); transform:scale(1.04); }
+  }
+
+  /* ================= APP LAYOUT ================= */
+  #app{
+    position:relative; z-index:1;
+    display:none;
+    flex-direction:column;
+    height:100vh;
+    animation:fadeIn 0.6s ease;
+  }
+  @keyframes fadeIn{
+    from{ opacity:0; } to{ opacity:1; }
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px;
+    padding:12px 18px;
+    background:linear-gradient(180deg, #0a0c0a, #060706);
+    border-bottom:1px solid var(--lime-dim);
+    flex-wrap:wrap;
+  }
+  .logo{
+    font-size:22px; font-weight:800; letter-spacing:2px;
+  }
+  .header-stats{
+    display:flex; align-items:center; gap:16px;
+    font-size:12px;
+  }
+  .stat-chip{
+    background:var(--panel-2);
+    border:1px solid var(--lime-dim);
+    border-radius:20px;
+    padding:6px 12px;
+    display:flex; align-items:center; gap:6px;
+    letter-spacing:1px;
+  }
+  .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--lime-glow);
+    box-shadow:0 0 8px var(--lime-glow);
+    animation:blink 1.6s infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0.25; } }
+  #purgeTimer{
+    color:var(--crimson);
+    text-shadow:0 0 8px rgba(255,23,68,0.7);
+    font-weight:700;
+  }
+
+  main{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 14px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    scroll-behavior:smooth;
+  }
+  main::-webkit-scrollbar{ width:8px; }
+  main::-webkit-scrollbar-thumb{ background:var(--lime-dim); border-radius:4px; }
+  main::-webkit-scrollbar-track{ background:transparent; }
+
+  .sys-msg{
+    align-self:center;
+    color:var(--lime-dim);
+    font-size:11px;
+    letter-spacing:1px;
+    border:1px dashed var(--lime-dim);
+    padding:4px 12px;
+    border-radius:20px;
+    background:rgba(57,255,20,0.03);
+  }
+
+  .msg{
+    max-width:78%;
+    background:var(--panel-2);
+    border:1px solid #1c231c;
+    border-left:3px solid var(--lime-dim);
+    border-radius:4px;
+    padding:8px 12px;
+    animation:msgIn 0.25s ease;
+  }
+  @keyframes msgIn{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .msg.mine{
+    align-self:flex-end;
+    border-left:3px solid var(--crimson);
+    background:#12100f;
+  }
+  .msg-meta{
+    display:flex; justify-content:space-between; gap:12px;
+    font-size:11px; margin-bottom:3px;
+    letter-spacing:0.5px;
+  }
+  .msg-user{ font-weight:700; }
+  .msg-time{ color:#5a6a5a; }
+  .msg-text{
+    font-size:14px;
+    word-break:break-word;
+    line-height:1.4;
+    color:#dfffe0;
+  }
+
+  form#composer{
+    display:flex; gap:10px;
+    padding:14px;
+    background:#080a08;
+    border-top:1px solid var(--lime-dim);
+  }
+  #msgInput{
+    flex:1;
+    background:#0b0e0b;
+    border:1px solid var(--lime-dim);
+    border-radius:5px;
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:12px 14px;
+    outline:none;
+    transition:box-shadow 0.15s, border-color 0.15s;
+  }
+  #msgInput:focus{
+    border-color:var(--lime-glow);
+    box-shadow:0 0 14px rgba(0,255,102,0.35);
+  }
+  #msgInput::placeholder{ color:#3d4d3d; }
+  #sendBtn{
+    background:var(--lime);
+    border:none;
+    color:#031403;
+    font-family:var(--mono);
+    font-weight:800;
+    padding:0 20px;
+    border-radius:5px;
+    cursor:pointer;
+    letter-spacing:1px;
+    transition:transform 0.1s, box-shadow 0.15s;
+  }
+  #sendBtn:hover{
+    box-shadow:0 0 16px rgba(57,255,20,0.6);
+    transform:translateY(-1px);
+  }
+  #sendBtn:active{ transform:translateY(0); }
+
+  .footnote{
+    text-align:center;
+    font-size:10px;
+    color:#33452f;
+    padding:4px 0 8px;
+    letter-spacing:1px;
+  }
+
+  @media (max-width: 640px){
+    .logo{ font-size:18px; }
+    .header-stats{ font-size:10px; gap:8px; }
+    .msg{ max-width:90%; }
+    .lock-box{ padding:26px 18px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrixCanvas"></canvas>
+<div class="crt-overlay"></div>
+<div class="crt-vignette"></div>
+
+<!-- ============ LOCK SCREEN ============ -->
+<div id="lockScreen" class="flicker">
+  <div class="lock-box">
+    <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
+    <div class="lock-sub">// encrypted node access required</div>
+    <div class="hint-line">[ CLEARANCE CODE REQUIRED — UNAUTHORIZED ACCESS WILL BE LOGGED ]</div>
+    <div class="pass-row">
+      <input type="password" id="passInput" maxlength="8" placeholder="••••" autocomplete="off">
+      <button id="unlockBtn">UNLOCK</button>
+    </div>
+    <div class="lock-error" id="lockError"></div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app">
+  <header>
+    <div class="logo glitch" data-text="LIME DEVIL">LIME DEVIL</div>
+    <div class="header-stats">
+      <div class="stat-chip"><span class="dot"></span><span id="userCount">1</span> ONLINE</div>
+      <div class="stat-chip">SYSTEM PURGE IN: <span id="purgeTimer">30:00</span></div>
+      <div class="stat-chip" id="myNameChip">YOU: —</div>
+    </div>
+  </header>
+
+  <main id="feed"></main>
+
+  <form id="composer" autocomplete="off">
+    <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
+    <button type="submit" id="sendBtn">SEND ▶</button>
+  </form>
+  <div class="footnote">ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 30 MIN</div>
+</div>
+
+<script type="module">
+  /* ================= FIREBASE SETUP ================= */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot,
+    query, orderBy, runTransaction, getDocs, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
+    authDomain: "limedevil-d3725.firebaseapp.com",
+    projectId: "limedevil-d3725",
+    storageBucket: "limedevil-d3725.firebasestorage.app",
+    messagingSenderId: "678313318556",
+    appId: "1:678313318556:web:b0d4207b086319c05cf559",
+    measurementId: "G-BHJ50N5NNZ"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+  const auth = getAuth(fbApp);
+
+  const messagesCol = collection(db, "messages");
+  const presenceCol = collection(db, "presence");
+  const purgeRef = doc(db, "meta", "purge");
+
+  /* ================= MATRIX DUST BACKGROUND ================= */
+  const canvas = document.getElementById('matrixCanvas');
+  const ctx = canvas.getContext('2d');
+  let cols, drops;
+  function resizeCanvas(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width / 16);
+    drops = new Array(cols).fill(0).map(()=>Math.random()*-100);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  const chars = "01LIMEDEVIL01ΞΔ01";
+  function drawMatrix(){
+    ctx.fillStyle = "rgba(5,5,5,0.08)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "#39FF14";
+    ctx.font = "14px monospace";
+    for(let i=0;i<cols;i++){
+      const text = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillText(text, i*16, drops[i]*16);
+      if(drops[i]*16 > canvas.height && Math.random() > 0.975){
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+    requestAnimationFrame(drawMatrix);
+  }
+  drawMatrix();
+
+  /* ================= CONSTANTS ================= */
+  const PASSWORD = "1280";
+  const PURGE_MS = 30 * 60 * 1000; // 30 minutes
+  const PRESENCE_STALE_MS = 20000;
+  const NAME_COLORS = ["#39FF14","#ff1744","#00eaff","#ffd600","#ff6e40","#b388ff","#00FF66","#ff4081"];
+
+  /* ================= ANON CODENAME ================= */
+  const PREFIXES = ["Devil","Lime","Void","Ghost","Shadow","Cipher","Wraith","Static","Toxin","Nyx","Fang","Ash"];
+  const SUFFIXES = ["Ghost","Shadow","X","Prime","Null","Zero","Reaper","Node","Vex","Storm"];
+  function generateCodename(){
+    const usePrefixOnly = Math.random() > 0.5;
+    const p = PREFIXES[Math.floor(Math.random()*PREFIXES.length)];
+    const num = Math.floor(1000 + Math.random()*8999);
+    if(usePrefixOnly){
+      return `${p}_${num}`;
+    } else {
+      const s = SUFFIXES[Math.floor(Math.random()*SUFFIXES.length)];
+      return `${p}_${s}_${num % 100}`;
+    }
+  }
+
+  const myName = generateCodename();
+  const myColor = NAME_COLORS[Math.floor(Math.random()*NAME_COLORS.length)];
+  const myId = myName + "_" + Math.random().toString(36).slice(2,8);
+
+  document.getElementById('myNameChip').textContent = "YOU: " + myName;
+
+  /* ================= RENDERING ================= */
+  const feed = document.getElementById('feed');
+
+  function fmtTime(ts){
+    const d = new Date(ts);
+    return d.toTimeString().slice(0,8);
+  }
+
+  function escapeHTML(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function renderMessageDoc(m){
+    if(m.type === 'system'){
+      const el = document.createElement('div');
+      el.className = 'sys-msg';
+      el.textContent = m.text;
+      feed.appendChild(el);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'msg' + (m.userId === myId ? ' mine' : '');
+    el.innerHTML = `
+      <div class="msg-meta">
+        <span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span>
+        <span class="msg-time">${fmtTime(m.ts)}</span>
+      </div>
+      <div class="msg-text"></div>
+    `;
+    el.querySelector('.msg-text').textContent = m.text;
+    feed.appendChild(el);
+  }
+
+  function scrollToBottom(){
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  /* ================= FIRESTORE: MESSAGES (live sync) ================= */
+  const messagesQuery = query(messagesCol, orderBy("ts"));
+
+  async function pushSystemMessage(text){
+    try{
+      const now = Date.now();
+      await addDoc(messagesCol, {
+        type:'system',
+        text,
+        ts: now,
+        expiresAt: new Date(now + PURGE_MS)
+      });
+    }catch(e){ console.error(e); }
+  }
+
+  async function sendMessage(text){
+    text = text.trim();
+    if(!text) return;
+    try{
+      await addDoc(messagesCol, {
+        type:'msg',
+        user: myName,
+        userId: myId,
+        color: myColor,
+        text,
+        ts: Date.now(),
+        expiresAt: new Date(Date.now() + PURGE_MS)
+      });
+    }catch(e){ console.error(e); }
+  }
+
+  /* ================= FIRESTORE: PRESENCE (online count) ================= */
+  const userCountEl = document.getElementById('userCount');
+
+  async function heartbeat(){
+    try{
+      await setDoc(doc(presenceCol, myId), { lastSeen: Date.now() });
+    }catch(e){ console.error(e); }
+  }
+
+  /* ================= FIRESTORE: PURGE COUNTDOWN (shared, atomic) ================= */
+  const purgeTimerEl = document.getElementById('purgeTimer');
+  let purgeStart = null;
+  let purging = false;
+
+  async function deleteAllMessagesInBatches(){
+    const msgsSnap = await getDocs(messagesCol);
+    if(msgsSnap.empty) return 0;
+
+    const docs = msgsSnap.docs;
+    let deleted = 0;
+
+    // Firestore writeBatch has a 500-operation limit.
+    for(let i = 0; i < docs.length; i += 450){
+      const batch = writeBatch(db);
+      docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      deleted += Math.min(450, docs.length - i);
+    }
+    return deleted;
+  }
+
+  async function tryPurge(){
+    if(purging || typeof purgeStart !== 'number') return;
+    purging = true;
+    try{
+      const now = Date.now();
+
+      const didPurge = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(purgeRef);
+        const start = (snap.exists() && typeof snap.data().purgeStart === 'number')
+          ? snap.data().purgeStart
+          : now;
+
+        if(now - start >= PURGE_MS){
+          tx.set(purgeRef, { purgeStart: now });
+          return true;
+        }
+        return false;
+      });
+
+      if(didPurge){
+        await deleteAllMessagesInBatches();
+        await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]");
+      }
+    }catch(e){
+      console.error("purge error:", e);
+    }finally{
+      purging = false;
+    }
+  }
+
+  function tickPurge(){
+    if(typeof purgeStart !== 'number'){
+      purgeTimerEl.textContent = "30:00";
+      return;
+    }
+
+    const remaining = PURGE_MS - (Date.now() - purgeStart);
+    if(remaining <= 0){
+      purgeTimerEl.textContent = "00:00";
+      tryPurge();
+      return;
+    }
+
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  }
+
+  /* ================= COMPOSER ================= */
+  const composer = document.getElementById('composer');
+  const msgInput = document.getElementById('msgInput');
+  composer.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = msgInput.value;
+    msgInput.value = '';
+    sendMessage(text);
+    msgInput.focus();
+  });
+
+  /* ================= INIT CHAT — only runs after a verified password + real auth ================= */
+  let chatInitialized = false;
+  function initChat(){
+    if(chatInitialized) return;
+    chatInitialized = true;
+
+    onSnapshot(messagesQuery, (snapshot) => {
+      feed.innerHTML = '';
+      snapshot.forEach(docSnap => renderMessageDoc(docSnap.data()));
+      scrollToBottom();
+    }, (err) => {
+      console.error("messages listener error:", err);
+      feed.innerHTML = '<div class="sys-msg">[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]</div>';
+    });
+
+    onSnapshot(presenceCol, (snapshot) => {
+      const now = Date.now();
+      let active = 0;
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if(data && typeof data.lastSeen === 'number' && (now - data.lastSeen) < PRESENCE_STALE_MS){
+          active++;
+        }
+      });
+      userCountEl.textContent = Math.max(1, active);
+    }, (err) => console.error("presence listener error:", err));
+
+    onSnapshot(purgeRef, (snap) => {
+      if(snap.exists() && typeof snap.data().purgeStart === 'number'){
+        purgeStart = snap.data().purgeStart;
+      } else {
+        const start = Date.now();
+        purgeStart = start;
+        setDoc(purgeRef, { purgeStart: start }, { merge: true })
+          .catch(e => console.error("purge init error:", e));
+      }
+      tickPurge();
+    }, (err) => console.error("purge listener error:", err));
+
+    setInterval(tickPurge, 1000);
+    tickPurge();
+
+    heartbeat();
+    setInterval(heartbeat, 5000);
+
+    pushSystemMessage(`[ ${myName} HAS JOINED THE NODE ]`);
+  }
+
+  /* ================= LOCK SCREEN LOGIC ================= */
+  const lockScreen = document.getElementById('lockScreen');
+  const passInput = document.getElementById('passInput');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const lockError = document.getElementById('lockError');
+  const lockBox = document.querySelector('.lock-box');
+  const appEl = document.getElementById('app');
+
+  async function attemptUnlock(){
+    if(passInput.value.trim() !== PASSWORD){
+      lockError.textContent = "ACCESS DENIED — INVALID CLEARANCE CODE";
+      lockBox.classList.remove('shake');
+      void lockBox.offsetWidth;
+      lockBox.classList.add('shake');
+      passInput.value = '';
+      return;
+    }
+
+    unlockBtn.disabled = true;
+    lockError.textContent = "AUTHENTICATING NODE...";
+    lockError.style.color = "var(--lime-glow)";
+
+    try{
+      await signInAnonymously(auth);
+    }catch(e){
+      console.error("auth error:", e);
+      lockError.textContent = "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
+      lockError.style.color = "var(--crimson)";
+      unlockBtn.disabled = false;
+      return;
+    }
+
+    lockScreen.classList.add('lock-dissolve');
+    setTimeout(() => {
+      lockScreen.style.display = 'none';
+      appEl.style.display = 'flex';
+      initChat();
+      msgInput.focus();
+    }, 680);
+  }
+
+  unlockBtn.addEventListener('click', attemptUnlock);
+  passInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') attemptUnlock();
+  });
+  passInput.addEventListener('input', () => {
+    lockError.textContent = '';
+    lockError.style.color = "var(--crimson)";
+  });
+
+  /* cleanup presence on unload (best-effort) */
+  window.addEventListener('beforeunload', () => {
+    if(chatInitialized){
+      deleteDoc(doc(presenceCol, myId)).catch(()=>{});
+    }
+  });
+</script>
+</body>
+</html>

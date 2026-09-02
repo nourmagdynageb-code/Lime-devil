@@ -1,0 +1,11 @@
+LIME DEVIL — FINAL SETUP
+
+1) Firebase Console → Authentication → Sign-in method → Anonymous → Enable.
+2) Firebase Console → Firestore Database → Rules → paste firestore.rules and Publish.
+3) Upload index.html to your hosting as the site's index.html.
+4) No CSS/design changes were made.
+
+IMPORTANT:
+- The current 30-minute purge is browser-driven: when a connected visitor reaches zero, that visitor performs the purge.
+- expiresAt is stored on every message so you can enable Firestore TTL later if desired.
+- The password in the HTML is only a UI gate, not real security. Anyone who can inspect the page can find it.
