@@ -1047,18 +1047,19 @@ function initTypingListener(){
 const purgeTimerEl = document.getElementById('purgeTimer');
 const togglePurgeBtn = document.getElementById('togglePurgeBtn');
 
-// متغيرات العداد المزامنة جماعياً من السيرفر
+// متغيرات العداد المركزية المتزامنة من السيرفر
 let cloudPurgePaused = false;
-let cloudPurgeStart = Date.now();
+let serverOffset = 0; // لحل مشكلة فرق التوقيت بين الأجهزة والسيرفر
+let targetPurgeTime = Date.now() + PURGE_MS;
 
 async function initPurgeState(){
   try{
     const snap = await getDoc(systemStateDocRef);
     if(!snap.exists()){
-      // لو أول مرة مش منشورة على الفايرستور، ننشئها
+      const now = Date.now();
       await setDoc(systemStateDocRef, {
         paused: false,
-        purgeStart: Date.now()
+        targetTime: now + PURGE_MS
       });
     }
   }catch(e){
@@ -1075,12 +1076,21 @@ togglePurgeBtn.addEventListener('click', async () => {
   }
 
   const newPausedState = !cloudPurgePaused;
-  const newStartVal = Date.now();
+  const now = Date.now();
 
   try{
+    let newTarget = targetPurgeTime;
+    if (newPausedState) {
+      // لو هنوقف العداد، نحسب الوقت اللي كان باقي بالظبط ونخزنه
+      newTarget = targetPurgeTime - now; 
+    } else {
+      // لو هنشغل العداد تاني، نحسب الهدف الجديد بناءً على الوقت الباقي المتخزن
+      newTarget = now + targetPurgeTime;
+    }
+
     await setDoc(systemStateDocRef, {
       paused: newPausedState,
-      purgeStart: newStartVal
+      targetTime: newTarget
     }, { merge: true });
 
     if(newPausedState){
@@ -1113,14 +1123,16 @@ function tickPurge(){
     purgeTimerEl.textContent = "PAUSED";
     return;
   }
-  const remaining = PURGE_MS - (Date.now() - cloudPurgeStart);
+
+  const remaining = targetPurgeTime - Date.now();
   if(remaining <= 0){
     purgeTimerEl.textContent = "00:00";
     executePurge();
-    const freshStart = Date.now();
-    setDoc(systemStateDocRef, { purgeStart: freshStart }, { merge: true }).catch(()=>{});
+    const freshTarget = Date.now() + PURGE_MS;
+    setDoc(systemStateDocRef, { targetTime: freshTarget, paused: false }, { merge: true }).catch(()=>{});
     return;
   }
+
   const mins = Math.floor(remaining / 60000);
   const secs = Math.floor((remaining % 60000) / 1000);
   purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
@@ -1162,13 +1174,13 @@ async function initChat(){
     Notification.requestPermission();
   }
 
-  // الاستماع لحالة العداد المتزامنة من الفايرستور (عشان أي تليفون يشوف نفس الـ Pause والوقت بالضبط)
+  // الاستماع اللحظي لتغييرات حالة العداد من الفايرستور لكل الأجهزة
   onSnapshot(systemStateDocRef, (snap) => {
     if(snap.exists()){
       const data = snap.data();
       cloudPurgePaused = !!data.paused;
-      if(typeof data.purgeStart === 'number'){
-        cloudPurgeStart = data.purgeStart;
+      if(typeof data.targetTime === 'number'){
+        targetPurgeTime = data.targetTime;
       }
     }
   }, (err) => console.error("purge state listener error:", err));
