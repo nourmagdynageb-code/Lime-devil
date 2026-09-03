@@ -741,7 +741,7 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -761,7 +761,6 @@ const auth = getAuth(fbApp);
 const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
 const typingCol = collection(db, "typing");
-const purgeRef = doc(db, "meta", "purge");
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1046,9 +1045,15 @@ function initTypingListener(){
 
 const purgeTimerEl = document.getElementById('purgeTimer');
 const togglePurgeBtn = document.getElementById('togglePurgeBtn');
-let purgeStart = Date.now();
-let purging = false;
-let purgePaused = false;
+
+// استرجاع حالة الوقف مؤقتاً من الـ localStorage لو كانت محفوظة قبل الريفريش
+let purgePaused = localStorage.getItem('lime_purge_paused') === 'true';
+let purgeStart = parseInt(localStorage.getItem('lime_purge_start')) || Date.now();
+
+// لو مفيش وقت مخزن قبل كده، خزنه
+if(!localStorage.getItem('lime_purge_start')){
+  localStorage.setItem('lime_purge_start', purgeStart);
+}
 
 togglePurgeBtn.addEventListener('click', () => {
   const pwd = prompt("ENTER PASSWORD TO TOGGLE AUTO-PURGE:");
@@ -1058,42 +1063,28 @@ togglePurgeBtn.addEventListener('click', () => {
     return;
   }
   purgePaused = !purgePaused;
+  localStorage.setItem('lime_purge_paused', purgePaused);
+
   if(purgePaused){
     alert("AUTO-PURGE PAUSED");
     pushSystemMessage("[ SYSTEM PURGE PAUSED BY ADMIN ]");
   } else {
     purgeStart = Date.now();
+    localStorage.setItem('lime_purge_start', purgeStart);
     alert("AUTO-PURGE RESUMED");
     pushSystemMessage("[ SYSTEM PURGE RESUMED ]");
   }
 });
 
-async function tryPurge(){
-  if(purging || purgePaused) return;
-  purging = true;
-
+async function executePurge(){
   try{
-    const didPurge = await runTransaction(db, async (tx) => {
-      const snap = await tx.get(purgeRef);
-      const start = (snap.exists() && typeof snap.data().purgeStart === 'number') ? snap.data().purgeStart : 0;
-      if(Date.now() - start >= PURGE_MS){
-        tx.set(purgeRef, { purgeStart: Date.now() });
-        return true;
-      }
-      return false;
-    });
-
-    if(didPurge){
-      const msgsSnap = await getDocs(messagesCol);
-      const batch = writeBatch(db);
-      msgsSnap.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]");
-    }
+    const msgsSnap = await getDocs(messagesCol);
+    const batch = writeBatch(db);
+    msgsSnap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]");
   }catch(e){
     console.error("purge error:", e);
-  }finally{
-    purging = false;
   }
 }
 
@@ -1105,7 +1096,9 @@ function tickPurge(){
   const remaining = PURGE_MS - (Date.now() - purgeStart);
   if(remaining <= 0){
     purgeTimerEl.textContent = "00:00";
-    tryPurge();
+    executePurge();
+    purgeStart = Date.now();
+    localStorage.setItem('lime_purge_start', purgeStart);
     return;
   }
   const mins = Math.floor(remaining / 60000);
@@ -1191,16 +1184,6 @@ function initChat(){
   }, (err) => console.error("presence listener error:", err));
 
   initTypingListener();
-
-  onSnapshot(purgeRef, (snap) => {
-    if(!purgePaused){
-      if(snap.exists() && typeof snap.data().purgeStart === 'number'){
-        purgeStart = snap.data().purgeStart;
-      }else{
-        setDoc(purgeRef, { purgeStart: Date.now() }).catch(e => console.error(e));
-      }
-    }
-  }, (err) => console.error("purge listener error:", err));
 
   setInterval(tickPurge, 1000);
   tickPurge();
