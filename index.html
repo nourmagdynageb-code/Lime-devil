@@ -343,12 +343,20 @@
     letter-spacing:1px;
   }
 
-  /* جعل زر الـ Online قابل للضغط لفتح القائمة */
   .stat-chip.clickable {
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .stat-chip.clickable:hover {
+    border-color: var(--lime-glow);
+    box-shadow: 0 0 10px rgba(0,255,102,0.3);
+  }
+
+  .stat-chip.purge-clickable {
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .stat-chip.purge-clickable:hover {
     border-color: var(--lime-glow);
     box-shadow: 0 0 10px rgba(0,255,102,0.3);
   }
@@ -584,7 +592,6 @@
     letter-spacing:1px;
   }
 
-  /* نافذة منبثقة لقائمة المتصلين */
   #usersModal {
     position: fixed; inset: 0; z-index: 9999;
     background: rgba(0,0,0,0.8);
@@ -673,7 +680,6 @@
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<!-- نافذة قائمة المتصلين المنبثقة -->
 <div id="usersModal">
   <div class="users-modal-box">
     <div class="users-modal-title">// ACTIVE NODES IN NETWORK</div>
@@ -705,7 +711,7 @@
         ONLINE
       </div>
 
-      <div class="stat-chip">
+      <div class="stat-chip purge-clickable" id="togglePurgeBtn" title="Click to toggle auto-purge with password">
         SYSTEM PURGE IN:
         <span id="purgeTimer">10:00</span>
       </div>
@@ -734,8 +740,6 @@
 
 <script type="module">
 
-/* ================= FIREBASE SETUP ================= */
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -759,7 +763,6 @@ const presenceCol = collection(db, "presence");
 const typingCol = collection(db, "typing");
 const purgeRef = doc(db, "meta", "purge");
 
-/* ================= AUDIO SYNTHESIZER (MECHANIC KEYBOARD & ALERTS) ================= */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playKeyClickSound() {
@@ -790,8 +793,6 @@ function playNotificationSound() {
   osc.start();
   osc.stop(audioCtx.currentTime + 0.15);
 }
-
-/* ================= MATRIX DUST BACKGROUND ================= */
 
 const canvas = document.getElementById('matrixCanvas');
 const ctx = canvas.getContext('2d');
@@ -827,9 +828,10 @@ function drawMatrix(){
 }
 drawMatrix();
 
-/* ================= CONSTANTS ================= */
+const PASSWORD = "181";          // باسورد دخول الموقع
+const PURGE_PASSWORD = "1280";   // باسورد الميزة الجديدة (التحكم في العداد)
+const EMERGENCY_PASSWORD = "101";// باسورد الطوارئ
 
-const PASSWORD = "181";
 const PURGE_MS = 10 * 60 * 1000;
 const PRESENCE_STALE_MS = 20000;
 const TYPING_STALE_MS = 3000;
@@ -839,10 +841,6 @@ const NAME_COLORS = [
   "#39FF14", "#ff1744", "#00eaff", "#ffd600",
   "#ff6e40", "#b388ff", "#00FF66", "#ff4081"
 ];
-
-const EMERGENCY_PASSWORD = "101";
-
-/* ================= ANON CODENAME ================= */
 
 const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static", "Toxin", "Nyx", "Fang", "Ash"];
 const SUFFIXES = ["Ghost", "Shadow", "X", "Prime", "Null", "Zero", "Reaper", "Node", "Vex", "Storm"];
@@ -864,8 +862,6 @@ const myColor = NAME_COLORS[Math.floor(Math.random() * NAME_COLORS.length)];
 const myId = myName + "_" + Math.random().toString(36).slice(2,8);
 
 document.getElementById('myNameChip').textContent = "YOU: " + myName;
-
-/* ================= RENDERING ================= */
 
 const feed = document.getElementById('feed');
 
@@ -908,8 +904,6 @@ function scrollToBottom(){
   feed.scrollTop = feed.scrollHeight;
 }
 
-/* ================= FIRESTORE: MESSAGES ================= */
-
 const messagesQuery = query(messagesCol, orderBy("ts"));
 
 async function pushSystemMessage(text){
@@ -937,8 +931,6 @@ async function sendMessage(text){
     console.error(e);
   }
 }
-
-/* ================= EMERGENCY WIPE ================= */
 
 const emergencyBtn = document.getElementById("emergencyBtn");
 
@@ -970,8 +962,6 @@ emergencyBtn.addEventListener("click", async () => {
   }
 });
 
-/* ================= FIRESTORE: PRESENCE ================= */
-
 const userCountEl = document.getElementById('userCount');
 const onlineUsersList = document.getElementById('onlineUsersList');
 const usersModal = document.getElementById('usersModal');
@@ -988,8 +978,6 @@ async function heartbeat(){
     console.error(e);
   }
 }
-
-/* ================= FIRESTORE: TYPING ================= */
 
 const typingIndicator = document.getElementById('typingIndicator');
 let typingTimeout = null;
@@ -1056,14 +1044,32 @@ function initTypingListener(){
   onSnapshot(typingCol, renderTyping, (err) => { console.error("typing listener error:", err); });
 }
 
-/* ================= FIRESTORE: PURGE COUNTDOWN ================= */
-
 const purgeTimerEl = document.getElementById('purgeTimer');
+const togglePurgeBtn = document.getElementById('togglePurgeBtn');
 let purgeStart = Date.now();
 let purging = false;
+let purgePaused = false;
+
+togglePurgeBtn.addEventListener('click', () => {
+  const pwd = prompt("ENTER PASSWORD TO TOGGLE AUTO-PURGE:");
+  if(pwd === null) return;
+  if(pwd !== PURGE_PASSWORD){
+    alert("ACCESS DENIED");
+    return;
+  }
+  purgePaused = !purgePaused;
+  if(purgePaused){
+    alert("AUTO-PURGE PAUSED");
+    pushSystemMessage("[ SYSTEM PURGE PAUSED BY ADMIN ]");
+  } else {
+    purgeStart = Date.now();
+    alert("AUTO-PURGE RESUMED");
+    pushSystemMessage("[ SYSTEM PURGE RESUMED ]");
+  }
+});
 
 async function tryPurge(){
-  if(purging) return;
+  if(purging || purgePaused) return;
   purging = true;
 
   try{
@@ -1092,6 +1098,10 @@ async function tryPurge(){
 }
 
 function tickPurge(){
+  if(purgePaused){
+    purgeTimerEl.textContent = "PAUSED";
+    return;
+  }
   const remaining = PURGE_MS - (Date.now() - purgeStart);
   if(remaining <= 0){
     purgeTimerEl.textContent = "00:00";
@@ -1103,12 +1113,9 @@ function tickPurge(){
   purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 }
 
-/* ================= COMPOSER ================= */
-
 const composer = document.getElementById('composer');
 const msgInput = document.getElementById('msgInput');
 
-// تشغيل صوت ضغطات الكيبورد وأحداث الكتابة
 msgInput.addEventListener('input', () => {
   playKeyClickSound();
   if(msgInput.value.trim()){
@@ -1129,8 +1136,6 @@ composer.addEventListener('submit', (e) => {
 
 msgInput.addEventListener('blur', () => { stopTyping(); });
 
-/* ================= INIT CHAT ================= */
-
 let chatInitialized = false;
 let lastMessageCount = 0;
 
@@ -1138,7 +1143,6 @@ function initChat(){
   if(chatInitialized) return;
   chatInitialized = true;
 
-  // طلب إذن إشعارات المتصفح
   if("Notification" in window && Notification.permission !== "granted"){
     Notification.requestPermission();
   }
@@ -1189,10 +1193,12 @@ function initChat(){
   initTypingListener();
 
   onSnapshot(purgeRef, (snap) => {
-    if(snap.exists() && typeof snap.data().purgeStart === 'number'){
-      purgeStart = snap.data().purgeStart;
-    }else{
-      setDoc(purgeRef, { purgeStart: Date.now() }).catch(e => console.error(e));
+    if(!purgePaused){
+      if(snap.exists() && typeof snap.data().purgeStart === 'number'){
+        purgeStart = snap.data().purgeStart;
+      }else{
+        setDoc(purgeRef, { purgeStart: Date.now() }).catch(e => console.error(e));
+      }
     }
   }, (err) => console.error("purge listener error:", err));
 
@@ -1202,8 +1208,6 @@ function initChat(){
   setInterval(heartbeat, 5000);
   pushSystemMessage(`[ ${myName} HAS JOINED THE NODE ]`);
 }
-
-/* ================= LOCK SCREEN LOGIC ================= */
 
 const lockScreen = document.getElementById('lockScreen');
 const passInput = document.getElementById('passInput');
@@ -1248,8 +1252,6 @@ async function attemptUnlock(){
 unlockBtn.addEventListener('click', attemptUnlock);
 passInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attemptUnlock(); });
 passInput.addEventListener('input', () => { lockError.textContent = ''; lockError.style.color = "var(--crimson)"; });
-
-/* ================= CLEANUP PRESENCE + TYPING ================= */
 
 function handleUserExit() {
   if(chatInitialized){
