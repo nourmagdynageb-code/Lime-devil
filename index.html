@@ -199,12 +199,8 @@
   }
 
   @keyframes pulseHint{
-    0%,100%{
-      box-shadow:0 0 0 rgba(255,23,68,0);
-    }
-    50%{
-      box-shadow:0 0 14px rgba(255,23,68,0.35);
-    }
+    0%,100%{ box-shadow:0 0 0 rgba(255,23,68,0); }
+    50%{ box-shadow:0 0 14px rgba(255,23,68,0.35); }
   }
 
   .pass-row{
@@ -276,19 +272,9 @@
   }
 
   @keyframes dissolveOut{
-    0%{
-      opacity:1;
-      filter:blur(0) brightness(1);
-    }
-    40%{
-      opacity:0.7;
-      filter:blur(2px) brightness(3) hue-rotate(30deg);
-    }
-    100%{
-      opacity:0;
-      filter:blur(10px) brightness(0.2);
-      transform:scale(1.04);
-    }
+    0%{ opacity:1; filter:blur(0) brightness(1); }
+    40%{ opacity:0.7; filter:blur(2px) brightness(3) hue-rotate(30deg); }
+    100%{ opacity:0; filter:blur(10px) brightness(0.2); transform:scale(1.04); }
   }
 
   /* ================= APP LAYOUT ================= */
@@ -352,15 +338,6 @@
     box-shadow: 0 0 10px rgba(0,255,102,0.3);
   }
 
-  .stat-chip.purge-clickable {
-    cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .stat-chip.purge-clickable:hover {
-    border-color: var(--lime-glow);
-    box-shadow: 0 0 10px rgba(0,255,102,0.3);
-  }
-
   .dot{
     width:7px;
     height:7px;
@@ -379,8 +356,6 @@
     text-shadow:0 0 8px rgba(255,23,68,0.7);
     font-weight:700;
   }
-
-  /* ================= EMERGENCY BUTTON ================= */
 
   #emergencyBtn{
     background:var(--crimson);
@@ -401,10 +376,6 @@
     transform:translateY(-1px);
   }
 
-  #emergencyBtn:active{
-    transform:translateY(0);
-  }
-
   #emergencyBtn:disabled{
     opacity:0.55;
     cursor:not-allowed;
@@ -421,18 +392,9 @@
     scroll-behavior:smooth;
   }
 
-  main::-webkit-scrollbar{
-    width:8px;
-  }
-
-  main::-webkit-scrollbar-thumb{
-    background:var(--lime-dim);
-    border-radius:4px;
-  }
-
-  main::-webkit-scrollbar-track{
-    background:transparent;
-  }
+  main::-webkit-scrollbar{ width:8px; }
+  main::-webkit-scrollbar-thumb{ background:var(--lime-dim); border-radius:4px; }
+  main::-webkit-scrollbar-track{ background:transparent; }
 
   .sys-msg{
     align-self:center;
@@ -456,14 +418,8 @@
   }
 
   @keyframes msgIn{
-    from{
-      opacity:0;
-      transform:translateY(8px);
-    }
-    to{
-      opacity:1;
-      transform:translateY(0);
-    }
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
   }
 
   .msg.mine{
@@ -481,22 +437,18 @@
     letter-spacing:0.5px;
   }
 
-  .msg-user{
-    font-weight:700;
-  }
+  .msg-user{ font-weight:700; }
+  .msg-time{ color:#5a6a5a; }
+  .msg-text{ font-size:14px; word-break:break-word; line-height:1.4; color:#dfffe0; }
 
-  .msg-time{
-    color:#5a6a5a;
+  .msg-img {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 4px;
+    margin-top: 6px;
+    border: 1px solid var(--lime-dim);
+    display: block;
   }
-
-  .msg-text{
-    font-size:14px;
-    word-break:break-word;
-    line-height:1.4;
-    color:#dfffe0;
-  }
-
-  /* ================= TYPING INDICATOR ================= */
 
   #typingIndicator{
     min-height:20px;
@@ -508,17 +460,9 @@
     text-shadow:0 0 7px rgba(57,255,20,0.35);
     pointer-events:none;
   }
+  #typingIndicator:empty{ min-height:0; padding:0; }
 
-  #typingIndicator:empty{
-    min-height:0;
-    padding:0;
-  }
-
-  .typing-user{
-    color:var(--lime-glow);
-    font-weight:700;
-  }
-
+  .typing-user{ color:var(--lime-glow); font-weight:700; }
   .typing-dots{
     display:inline-block;
     width:18px;
@@ -558,8 +502,21 @@
     box-shadow:0 0 14px rgba(0,255,102,0.35);
   }
 
-  #msgInput::placeholder{
-    color:#3d4d3d;
+  #fileUploadBtn {
+    background: var(--panel-2);
+    border: 1px solid var(--lime-dim);
+    color: var(--lime-glow);
+    font-family: var(--mono);
+    font-weight: 800;
+    padding: 0 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  #fileUploadBtn:hover {
+    box-shadow: 0 0 12px rgba(57,255,20,0.4);
+    border-color: var(--lime-glow);
   }
 
   #sendBtn{
@@ -578,10 +535,6 @@
   #sendBtn:hover{
     box-shadow:0 0 16px rgba(57,255,20,0.6);
     transform:translateY(-1px);
-  }
-
-  #sendBtn:active{
-    transform:translateY(0);
   }
 
   .footnote{
@@ -647,30 +600,6 @@
     border-color: var(--lime-glow);
     color: var(--lime-glow);
   }
-
-  @media (max-width:640px){
-    .logo{
-      font-size:18px;
-    }
-
-    .header-stats{
-      font-size:10px;
-      gap:8px;
-    }
-
-    .msg{
-      max-width:90%;
-    }
-
-    .lock-box{
-      padding:26px 18px 22px;
-    }
-
-    #emergencyBtn{
-      padding:6px 10px;
-      font-size:10px;
-    }
-  }
 </style>
 </head>
 
@@ -692,7 +621,7 @@
   <div class="lock-box">
     <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
     <div class="lock-sub">// encrypted node access required</div>
-    <div class="hint-line">[ CLEARANCE CODE REQUIRED — UNAUTHORIZED ACCESS WILL BE LOGGED ]</div>
+    <div class="hint-line">[ CLEARANCE CODE REQUIRED ]</div>
     <div class="pass-row">
       <input type="password" id="passInput" maxlength="8" placeholder="••••" autocomplete="off">
       <button id="unlockBtn">UNLOCK</button>
@@ -705,30 +634,25 @@
   <header>
     <div class="logo glitch" data-text="LIME DEVIL">LIME DEVIL</div>
     <div class="header-stats">
-      <div class="stat-chip clickable" id="openUsersModalBtn" title="Click to view active users">
+      <div class="stat-chip clickable" id="openUsersModalBtn">
         <span class="dot"></span>
-        <span id="userCount">1</span>
-        ONLINE
+        <span id="userCount">1</span> ONLINE
       </div>
-
-      <div class="stat-chip purge-clickable" id="togglePurgeBtn" title="Click to toggle auto-purge with password">
-        SYSTEM PURGE IN:
-        <span id="purgeTimer">10:00</span>
+      <div class="stat-chip">
+        SYSTEM PURGE IN: <span id="purgeTimer">10:00</span>
       </div>
-
-      <div class="stat-chip" id="myNameChip">
-        YOU: —
-      </div>
-
+      <div class="stat-chip" id="myNameChip">YOU: —</div>
       <button id="emergencyBtn" type="button">EMERGENCY</button>
     </div>
   </header>
 
   <main id="feed"></main>
 
-  <div id="typingIndicator" aria-live="polite"></div>
+  <div id="typingIndicator"></div>
 
   <form id="composer" autocomplete="off">
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+    <button type="button" id="fileUploadBtn" title="Attach Image">📁</button>
     <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
     <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
@@ -739,10 +663,10 @@
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDocs, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
@@ -757,14 +681,14 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
+const storage = getStorage(fbApp);
 
 const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
 const typingCol = collection(db, "typing");
-const systemStateDocRef = doc(db, "system", "purgeState");
+const purgeRef = doc(db, "meta", "purge");
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
 function playKeyClickSound() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
@@ -773,12 +697,9 @@ function playKeyClickSound() {
   osc.frequency.setValueAtTime(120 + Math.random() * 40, audioCtx.currentTime);
   gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.04);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.04);
 }
-
 function playNotificationSound() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
@@ -788,93 +709,52 @@ function playNotificationSound() {
   osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
   gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.15);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.15);
 }
 
 const canvas = document.getElementById('matrixCanvas');
 const ctx = canvas.getContext('2d');
 let cols, drops;
-
 function resizeCanvas(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   cols = Math.floor(canvas.width / 16);
   drops = new Array(cols).fill(0).map(() => Math.random() * -100);
 }
-
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
 const chars = "01LIMEDEVIL01ΞΔ01";
-
 function drawMatrix(){
   ctx.fillStyle = "rgba(5,5,5,0.08)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#39FF14";
   ctx.font = "14px monospace";
-
   for(let i = 0; i < cols; i++){
-    const text = chars[Math.floor(Math.random() * chars.length)];
-    ctx.fillText(text, i * 16, drops[i] * 16);
-    if(drops[i] * 16 > canvas.height && Math.random() > 0.975){
-      drops[i] = 0;
-    }
+    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 16, drops[i] * 16);
+    if(drops[i] * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
     drops[i]++;
   }
   requestAnimationFrame(drawMatrix);
 }
 drawMatrix();
 
-const PASSWORD = "181";          // باسورد دخول الموقع
-const PURGE_PASSWORD = "1280";   // باسورد التحكم في العداد
-const EMERGENCY_PASSWORD = "101";// باسورد الطوارئ
-
+const PASSWORD = "1280";
 const PURGE_MS = 10 * 60 * 1000;
-const PRESENCE_STALE_MS = 20000;
-const TYPING_STALE_MS = 3000;
-const TYPING_STOP_DELAY = 1500;
+const EMERGENCY_PASSWORD = "101";
 
-const NAME_COLORS = [
-  "#39FF14", "#ff1744", "#00eaff", "#ffd600",
-  "#ff6e40", "#b388ff", "#00FF66", "#ff4081"
-];
-
-const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static", "Toxin", "Nyx", "Fang", "Ash"];
-const SUFFIXES = ["Ghost", "Shadow", "X", "Prime", "Null", "Zero", "Reaper", "Node", "Vex", "Storm"];
-
+const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static"];
 function generateCodename(){
-  const usePrefixOnly = Math.random() > 0.5;
-  const p = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
-  const num = Math.floor(1000 + Math.random() * 8999);
-  if(usePrefixOnly){
-    return `${p}_${num}`;
-  }else{
-    const s = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
-    return `${p}_${s}_${num % 100}`;
-  }
+  return `${PREFIXES[Math.floor(Math.random() * PREFIXES.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
 }
-
 const myName = generateCodename();
-const myColor = NAME_COLORS[Math.floor(Math.random() * NAME_COLORS.length)];
+const myColor = ["#39FF14", "#ff1744", "#00eaff", "#ffd600", "#ff6e40", "#b388ff"][Math.floor(Math.random() * 6)];
 const myId = myName + "_" + Math.random().toString(36).slice(2,8);
-
 document.getElementById('myNameChip').textContent = "YOU: " + myName;
 
 const feed = document.getElementById('feed');
-
-function fmtTime(ts){
-  const d = new Date(ts);
-  return d.toTimeString().slice(0,8);
-}
-
-function escapeHTML(str){
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
+function fmtTime(ts){ return new Date(ts).toTimeString().slice(0,8); }
+function escapeHTML(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 function renderMessageDoc(m){
   if(m.type === 'system'){
@@ -884,99 +764,79 @@ function renderMessageDoc(m){
     feed.appendChild(el);
     return;
   }
-
   const el = document.createElement('div');
   el.className = 'msg' + (m.userId === myId ? ' mine' : '');
-
+  let contentHtml = `<div class="msg-text"></div>`;
+  if(m.fileUrl){
+    contentHtml += `<img src="${escapeHTML(m.fileUrl)}" class="msg-img" alt="attachment">`;
+  }
   el.innerHTML = `
-    <div class="msg-meta">
-      <span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span>
-      <span class="msg-time">${fmtTime(m.ts)}</span>
-    </div>
-    <div class="msg-text"></div>
+    <div class="msg-meta"><span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span><span class="msg-time">${fmtTime(m.ts)}</span></div>
+    ${contentHtml}
   `;
-
   el.querySelector('.msg-text').textContent = m.text;
   feed.appendChild(el);
 }
-
-function scrollToBottom(){
-  feed.scrollTop = feed.scrollHeight;
-}
-
-const messagesQuery = query(messagesCol, orderBy("ts"));
+function scrollToBottom(){ feed.scrollTop = feed.scrollHeight; }
 
 async function pushSystemMessage(text){
-  try{
-    await addDoc(messagesCol, { type:'system', text, ts:Date.now() });
-  }catch(e){
-    console.error(e);
-  }
+  try { await addDoc(messagesCol, { type:'system', text, ts:Date.now() }); } catch(e){}
 }
-
-async function sendMessage(text){
+async function sendMessage(text, fileUrl = null){
   text = text.trim();
-  if(!text) return;
-
-  try{
-    await addDoc(messagesCol, {
-      type:'msg',
-      user:myName,
-      userId:myId,
-      color:myColor,
-      text,
-      ts:Date.now()
-    });
-  }catch(e){
-    console.error(e);
-  }
+  if(!text && !fileUrl) return;
+  try { await addDoc(messagesCol, { type:'msg', user:myName, userId:myId, color:myColor, text, fileUrl, ts:Date.now() }); } catch(e){}
 }
 
-const emergencyBtn = document.getElementById("emergencyBtn");
-
-emergencyBtn.addEventListener("click", async () => {
-  const password = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
-  if(password !== EMERGENCY_PASSWORD){
-    if(password !== null) alert("ACCESS DENIED");
-    return;
-  }
-  const confirmed = confirm("⚠ EMERGENCY WIPE ⚠\n\nDELETE ALL MESSAGES?");
-  if(!confirmed) return;
-
-  try{
-    emergencyBtn.disabled = true;
-    const msgsSnap = await getDocs(messagesCol);
-    if(!msgsSnap.empty){
-      const docs = msgsSnap.docs;
-      for(let i = 0; i < docs.length; i += 450){
-        const batch = writeBatch(db);
-        docs.slice(i, i + 450).forEach(d => { batch.delete(d.ref); });
-        await batch.commit();
-      }
-    }
-  }catch(e){
-    console.error("emergency wipe error:", e);
-    alert("EMERGENCY WIPE FAILED");
-  }finally{
-    emergencyBtn.disabled = false;
-  }
+document.getElementById("emergencyBtn").addEventListener("click", async () => {
+  const pwd = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
+  if(pwd !== EMERGENCY_PASSWORD) { if(pwd !== null) alert("ACCESS DENIED"); return; }
+  if(!confirm("⚠ WIPE ALL MESSAGES?")) return;
+  try {
+    const snap = await getDocs(messagesCol);
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  } catch(e){ alert("WIPE FAILED"); }
 });
 
-const userCountEl = document.getElementById('userCount');
-const onlineUsersList = document.getElementById('onlineUsersList');
-const usersModal = document.getElementById('usersModal');
-const openUsersModalBtn = document.getElementById('openUsersModalBtn');
-const closeUsersModal = document.getElementById('closeUsersModal');
+const purgeTimerEl = document.getElementById('purgeTimer');
+let purgeStart = Date.now();
+let purging = false;
 
-openUsersModalBtn.addEventListener('click', () => { usersModal.style.display = 'flex'; });
-closeUsersModal.addEventListener('click', () => { usersModal.style.display = 'none'; });
+async function tryPurge(){
+  if(purging) return;
+  purging = true;
+  try {
+    const didPurge = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(purgeRef);
+      const start = (snap.exists() && typeof snap.data().purgeStart === 'number') ? snap.data().purgeStart : 0;
+      if(Date.now() - start >= PURGE_MS){
+        tx.set(purgeRef, { purgeStart: Date.now() });
+        return true;
+      }
+      return false;
+    });
+    if(didPurge){
+      const msgsSnap = await getDocs(messagesCol);
+      const batch = writeBatch(db);
+      msgsSnap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL LOGS WIPED ]");
+    }
+  } catch(e){} finally { purging = false; }
+}
 
-async function heartbeat(){
-  try{
-    await setDoc(doc(presenceCol, myId), { user: myName, color: myColor, lastSeen: Date.now() });
-  }catch(e){
-    console.error(e);
+function tickPurge(){
+  const remaining = PURGE_MS - (Date.now() - purgeStart);
+  if(remaining <= 0){
+    purgeTimerEl.textContent = "00:00";
+    tryPurge();
+    return;
   }
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 }
 
 const typingIndicator = document.getElementById('typingIndicator');
@@ -984,220 +844,55 @@ let typingTimeout = null;
 let currentlyTyping = false;
 
 async function setTypingState(isTyping){
-  try{
-    await setDoc(doc(typingCol, myId), {
-      user:myName,
-      userId:myId,
-      color:myColor,
-      isTyping,
-      lastSeen:Date.now()
-    });
-  }catch(e){
-    console.error("typing state error:", e);
-  }
+  try { await setDoc(doc(typingCol, myId), { user:myName, userId:myId, color:myColor, isTyping, lastSeen:Date.now() }); } catch(e){}
 }
-
 function startTyping(){
-  if(!currentlyTyping){
-    currentlyTyping = true;
-    setTypingState(true);
-  }
+  if(!currentlyTyping){ currentlyTyping = true; setTypingState(true); }
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => { stopTyping(); }, TYPING_STOP_DELAY);
+  typingTimeout = setTimeout(() => stopTyping(), 1500);
 }
-
 function stopTyping(){
   if(!currentlyTyping) return;
   currentlyTyping = false;
   clearTimeout(typingTimeout);
-  typingTimeout = null;
   setTypingState(false);
 }
-
 function renderTyping(snapshot){
   const now = Date.now();
   const typers = [];
-
   snapshot.forEach(docSnap => {
     const data = docSnap.data();
-    if(!data || data.userId === myId || data.isTyping !== true || typeof data.lastSeen !== "number") return;
-    if(now - data.lastSeen > TYPING_STALE_MS) return;
+    if(!data || data.userId === myId || data.isTyping !== true || (now - data.lastSeen > 3000)) return;
     typers.push(data);
   });
-
-  if(!typers.length){
-    typingIndicator.textContent = "";
-    return;
-  }
-
+  if(!typers.length){ typingIndicator.textContent = ""; return; }
   if(typers.length === 1){
-    const user = typers[0];
-    typingIndicator.innerHTML = `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span> IS TYPING<span class="typing-dots">...</span>`;
+    typingIndicator.innerHTML = `<span class="typing-user">${escapeHTML(typers[0].user)}</span> IS TYPING<span class="typing-dots">...</span>`;
     return;
   }
-
-  const names = typers.slice(0,3).map(user => `<span class="typing-user">${escapeHTML(user.user || "UNKNOWN")}</span>`).join(", ");
+  const names = typers.slice(0,3).map(u => `<span class="typing-user">${escapeHTML(u.user)}</span>`).join(", ");
   typingIndicator.innerHTML = `${names} ARE TYPING<span class="typing-dots">...</span>`;
 }
-
-function initTypingListener(){
-  onSnapshot(typingCol, renderTyping, (err) => { console.error("typing listener error:", err); });
-}
-
-const purgeTimerEl = document.getElementById('purgeTimer');
-const togglePurgeBtn = document.getElementById('togglePurgeBtn');
-
-// متغيرات العداد المركزية المتزامنة من السيرفر
-let cloudPurgePaused = false;
-let serverOffset = 0; // لحل مشكلة فرق التوقيت بين الأجهزة والسيرفر
-let targetPurgeTime = Date.now() + PURGE_MS;
-
-async function initPurgeState(){
-  try{
-    const snap = await getDoc(systemStateDocRef);
-    if(!snap.exists()){
-      const now = Date.now();
-      await setDoc(systemStateDocRef, {
-        paused: false,
-        targetTime: now + PURGE_MS
-      });
-    }
-  }catch(e){
-    console.error("init purge state error:", e);
-  }
-}
-
-togglePurgeBtn.addEventListener('click', async () => {
-  const pwd = prompt("ENTER PASSWORD TO TOGGLE AUTO-PURGE:");
-  if(pwd === null) return;
-  if(pwd !== PURGE_PASSWORD){
-    alert("ACCESS DENIED");
-    return;
-  }
-
-  const newPausedState = !cloudPurgePaused;
-  const now = Date.now();
-
-  try{
-    let newTarget = targetPurgeTime;
-    if (newPausedState) {
-      // لو هنوقف العداد، نحسب الوقت اللي كان باقي بالظبط ونخزنه
-      newTarget = targetPurgeTime - now; 
-    } else {
-      // لو هنشغل العداد تاني، نحسب الهدف الجديد بناءً على الوقت الباقي المتخزن
-      newTarget = now + targetPurgeTime;
-    }
-
-    await setDoc(systemStateDocRef, {
-      paused: newPausedState,
-      targetTime: newTarget
-    }, { merge: true });
-
-    if(newPausedState){
-      alert("AUTO-PURGE PAUSED");
-      pushSystemMessage("[ SYSTEM PURGE PAUSED BY ADMIN ]");
-    } else {
-      alert("AUTO-PURGE RESUMED");
-      pushSystemMessage("[ SYSTEM PURGE RESUMED ]");
-    }
-  }catch(e){
-    console.error("toggle purge error:", e);
-    alert("FAILED TO UPDATE PURGE STATE");
-  }
-});
-
-async function executePurge(){
-  try{
-    const msgsSnap = await getDocs(messagesCol);
-    const batch = writeBatch(db);
-    msgsSnap.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-    await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL TRAFFIC LOGS WIPED ]");
-  }catch(e){
-    console.error("purge error:", e);
-  }
-}
-
-function tickPurge(){
-  if(cloudPurgePaused){
-    purgeTimerEl.textContent = "PAUSED";
-    return;
-  }
-
-  const remaining = targetPurgeTime - Date.now();
-  if(remaining <= 0){
-    purgeTimerEl.textContent = "00:00";
-    executePurge();
-    const freshTarget = Date.now() + PURGE_MS;
-    setDoc(systemStateDocRef, { targetTime: freshTarget, paused: false }, { merge: true }).catch(()=>{});
-    return;
-  }
-
-  const mins = Math.floor(remaining / 60000);
-  const secs = Math.floor((remaining % 60000) / 1000);
-  purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-}
-
-const composer = document.getElementById('composer');
-const msgInput = document.getElementById('msgInput');
-
-msgInput.addEventListener('input', () => {
-  playKeyClickSound();
-  if(msgInput.value.trim()){
-    startTyping();
-  }else{
-    stopTyping();
-  }
-});
-
-composer.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = msgInput.value;
-  msgInput.value = '';
-  stopTyping();
-  sendMessage(text);
-  msgInput.focus();
-});
-
-msgInput.addEventListener('blur', () => { stopTyping(); });
 
 let chatInitialized = false;
 let lastMessageCount = 0;
 
-async function initChat(){
+function initChat(){
   if(chatInitialized) return;
   chatInitialized = true;
-
-  await initPurgeState();
 
   if("Notification" in window && Notification.permission !== "granted"){
     Notification.requestPermission();
   }
 
-  // الاستماع اللحظي لتغييرات حالة العداد من الفايرستور لكل الأجهزة
-  onSnapshot(systemStateDocRef, (snap) => {
-    if(snap.exists()){
-      const data = snap.data();
-      cloudPurgePaused = !!data.paused;
-      if(typeof data.targetTime === 'number'){
-        targetPurgeTime = data.targetTime;
-      }
-    }
-  }, (err) => console.error("purge state listener error:", err));
-
-  onSnapshot(messagesQuery, (snapshot) => {
-    if (lastMessageCount > 0 && snapshot.docs.length > lastMessageCount) {
+  onSnapshot(query(messagesCol, orderBy("ts")), (snapshot) => {
+    if(lastMessageCount > 0 && snapshot.docs.length > lastMessageCount){
       const newestDoc = snapshot.docs[snapshot.docs.length - 1].data();
-      if (newestDoc && newestDoc.type !== 'system' && newestDoc.userId !== myId) {
+      if(newestDoc && newestDoc.type !== 'system' && newestDoc.userId !== myId){
         playNotificationSound();
-        if ("vibrate" in navigator) {
-          navigator.vibrate([100, 50, 100]);
-        }
-        if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-          new Notification(`LIME DEVIL // ${newestDoc.user}`, {
-            body: newestDoc.text || "New encrypted transmission received.",
-            icon: ""
-          });
+        if("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
+        if(document.hidden && "Notification" in window && Notification.permission === "granted"){
+          new Notification(`LIME DEVIL // ${newestDoc.user}`, { body: newestDoc.text || "New message received." });
         }
       }
     }
@@ -1206,96 +901,102 @@ async function initChat(){
     feed.innerHTML = '';
     snapshot.forEach(docSnap => renderMessageDoc(docSnap.data()));
     scrollToBottom();
-  }, (err) => {
-    console.error("messages listener error:", err);
-    feed.innerHTML = '<div class="sys-msg">[ CONNECTION ERROR — CHECK FIRESTORE RULES/CONFIG ]</div>';
   });
 
   onSnapshot(presenceCol, (snapshot) => {
+    let active = 0, html = '';
     const now = Date.now();
-    let active = 0;
-    let onlineUsersHTML = '';
-
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      if(data && typeof data.lastSeen === 'number' && (now - data.lastSeen) < PRESENCE_STALE_MS){
+    snapshot.forEach(d => {
+      const data = d.data();
+      if(data && (now - data.lastSeen) < 20000){
         active++;
-        onlineUsersHTML += `<div class="online-user-item" style="color: ${data.color || '#39FF14'}">◈ ${escapeHTML(data.user || 'UNKNOWN')}</div>`;
+        html += `<div class="online-user-item" style="color:${data.color}">◈ ${escapeHTML(data.user)}</div>`;
       }
     });
+    document.getElementById('userCount').textContent = Math.max(1, active);
+    document.getElementById('onlineUsersList').innerHTML = html || '<div class="online-user-item">No other nodes active.</div>';
+  });
 
-    userCountEl.textContent = Math.max(1, active);
-    onlineUsersList.innerHTML = onlineUsersHTML || '<div class="online-user-item">No other nodes active.</div>';
-  }, (err) => console.error("presence listener error:", err));
+  onSnapshot(typingCol, renderTyping);
 
-  initTypingListener();
+  onSnapshot(purgeRef, (snap) => {
+    if(snap.exists() && typeof snap.data().purgeStart === 'number'){
+      purgeStart = snap.data().purgeStart;
+    } else {
+      setDoc(purgeRef, { purgeStart: Date.now() }).catch(()=>{});
+    }
+  });
 
   setInterval(tickPurge, 1000);
   tickPurge();
-  heartbeat();
-  setInterval(heartbeat, 5000);
+  setInterval(() => setDoc(doc(presenceCol, myId), { user: myName, color: myColor, lastSeen: Date.now() }), 5000);
   pushSystemMessage(`[ ${myName} HAS JOINED THE NODE ]`);
 }
 
 const lockScreen = document.getElementById('lockScreen');
 const passInput = document.getElementById('passInput');
-const unlockBtn = document.getElementById('unlockBtn');
 const lockError = document.getElementById('lockError');
 const lockBox = document.querySelector('.lock-box');
-const appEl = document.getElementById('app');
 
 async function attemptUnlock(){
   if(passInput.value.trim() !== PASSWORD){
     lockError.textContent = "ACCESS DENIED — INVALID CLEARANCE CODE";
-    lockBox.classList.remove('shake');
-    void lockBox.offsetWidth;
     lockBox.classList.add('shake');
+    setTimeout(() => lockBox.classList.remove('shake'), 350);
     passInput.value = '';
     return;
   }
-
-  unlockBtn.disabled = true;
-  lockError.textContent = "AUTHENTICATING NODE";
-  lockError.style.color = "var(--lime-glow)";
-
-  try{
-    await signInAnonymously(auth);
-  }catch(e){
-    console.error("auth error:", e);
-    lockError.textContent = "CONNECTION FAILED — CHECK NETWORK / FIREBASE CONFIG";
-    lockError.style.color = "var(--crimson)";
-    unlockBtn.disabled = false;
-    return;
-  }
-
+  try { await signInAnonymously(auth); } catch(e){}
   lockScreen.classList.add('lock-dissolve');
   setTimeout(() => {
     lockScreen.style.display = 'none';
-    appEl.style.display = 'flex';
+    document.getElementById('app').style.display = 'flex';
     initChat();
-    msgInput.focus();
+    document.getElementById('msgInput').focus();
   }, 680);
 }
 
-unlockBtn.addEventListener('click', attemptUnlock);
+document.getElementById('unlockBtn').addEventListener('click', attemptUnlock);
 passInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attemptUnlock(); });
-passInput.addEventListener('input', () => { lockError.textContent = ''; lockError.style.color = "var(--crimson)"; });
 
-function handleUserExit() {
-  if(chatInitialized){
-    deleteDoc(doc(presenceCol, myId)).catch(() => {});
-    deleteDoc(doc(typingCol, myId)).catch(() => {});
-  }
-}
+document.getElementById('openUsersModalBtn').addEventListener('click', () => document.getElementById('usersModal').style.display = 'flex');
+document.getElementById('closeUsersModal').addEventListener('click', () => document.getElementById('usersModal').style.display = 'none');
 
-window.addEventListener('beforeunload', handleUserExit);
-window.addEventListener('pagehide', handleUserExit);
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    handleUserExit();
+const msgInput = document.getElementById('msgInput');
+const fileInput = document.getElementById('fileInput');
+const fileUploadBtn = document.getElementById('fileUploadBtn');
+
+msgInput.addEventListener('input', () => {
+  playKeyClickSound();
+  if(msgInput.value.trim()) startTyping(); else stopTyping();
+});
+
+fileUploadBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files[0];
+  if(!file) return;
+  try {
+    fileUploadBtn.textContent = "⌛";
+    const fileRef = sRef(storage, `uploads/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const downloadUrl = await getDownloadURL(fileRef);
+    await sendMessage(file.name, downloadUrl);
+    fileInput.value = '';
+  } catch(e) {
+    alert("FILE UPLOAD FAILED");
+  } finally {
+    fileUploadBtn.textContent = "📁";
   }
 });
 
+document.getElementById('composer').addEventListener('submit', (e) => {
+  e.preventDefault();
+  sendMessage(msgInput.value);
+  msgInput.value = '';
+  stopTyping();
+  msgInput.focus();
+});
 </script>
 </body>
 </html>
