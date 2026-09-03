@@ -351,6 +351,15 @@
     50%{ opacity:0.25; }
   }
 
+  #purgeTimerContainer {
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #purgeTimerContainer:hover {
+    border-color: var(--crimson);
+    box-shadow: 0 0 10px rgba(255,23,68,0.4);
+  }
+
   #purgeTimer{
     color:var(--crimson);
     text-shadow:0 0 8px rgba(255,23,68,0.7);
@@ -638,8 +647,8 @@
         <span class="dot"></span>
         <span id="userCount">1</span> ONLINE
       </div>
-      <div class="stat-chip">
-        SYSTEM PURGE IN: <span id="purgeTimer">10:00</span>
+      <div class="stat-chip clickable" id="purgeTimerContainer" title="Click to disable auto-purge">
+        PURGE IN: <span id="purgeTimer">10:00</span>
       </div>
       <div class="stat-chip" id="myNameChip">YOU: —</div>
       <button id="emergencyBtn" type="button">EMERGENCY</button>
@@ -739,9 +748,10 @@ function drawMatrix(){
 }
 drawMatrix();
 
-const PASSWORD = "1280";
+const PASSWORD = "181"; // تم تغيير باسورد دخول الموقع إلى 181
 const PURGE_MS = 10 * 60 * 1000;
 const EMERGENCY_PASSWORD = "101";
+const PURGE_DISABLE_PASSWORD = "1280"; // باسورد إيقاف الحذف التلقائي
 
 const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static"];
 function generateCodename(){
@@ -801,11 +811,31 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
 });
 
 const purgeTimerEl = document.getElementById('purgeTimer');
+const purgeTimerContainer = document.getElementById('purgeTimerContainer');
 let purgeStart = Date.now();
 let purging = false;
+let purgeDisabled = false;
+
+// إيقاف العداد والحذف التلقائي عند الضغط عليه
+purgeTimerContainer.addEventListener('click', async () => {
+  if (purgeDisabled) {
+    alert("AUTO-PURGE IS ALREADY DISABLED.");
+    return;
+  }
+  const pwd = prompt("ENTER CLEARANCE CODE (1280) TO DISABLE AUTO-PURGE:");
+  if (pwd !== PURGE_DISABLE_PASSWORD) {
+    if (pwd !== null) alert("ACCESS DENIED — INVALID CODE");
+    return;
+  }
+  purgeDisabled = true;
+  purgeTimerEl.textContent = "DISABLED";
+  purgeTimerContainer.style.borderColor = "var(--lime-glow)";
+  purgeTimerContainer.style.boxShadow = "0 0 12px rgba(0,255,102,0.4)";
+  await pushSystemMessage("[ SYSTEM ALERT: AUTO-PURGE PERMANENTLY DISABLED BY NODE ADMIN ]");
+});
 
 async function tryPurge(){
-  if(purging) return;
+  if(purging || purgeDisabled) return;
   purging = true;
   try {
     const didPurge = await runTransaction(db, async (tx) => {
@@ -828,6 +858,7 @@ async function tryPurge(){
 }
 
 function tickPurge(){
+  if (purgeDisabled) return;
   const remaining = PURGE_MS - (Date.now() - purgeStart);
   if(remaining <= 0){
     purgeTimerEl.textContent = "00:00";
