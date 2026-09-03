@@ -450,15 +450,6 @@
   .msg-time{ color:#5a6a5a; }
   .msg-text{ font-size:14px; word-break:break-word; line-height:1.4; color:#dfffe0; }
 
-  .msg-img {
-    max-width: 100%;
-    max-height: 220px;
-    border-radius: 4px;
-    margin-top: 6px;
-    border: 1px solid var(--lime-dim);
-    display: block;
-  }
-
   #typingIndicator{
     min-height:20px;
     padding:0 16px 4px;
@@ -509,23 +500,6 @@
   #msgInput:focus{
     border-color:var(--lime-glow);
     box-shadow:0 0 14px rgba(0,255,102,0.35);
-  }
-
-  #fileUploadBtn {
-    background: var(--panel-2);
-    border: 1px solid var(--lime-dim);
-    color: var(--lime-glow);
-    font-family: var(--mono);
-    font-weight: 800;
-    padding: 0 14px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: transform 0.1s, box-shadow 0.15s;
-  }
-  #fileUploadBtn:hover {
-    box-shadow: 0 0 12px rgba(57,255,20,0.4);
-    border-color: var(--lime-glow);
   }
 
   #sendBtn{
@@ -647,7 +621,7 @@
         <span class="dot"></span>
         <span id="userCount">1</span> ONLINE
       </div>
-      <div class="stat-chip clickable" id="purgeTimerContainer" title="Click to disable auto-purge">
+      <div class="stat-chip clickable" id="purgeTimerContainer" title="Click to toggle auto-purge">
         PURGE IN: <span id="purgeTimer">10:00</span>
       </div>
       <div class="stat-chip" id="myNameChip">YOU: —</div>
@@ -660,8 +634,6 @@
   <div id="typingIndicator"></div>
 
   <form id="composer" autocomplete="off">
-    <input type="file" id="fileInput" accept="image/*" style="display:none;">
-    <button type="button" id="fileUploadBtn" title="Attach Image">📁</button>
     <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
     <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
@@ -675,7 +647,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
@@ -690,7 +661,6 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
-const storage = getStorage(fbApp);
 
 const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
@@ -776,13 +746,9 @@ function renderMessageDoc(m){
   }
   const el = document.createElement('div');
   el.className = 'msg' + (m.userId === myId ? ' mine' : '');
-  let contentHtml = `<div class="msg-text"></div>`;
-  if(m.fileUrl){
-    contentHtml += `<img src="${escapeHTML(m.fileUrl)}" class="msg-img" alt="attachment">`;
-  }
   el.innerHTML = `
     <div class="msg-meta"><span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span><span class="msg-time">${fmtTime(m.ts)}</span></div>
-    ${contentHtml}
+    <div class="msg-text"></div>
   `;
   el.querySelector('.msg-text').textContent = m.text;
   feed.appendChild(el);
@@ -792,10 +758,10 @@ function scrollToBottom(){ feed.scrollTop = feed.scrollHeight; }
 async function pushSystemMessage(text){
   try { await addDoc(messagesCol, { type:'system', text, ts:Date.now() }); } catch(e){}
 }
-async function sendMessage(text, fileUrl = null){
+async function sendMessage(text){
   text = text.trim();
-  if(!text && !fileUrl) return;
-  try { await addDoc(messagesCol, { type:'msg', user:myName, userId:myId, color:myColor, text, fileUrl, ts:Date.now() }); } catch(e){}
+  if(!text) return;
+  try { await addDoc(messagesCol, { type:'msg', user:myName, userId:myId, color:myColor, text, ts:Date.now() }); } catch(e){}
 }
 
 document.getElementById("emergencyBtn").addEventListener("click", async () => {
@@ -816,20 +782,21 @@ let purgeStart = Date.now();
 let purging = false;
 let purgeDisabled = false;
 
-// تعطيل العداد وحفظ الحالة في قاعدة البيانات لتسمع في كل الأجهزة
 purgeTimerContainer.addEventListener('click', async () => {
-  if (purgeDisabled) {
-    alert("AUTO-PURGE IS ALREADY DISABLED.");
-    return;
-  }
-  const pwd = prompt("ENTER CLEARANCE CODE (1280) TO DISABLE AUTO-PURGE:");
+  const actionName = purgeDisabled ? "ENABLE" : "DISABLE";
+  const pwd = prompt(`ENTER CLEARANCE CODE (1280) TO ${actionName} AUTO-PURGE:`);
   if (pwd !== PURGE_DISABLE_PASSWORD) {
     if (pwd !== null) alert("ACCESS DENIED — INVALID CODE");
     return;
   }
   try {
-    await updateDoc(purgeRef, { disabled: true });
-    await pushSystemMessage("[ SYSTEM ALERT: AUTO-PURGE PERMANENTLY DISABLED BY NODE ADMIN ]");
+    const newState = !purgeDisabled;
+    const updates = { disabled: newState };
+    if (!newState) {
+      updates.purgeStart = Date.now();
+    }
+    await updateDoc(purgeRef, updates);
+    await pushSystemMessage(`[ SYSTEM ALERT: AUTO-PURGE ${newState ? 'DISABLED' : 'RE-ENABLED'} BY NODE ADMIN ]`);
   } catch(e) {
     alert("FAILED TO UPDATE SERVER STATE");
   }
@@ -960,8 +927,8 @@ function initChat(){
       if(data.disabled === true){
         purgeDisabled = true;
         purgeTimerEl.textContent = "DISABLED";
-        purgeTimerContainer.style.borderColor = "var(--lime-glow)";
-        purgeTimerContainer.style.boxShadow = "0 0 12px rgba(0,255,102,0.4)";
+        purgeTimerContainer.style.borderColor = "var(--crimson)";
+        purgeTimerContainer.style.boxShadow = "0 0 12px rgba(255,23,68,0.4)";
       } else {
         purgeDisabled = false;
         purgeTimerContainer.style.borderColor = "";
@@ -1008,31 +975,10 @@ document.getElementById('openUsersModalBtn').addEventListener('click', () => doc
 document.getElementById('closeUsersModal').addEventListener('click', () => document.getElementById('usersModal').style.display = 'none');
 
 const msgInput = document.getElementById('msgInput');
-const fileInput = document.getElementById('fileInput');
-const fileUploadBtn = document.getElementById('fileUploadBtn');
 
 msgInput.addEventListener('input', () => {
   playKeyClickSound();
   if(msgInput.value.trim()) startTyping(); else stopTyping();
-});
-
-fileUploadBtn.addEventListener('click', () => fileInput.click());
-
-fileInput.addEventListener('change', async () => {
-  const file = fileInput.files[0];
-  if(!file) return;
-  try {
-    fileUploadBtn.textContent = "⌛";
-    const fileRef = sRef(storage, `uploads/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    const downloadUrl = await getDownloadURL(fileRef);
-    await sendMessage(file.name, downloadUrl);
-    fileInput.value = '';
-  } catch(e) {
-    alert("FILE UPLOAD FAILED");
-  } finally {
-    fileUploadBtn.textContent = "📁";
-  }
 });
 
 document.getElementById('composer').addEventListener('submit', (e) => {
