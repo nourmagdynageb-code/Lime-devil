@@ -673,7 +673,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
@@ -748,10 +748,10 @@ function drawMatrix(){
 }
 drawMatrix();
 
-const PASSWORD = "181"; // تم تغيير باسورد دخول الموقع إلى 181
+const PASSWORD = "181";
 const PURGE_MS = 10 * 60 * 1000;
 const EMERGENCY_PASSWORD = "101";
-const PURGE_DISABLE_PASSWORD = "1280"; // باسورد إيقاف الحذف التلقائي
+const PURGE_DISABLE_PASSWORD = "1280";
 
 const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static"];
 function generateCodename(){
@@ -816,7 +816,7 @@ let purgeStart = Date.now();
 let purging = false;
 let purgeDisabled = false;
 
-// إيقاف العداد والحذف التلقائي عند الضغط عليه
+// تعطيل العداد وحفظ الحالة في قاعدة البيانات لتسمع في كل الأجهزة
 purgeTimerContainer.addEventListener('click', async () => {
   if (purgeDisabled) {
     alert("AUTO-PURGE IS ALREADY DISABLED.");
@@ -827,11 +827,12 @@ purgeTimerContainer.addEventListener('click', async () => {
     if (pwd !== null) alert("ACCESS DENIED — INVALID CODE");
     return;
   }
-  purgeDisabled = true;
-  purgeTimerEl.textContent = "DISABLED";
-  purgeTimerContainer.style.borderColor = "var(--lime-glow)";
-  purgeTimerContainer.style.boxShadow = "0 0 12px rgba(0,255,102,0.4)";
-  await pushSystemMessage("[ SYSTEM ALERT: AUTO-PURGE PERMANENTLY DISABLED BY NODE ADMIN ]");
+  try {
+    await updateDoc(purgeRef, { disabled: true });
+    await pushSystemMessage("[ SYSTEM ALERT: AUTO-PURGE PERMANENTLY DISABLED BY NODE ADMIN ]");
+  } catch(e) {
+    alert("FAILED TO UPDATE SERVER STATE");
+  }
 });
 
 async function tryPurge(){
@@ -840,9 +841,10 @@ async function tryPurge(){
   try {
     const didPurge = await runTransaction(db, async (tx) => {
       const snap = await tx.get(purgeRef);
+      if (snap.exists() && snap.data().disabled === true) return false;
       const start = (snap.exists() && typeof snap.data().purgeStart === 'number') ? snap.data().purgeStart : 0;
       if(Date.now() - start >= PURGE_MS){
-        tx.set(purgeRef, { purgeStart: Date.now() });
+        tx.set(purgeRef, { purgeStart: Date.now(), disabled: false }, { merge: true });
         return true;
       }
       return false;
@@ -951,10 +953,22 @@ function initChat(){
   onSnapshot(typingCol, renderTyping);
 
   onSnapshot(purgeRef, (snap) => {
-    if(snap.exists() && typeof snap.data().purgeStart === 'number'){
-      purgeStart = snap.data().purgeStart;
+    if(snap.exists()){
+      const data = snap.data();
+      if(typeof data.purgeStart === 'number') purgeStart = data.purgeStart;
+      
+      if(data.disabled === true){
+        purgeDisabled = true;
+        purgeTimerEl.textContent = "DISABLED";
+        purgeTimerContainer.style.borderColor = "var(--lime-glow)";
+        purgeTimerContainer.style.boxShadow = "0 0 12px rgba(0,255,102,0.4)";
+      } else {
+        purgeDisabled = false;
+        purgeTimerContainer.style.borderColor = "";
+        purgeTimerContainer.style.boxShadow = "";
+      }
     } else {
-      setDoc(purgeRef, { purgeStart: Date.now() }).catch(()=>{});
+      setDoc(purgeRef, { purgeStart: Date.now(), disabled: false }).catch(()=>{});
     }
   });
 
