@@ -741,7 +741,7 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDocs, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -761,6 +761,7 @@ const auth = getAuth(fbApp);
 const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
 const typingCol = collection(db, "typing");
+const systemStateDocRef = doc(db, "system", "purgeState");
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -828,7 +829,7 @@ function drawMatrix(){
 drawMatrix();
 
 const PASSWORD = "181";          // باسورد دخول الموقع
-const PURGE_PASSWORD = "1280";   // باسورد الميزة الجديدة (التحكم في العداد)
+const PURGE_PASSWORD = "1280";   // باسورد التحكم في العداد
 const EMERGENCY_PASSWORD = "101";// باسورد الطوارئ
 
 const PURGE_MS = 10 * 60 * 1000;
@@ -1046,33 +1047,52 @@ function initTypingListener(){
 const purgeTimerEl = document.getElementById('purgeTimer');
 const togglePurgeBtn = document.getElementById('togglePurgeBtn');
 
-// استرجاع حالة الوقف مؤقتاً من الـ localStorage لو كانت محفوظة قبل الريفريش
-let purgePaused = localStorage.getItem('lime_purge_paused') === 'true';
-let purgeStart = parseInt(localStorage.getItem('lime_purge_start')) || Date.now();
+// متغيرات العداد المزامنة جماعياً من السيرفر
+let cloudPurgePaused = false;
+let cloudPurgeStart = Date.now();
 
-// لو مفيش وقت مخزن قبل كده، خزنه
-if(!localStorage.getItem('lime_purge_start')){
-  localStorage.setItem('lime_purge_start', purgeStart);
+async function initPurgeState(){
+  try{
+    const snap = await getDoc(systemStateDocRef);
+    if(!snap.exists()){
+      // لو أول مرة مش منشورة على الفايرستور، ننشئها
+      await setDoc(systemStateDocRef, {
+        paused: false,
+        purgeStart: Date.now()
+      });
+    }
+  }catch(e){
+    console.error("init purge state error:", e);
+  }
 }
 
-togglePurgeBtn.addEventListener('click', () => {
+togglePurgeBtn.addEventListener('click', async () => {
   const pwd = prompt("ENTER PASSWORD TO TOGGLE AUTO-PURGE:");
   if(pwd === null) return;
   if(pwd !== PURGE_PASSWORD){
     alert("ACCESS DENIED");
     return;
   }
-  purgePaused = !purgePaused;
-  localStorage.setItem('lime_purge_paused', purgePaused);
 
-  if(purgePaused){
-    alert("AUTO-PURGE PAUSED");
-    pushSystemMessage("[ SYSTEM PURGE PAUSED BY ADMIN ]");
-  } else {
-    purgeStart = Date.now();
-    localStorage.setItem('lime_purge_start', purgeStart);
-    alert("AUTO-PURGE RESUMED");
-    pushSystemMessage("[ SYSTEM PURGE RESUMED ]");
+  const newPausedState = !cloudPurgePaused;
+  const newStartVal = Date.now();
+
+  try{
+    await setDoc(systemStateDocRef, {
+      paused: newPausedState,
+      purgeStart: newStartVal
+    }, { merge: true });
+
+    if(newPausedState){
+      alert("AUTO-PURGE PAUSED");
+      pushSystemMessage("[ SYSTEM PURGE PAUSED BY ADMIN ]");
+    } else {
+      alert("AUTO-PURGE RESUMED");
+      pushSystemMessage("[ SYSTEM PURGE RESUMED ]");
+    }
+  }catch(e){
+    console.error("toggle purge error:", e);
+    alert("FAILED TO UPDATE PURGE STATE");
   }
 });
 
@@ -1089,16 +1109,16 @@ async function executePurge(){
 }
 
 function tickPurge(){
-  if(purgePaused){
+  if(cloudPurgePaused){
     purgeTimerEl.textContent = "PAUSED";
     return;
   }
-  const remaining = PURGE_MS - (Date.now() - purgeStart);
+  const remaining = PURGE_MS - (Date.now() - cloudPurgeStart);
   if(remaining <= 0){
     purgeTimerEl.textContent = "00:00";
     executePurge();
-    purgeStart = Date.now();
-    localStorage.setItem('lime_purge_start', purgeStart);
+    const freshStart = Date.now();
+    setDoc(systemStateDocRef, { purgeStart: freshStart }, { merge: true }).catch(()=>{});
     return;
   }
   const mins = Math.floor(remaining / 60000);
@@ -1132,13 +1152,26 @@ msgInput.addEventListener('blur', () => { stopTyping(); });
 let chatInitialized = false;
 let lastMessageCount = 0;
 
-function initChat(){
+async function initChat(){
   if(chatInitialized) return;
   chatInitialized = true;
+
+  await initPurgeState();
 
   if("Notification" in window && Notification.permission !== "granted"){
     Notification.requestPermission();
   }
+
+  // الاستماع لحالة العداد المتزامنة من الفايرستور (عشان أي تليفون يشوف نفس الـ Pause والوقت بالضبط)
+  onSnapshot(systemStateDocRef, (snap) => {
+    if(snap.exists()){
+      const data = snap.data();
+      cloudPurgePaused = !!data.paused;
+      if(typeof data.purgeStart === 'number'){
+        cloudPurgeStart = data.purgeStart;
+      }
+    }
+  }, (err) => console.error("purge state listener error:", err));
 
   onSnapshot(messagesQuery, (snapshot) => {
     if (lastMessageCount > 0 && snapshot.docs.length > lastMessageCount) {
