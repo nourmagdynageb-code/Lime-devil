@@ -667,7 +667,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -800,7 +800,7 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
   } catch(e){ alert("WIPE FAILED"); }
 });
 
-// زر الـ Lock: يرسل التوقيت الجديد لجميع المتصلين في نفس اللحظة
+// زر الـ Lock: يقوم بتغيير رقم الـ version في المستند إجبارياً ليجبر الكل على الخروج
 document.getElementById("lockBtn").addEventListener("click", async () => {
   const pwd = prompt("ENTER LOCK PASSWORD:");
   if(pwd !== LOCK_BUTTON_PASSWORD) {
@@ -808,10 +808,12 @@ document.getElementById("lockBtn").addEventListener("click", async () => {
     return;
   }
   try {
-    await setDoc(globalLockRef, { trigger: Date.now() });
-    setTimeout(async () => {
-      try { await deleteDoc(globalLockRef); } catch(err){}
-    }, 1500);
+    const snap = await getDoc(globalLockRef);
+    let currentVer = 0;
+    if(snap.exists() && typeof snap.data().version === 'number'){
+      currentVer = snap.data().version;
+    }
+    await setDoc(globalLockRef, { version: currentVer + 1 });
   } catch(e) {
     alert("FAILED TO EXECUTE LOCK COMMAND");
   }
@@ -980,12 +982,25 @@ function initChat(){
     }
   });
 
-  // الاستماع لأمر القفل الشامل وطرد كل المتصلين في نفس اللحظة
-  const pageOpenTime = Date.now();
+  // نظام مراقبة القفل الشامل المحدث (إصدار يعتمد على التغيير المباشر لنسخة القفل)
+  let initialLockCheck = true;
+  let baseLockVersion = null;
+
   onSnapshot(globalLockRef, (snap) => {
+    if(initialLockCheck){
+      initialLockCheck = false;
+      if(snap.exists() && typeof snap.data().version === 'number'){
+        baseLockVersion = snap.data().version;
+      } else {
+        baseLockVersion = 0;
+      }
+      return;
+    }
+
     if(snap.exists()){
       const data = snap.data();
-      if(data && data.trigger && data.trigger > pageOpenTime){
+      const newVersion = typeof data.version === 'number' ? data.version : 0;
+      if(baseLockVersion !== null && newVersion > baseLockVersion){
         window.location.reload();
       }
     }
