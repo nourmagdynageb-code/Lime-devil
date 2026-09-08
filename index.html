@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>LIME DEVIL // encrypted terminal</title>
 
+<!-- مكتبة معرفة نوع الجهاز والمتصفح بدقة -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/UAParser.js/1.0.37/ua-parser.min.js"></script>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&display=swap');
 
@@ -297,15 +300,15 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px;
-    padding:12px 18px;
+    gap:10px;
+    padding:10px 14px;
     background:linear-gradient(180deg, #0a0c0a, #060706);
     border-bottom:1px solid var(--lime-dim);
     flex-wrap:wrap;
   }
 
   .logo{
-    font-size:22px;
+    font-size:20px;
     font-weight:800;
     letter-spacing:2px;
   }
@@ -313,8 +316,8 @@
   .header-stats{
     display:flex;
     align-items:center;
-    gap:16px;
-    font-size:12px;
+    gap:10px;
+    font-size:11px;
     flex-wrap:wrap;
   }
 
@@ -322,7 +325,7 @@
     background:var(--panel-2);
     border:1px solid var(--lime-dim);
     border-radius:20px;
-    padding:6px 12px;
+    padding:5px 10px;
     display:flex;
     align-items:center;
     gap:6px;
@@ -366,39 +369,13 @@
     font-weight:700;
   }
 
-  #emergencyBtn{
-    background:var(--crimson);
-    border:1px solid var(--crimson);
-    color:#fff;
-    font-family:var(--mono);
-    font-weight:800;
-    padding:6px 12px;
-    border-radius:4px;
-    cursor:pointer;
-    letter-spacing:1px;
-    box-shadow:0 0 10px rgba(255,23,68,0.35);
-    transition:transform 0.1s, box-shadow 0.15s;
-  }
-
-  #emergencyBtn:hover{
-    box-shadow:0 0 18px rgba(255,23,68,0.75);
-    transform:translateY(-1px);
-  }
-
-  #emergencyBtn:disabled{
-    opacity:0.55;
-    cursor:not-allowed;
-    transform:none;
-  }
-
-  /* LOCK BUTTON STYLE */
-  #lockBtn{
+  .action-btn{
     background:var(--panel-2);
     border:1px solid var(--lime-dim);
     color:var(--lime-glow);
     font-family:var(--mono);
     font-weight:800;
-    padding:6px 12px;
+    padding:5px 10px;
     border-radius:4px;
     cursor:pointer;
     letter-spacing:1px;
@@ -406,10 +383,21 @@
     transition:transform 0.1s, box-shadow 0.15s, border-color 0.15s;
   }
 
-  #lockBtn:hover{
+  .action-btn:hover{
     border-color:var(--lime-glow);
     box-shadow:0 0 16px rgba(57,255,20,0.6);
     transform:translateY(-1px);
+  }
+
+  #emergencyBtn{
+    background:var(--crimson);
+    border:1px solid var(--crimson);
+    color:#fff;
+    box-shadow:0 0 10px rgba(255,23,68,0.35);
+  }
+  #emergencyBtn:hover{
+    box-shadow:0 0 18px rgba(255,23,68,0.75);
+    border-color:var(--crimson);
   }
 
   main{
@@ -549,22 +537,26 @@
     letter-spacing:1px;
   }
 
-  #usersModal {
+  /* Modals (Generic) */
+  .custom-modal {
     position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.85);
     display: none;
     align-items: center;
     justify-content: center;
   }
-  .users-modal-box {
-    width: min(90vw, 380px);
+  .modal-box {
+    width: min(92vw, 480px);
     background: linear-gradient(180deg, var(--panel), #08090a);
     border: 1px solid var(--lime-dim);
     border-radius: 6px;
     padding: 20px;
     box-shadow: 0 0 30px rgba(57,255,20,0.2);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
   }
-  .users-modal-title {
+  .modal-title {
     font-size: 14px;
     font-weight: 800;
     color: var(--lime-glow);
@@ -573,28 +565,34 @@
     border-bottom: 1px dashed var(--lime-dim);
     padding-bottom: 6px;
   }
-  #onlineUsersList {
-    max-height: 200px;
+  .modal-content-area {
+    flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     font-size: 12px;
     margin-bottom: 16px;
   }
-  .online-user-item {
+  .log-item {
     background: var(--panel-2);
-    padding: 6px 10px;
+    padding: 8px 10px;
     border-radius: 4px;
-    border-left: 2px solid var(--lime-dim);
+    border-left: 3px solid var(--lime-dim);
+    line-height: 1.4;
   }
+  .log-item.failed {
+    border-left-color: var(--crimson);
+    background: rgba(255,23,68,0.04);
+  }
+  .log-time { color: #788a78; font-size: 10px; }
   .close-modal-btn {
     width: 100%;
     background: var(--panel-2);
     border: 1px solid var(--lime-dim);
     color: var(--text);
     font-family: var(--mono);
-    padding: 8px;
+    padding: 9px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 700;
@@ -613,11 +611,21 @@
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<div id="usersModal">
-  <div class="users-modal-box">
-    <div class="users-modal-title">// ACTIVE NODES IN NETWORK</div>
-    <div id="onlineUsersList"></div>
-    <button class="close-modal-btn" id="closeUsersModal">CLOSE [X]</button>
+<!-- Modal نافذة الأونلاين -->
+<div id="usersModal" class="custom-modal">
+  <div class="modal-box">
+    <div class="modal-title">// ACTIVE NODES IN NETWORK</div>
+    <div id="onlineUsersList" class="modal-content-area"></div>
+    <button class="close-modal-btn" data-modal="usersModal">CLOSE [X]</button>
+  </div>
+</div>
+
+<!-- Modal نافذة سجلات الدخول الأمنية -->
+<div id="logsModal" class="custom-modal">
+  <div class="modal-box" style="width:min(94vw, 540px);">
+    <div class="modal-title">// SECURITY ACCESS LOGS (LOGIN ATTEMPTS)</div>
+    <div id="accessLogsList" class="modal-content-area"></div>
+    <button class="close-modal-btn" data-modal="logsModal">CLOSE [X]</button>
   </div>
 </div>
 
@@ -627,7 +635,7 @@
     <div class="lock-sub">// encrypted node access required</div>
     <div class="hint-line">[ CLEARANCE CODE REQUIRED ]</div>
     <div class="pass-row">
-      <input type="password" id="passInput" maxlength="8" placeholder="••••" autocomplete="off">
+      <input type="password" id="passInput" maxlength="16" placeholder="••••" autocomplete="off">
       <button id="unlockBtn">UNLOCK</button>
     </div>
     <div class="lock-error" id="lockError"></div>
@@ -645,9 +653,11 @@
       <div class="stat-chip clickable" id="purgeTimerContainer" title="Click to toggle auto-purge">
         PURGE IN: <span id="purgeTimer">10:00</span>
       </div>
+      <!-- زر logs الجديد المضاف مع باقي الأزرار -->
+      <button class="action-btn" id="openLogsBtn" type="button">LOGS</button>
       <div class="stat-chip" id="myNameChip">YOU: —</div>
-      <button id="emergencyBtn" type="button">EMERGENCY</button>
-      <button id="lockBtn" type="button">LOCK</button>
+      <button class="action-btn" id="emergencyBtn" type="button">EMERGENCY</button>
+      <button class="action-btn" id="lockBtn" type="button">LOCK</button>
     </div>
   </header>
 
@@ -667,7 +677,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc, deleteDoc, getDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -687,6 +697,7 @@ const auth = getAuth(fbApp);
 const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
 const typingCol = collection(db, "typing");
+const accessLogsCol = collection(db, "accessLogs"); // جدول السجلات الأمنية
 const purgeRef = doc(db, "meta", "purge");
 const globalLockRef = doc(db, "meta", "globalLock");
 
@@ -742,6 +753,7 @@ function drawMatrix(){
 drawMatrix();
 
 const PASSWORD = "181";
+const LOGS_PASSWORD = "1312"; // كلمة مرور زر الـ LOGS
 const PURGE_MS = 10 * 60 * 1000;
 const EMERGENCY_PASSWORD = "101";
 const PURGE_DISABLE_PASSWORD = "1280";
@@ -756,8 +768,16 @@ const myColor = ["#39FF14", "#ff1744", "#00eaff", "#ffd600", "#ff6e40", "#b388ff
 const myId = myName + "_" + Math.random().toString(36).slice(2,8);
 document.getElementById('myNameChip').textContent = "YOU: " + myName;
 
+// جلب تفاصيل الجهاز باستخدام UAParser
+const parser = new UAParser();
+const uaResult = parser.getResult();
+const deviceType = uaResult.device.type ? uaResult.device.type.toUpperCase() : "PC/DESKTOP";
+const browserName = uaResult.browser.name || "Unknown Browser";
+const osName = uaResult.os.name || "Unknown OS";
+const deviceSignature = `${deviceType} (${osName} - ${browserName})`;
+
 const feed = document.getElementById('feed');
-function fmtTime(ts){ return new Date(ts).toTimeString().slice(0,8); }
+function fmtTime(ts){ return new Date(ts).toLocaleString(); }
 function escapeHTML(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 function renderMessageDoc(m){
@@ -771,7 +791,7 @@ function renderMessageDoc(m){
   const el = document.createElement('div');
   el.className = 'msg' + (m.userId === myId ? ' mine' : '');
   el.innerHTML = `
-    <div class="msg-meta"><span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span><span class="msg-time">${fmtTime(m.ts)}</span></div>
+    <div class="msg-meta"><span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span><span class="msg-time">${new Date(m.ts).toTimeString().slice(0,8)}</span></div>
     <div class="msg-text"></div>
   `;
   el.querySelector('.msg-text').textContent = m.text;
@@ -788,6 +808,19 @@ async function sendMessage(text){
   try { await addDoc(messagesCol, { type:'msg', user:myName, userId:myId, color:myColor, text, ts:Date.now() }); } catch(e){}
 }
 
+// دالة لتسجيل محاولة الدخول في قاعدة البيانات
+async function logAccessAttempt(status, enteredPass){
+  try {
+    await addDoc(accessLogsCol, {
+      status: status, // 'SUCCESS' أو 'FAILED'
+      enteredCode: enteredPass,
+      device: deviceSignature,
+      codename: myName,
+      ts: Date.now()
+    });
+  } catch(e){}
+}
+
 document.getElementById("emergencyBtn").addEventListener("click", async () => {
   const pwd = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
   if(pwd !== EMERGENCY_PASSWORD) { if(pwd !== null) alert("ACCESS DENIED"); return; }
@@ -800,7 +833,6 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
   } catch(e){ alert("WIPE FAILED"); }
 });
 
-// زر الـ Lock: تحديث رقم الإصدار في المستند لإجبار كل المتصلين على الخروج
 document.getElementById("lockBtn").addEventListener("click", async () => {
   const pwd = prompt("ENTER LOCK PASSWORD:");
   if(pwd !== LOCK_BUTTON_PASSWORD) {
@@ -953,11 +985,11 @@ function initChat(){
       const data = d.data();
       if(data && (now - data.lastSeen) < 20000){
         active++;
-        html += `<div class="online-user-item" style="color:${data.color}">◈ ${escapeHTML(data.user)}</div>`;
+        html += `<div class="log-item" style="border-left-color:${data.color}">◈ ${escapeHTML(data.user)}</div>`;
       }
     });
     document.getElementById('userCount').textContent = Math.max(1, active);
-    document.getElementById('onlineUsersList').innerHTML = html || '<div class="online-user-item">No other nodes active.</div>';
+    document.getElementById('onlineUsersList').innerHTML = html || '<div class="log-item">No other nodes active.</div>';
   });
 
   onSnapshot(typingCol, renderTyping);
@@ -982,7 +1014,6 @@ function initChat(){
     }
   });
 
-  // نظام مراقبة القفل الشامل المحدث لتجاوز الكاش وإجبار الموبايل واللابتوب على الخروج
   let initialLockCheck = true;
   let baseLockVersion = null;
 
@@ -1018,13 +1049,21 @@ const lockError = document.getElementById('lockError');
 const lockBox = document.querySelector('.lock-box');
 
 async function attemptUnlock(){
-  if(passInput.value.trim() !== PASSWORD){
+  const val = passInput.value.trim();
+  if(val !== PASSWORD){
+    // تسجيل محاولة الدخول الفاشلة لمحطة العمل الرئيسية
+    await logAccessAttempt('FAILED_MAIN', val);
+
     lockError.textContent = "ACCESS DENIED — INVALID CLEARANCE CODE";
     lockBox.classList.add('shake');
     setTimeout(() => lockBox.classList.remove('shake'), 350);
     passInput.value = '';
     return;
   }
+
+  // تسجيل محاولة الدخول الناجحة
+  await logAccessAttempt('SUCCESS_MAIN', '****');
+
   try { await signInAnonymously(auth); } catch(e){}
   lockScreen.classList.add('lock-dissolve');
   setTimeout(() => {
@@ -1038,8 +1077,56 @@ async function attemptUnlock(){
 document.getElementById('unlockBtn').addEventListener('click', attemptUnlock);
 passInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') attemptUnlock(); });
 
+// إدارة فتح وإغلاق النوافذ (Modals)
 document.getElementById('openUsersModalBtn').addEventListener('click', () => document.getElementById('usersModal').style.display = 'flex');
-document.getElementById('closeUsersModal').addEventListener('click', () => document.getElementById('usersModal').style.display = 'none');
+
+// زر الـ LOGS يطلب كلمة المرور 1312 أولاً
+document.getElementById('openLogsBtn').addEventListener('click', async () => {
+  const pwd = prompt("ENTER SECURITY LOGS PASSWORD (1312):");
+  if(pwd !== LOGS_PASSWORD){
+    if(pwd !== null) alert("ACCESS DENIED — INVALID LOGS PASSWORD");
+    return;
+  }
+
+  const modal = document.getElementById('logsModal');
+  const container = document.getElementById('accessLogsList');
+  container.innerHTML = '<div class="log-item">Loading security telemetry...</div>';
+  modal.style.display = 'flex';
+
+  try {
+    const q = query(accessLogsCol, orderBy("ts", "desc"), limit(30));
+    const querySnapshot = await getDocs(q);
+    let html = '';
+    if(querySnapshot.empty){
+      html = '<div class="log-item">No access telemetry recorded yet.</div>';
+    } else {
+      querySnapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        const isFailed = d.status.includes('FAILED');
+        html += `
+          <div class="log-item ${isFailed ? 'failed' : ''}">
+            <div style="display:flex; justify-content:space-between; font-weight:700;">
+              <span>STATUS: ${d.status} ${isFailed ? `(Tried: "${escapeHTML(d.enteredCode)}")` : ''}</span>
+              <span class="log-time">${fmtTime(d.ts)}</span>
+            </div>
+            <div style="color:#a5d6a7; margin-top:3px;">DEVICE: ${escapeHTML(d.device)}</div>
+            <div style="color:#81c784; font-size:11px;">CODENAME: ${escapeHTML(d.codename || 'Anonymous')}</div>
+          </div>
+        `;
+      });
+    }
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="log-item" style="color:var(--crimson)">FAILED TO FETCH LOGS FROM FIREBASE.</div>';
+  }
+});
+
+document.querySelectorAll('.close-modal-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const modalId = btn.getAttribute('data-modal');
+    document.getElementById(modalId).style.display = 'none';
+  });
+});
 
 const msgInput = document.getElementById('msgInput');
 
