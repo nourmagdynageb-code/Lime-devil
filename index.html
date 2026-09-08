@@ -800,7 +800,7 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
   } catch(e){ alert("WIPE FAILED"); }
 });
 
-// زر الـ Lock: يقوم بتغيير رقم الـ version في المستند إجبارياً ليجبر الكل على الخروج
+// زر الـ Lock: تحديث رقم الإصدار في المستند لإجبار كل المتصلين على الخروج
 document.getElementById("lockBtn").addEventListener("click", async () => {
   const pwd = prompt("ENTER LOCK PASSWORD:");
   if(pwd !== LOCK_BUTTON_PASSWORD) {
@@ -982,7 +982,7 @@ function initChat(){
     }
   });
 
-  // نظام مراقبة القفل الشامل المحدث (إصدار يعتمد على التغيير المباشر لنسخة القفل)
+  // نظام مراقبة القفل الشامل المحدث لتجاوز الكاش وإجبار الموبايل واللابتوب على الخروج
   let initialLockCheck = true;
   let baseLockVersion = null;
 
@@ -1001,7 +1001,7 @@ function initChat(){
       const data = snap.data();
       const newVersion = typeof data.version === 'number' ? data.version : 0;
       if(baseLockVersion !== null && newVersion > baseLockVersion){
-        window.location.reload();
+        window.location.href = window.location.pathname + '?lock=' + Date.now();
       }
     }
   });
