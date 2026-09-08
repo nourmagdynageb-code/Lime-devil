@@ -391,6 +391,27 @@
     transform:none;
   }
 
+  /* LOCK BUTTON STYLE */
+  #lockBtn{
+    background:var(--panel-2);
+    border:1px solid var(--lime-dim);
+    color:var(--lime-glow);
+    font-family:var(--mono);
+    font-weight:800;
+    padding:6px 12px;
+    border-radius:4px;
+    cursor:pointer;
+    letter-spacing:1px;
+    box-shadow:0 0 8px rgba(57,255,20,0.2);
+    transition:transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+  }
+
+  #lockBtn:hover{
+    border-color:var(--lime-glow);
+    box-shadow:0 0 16px rgba(57,255,20,0.6);
+    transform:translateY(-1px);
+  }
+
   main{
     flex:1;
     overflow-y:auto;
@@ -626,6 +647,7 @@
       </div>
       <div class="stat-chip" id="myNameChip">YOU: —</div>
       <button id="emergencyBtn" type="button">EMERGENCY</button>
+      <button id="lockBtn" type="button">LOCK</button>
     </div>
   </header>
 
@@ -666,6 +688,7 @@ const messagesCol = collection(db, "messages");
 const presenceCol = collection(db, "presence");
 const typingCol = collection(db, "typing");
 const purgeRef = doc(db, "meta", "purge");
+const globalLockRef = doc(db, "meta", "globalLock");
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playKeyClickSound() {
@@ -722,6 +745,7 @@ const PASSWORD = "181";
 const PURGE_MS = 10 * 60 * 1000;
 const EMERGENCY_PASSWORD = "101";
 const PURGE_DISABLE_PASSWORD = "1280";
+const LOCK_BUTTON_PASSWORD = "lime1280";
 
 const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static"];
 function generateCodename(){
@@ -774,6 +798,20 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
     snap.forEach(d => batch.delete(d.ref));
     await batch.commit();
   } catch(e){ alert("WIPE FAILED"); }
+});
+
+// LOCK BUTTON LISTENER
+document.getElementById("lockBtn").addEventListener("click", async () => {
+  const pwd = prompt("ENTER LOCK PASSWORD:");
+  if(pwd !== LOCK_BUTTON_PASSWORD) {
+    if(pwd !== null) alert("ACCESS DENIED — INVALID PASSWORD");
+    return;
+  }
+  try {
+    await setDoc(globalLockRef, { lockTimestamp: Date.now() });
+  } catch(e) {
+    alert("FAILED TO EXECUTE LOCK COMMAND");
+  }
 });
 
 const purgeTimerEl = document.getElementById('purgeTimer');
@@ -936,6 +974,16 @@ function initChat(){
       }
     } else {
       setDoc(purgeRef, { purgeStart: Date.now(), disabled: false }).catch(()=>{});
+    }
+  });
+
+  // LISTEN FOR GLOBAL LOCK TRIGGER TO KICK USERS BACK TO PASSWORD SCREEN
+  onSnapshot(globalLockRef, (snap) => {
+    if(snap.exists()){
+      const lockData = snap.data();
+      if(lockData && lockData.lockTimestamp) {
+        window.location.reload();
+      }
     }
   });
 
