@@ -800,7 +800,7 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
   } catch(e){ alert("WIPE FAILED"); }
 });
 
-// LOCK BUTTON LISTENER (يحدث وقت الضغط فقط ثم يتم مسح الإشارة فوراً لتجنب التعليق)
+// زر الـ Lock: يرسل التوقيت الجديد لجميع المتصلين في نفس اللحظة
 document.getElementById("lockBtn").addEventListener("click", async () => {
   const pwd = prompt("ENTER LOCK PASSWORD:");
   if(pwd !== LOCK_BUTTON_PASSWORD) {
@@ -980,15 +980,14 @@ function initChat(){
     }
   });
 
-  // الاستماع لأمر الخروج اللحظي فقط عند ضغط الزر
-  let initialGlobalLockCheck = true;
+  // الاستماع لأمر القفل الشامل وطرد كل المتصلين في نفس اللحظة
+  const pageOpenTime = Date.now();
   onSnapshot(globalLockRef, (snap) => {
-    if(initialGlobalLockCheck) {
-      initialGlobalLockCheck = false;
-      return;
-    }
     if(snap.exists()){
-      window.location.reload();
+      const data = snap.data();
+      if(data && data.trigger && data.trigger > pageOpenTime){
+        window.location.reload();
+      }
     }
   });
 
