@@ -5,28 +5,29 @@ service cloud.firestore {
 
     match /messages/{messageId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.type in ['msg', 'system']
-        && request.resource.data.ts is number
-        && request.resource.data.expiresAt is timestamp
-        && request.resource.data.expiresAt <= request.time + duration.value(31, 'm');
-
-      // Needed by the browser purge routine.
-      // For production-grade security, move purge deletion to a trusted backend/Cloud Function.
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
       allow delete: if request.auth != null;
-      allow update: if false;
     }
 
     match /presence/{userId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null
-        && request.auth.uid != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    match /typing/{typingId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
     }
 
     match /meta/purge {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
+      allow read, create, update: if request.auth != null;
       allow delete: if false;
+    }
+
+    match /meta/globalLock {
+      allow read, create, update: if request.auth != null;
+      allow delete: if true;
     }
   }
 }
