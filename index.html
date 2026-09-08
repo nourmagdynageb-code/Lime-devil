@@ -667,7 +667,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -800,7 +800,7 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
   } catch(e){ alert("WIPE FAILED"); }
 });
 
-// LOCK BUTTON LISTENER
+// LOCK BUTTON LISTENER (يحدث وقت الضغط فقط ثم يتم مسح الإشارة فوراً لتجنب التعليق)
 document.getElementById("lockBtn").addEventListener("click", async () => {
   const pwd = prompt("ENTER LOCK PASSWORD:");
   if(pwd !== LOCK_BUTTON_PASSWORD) {
@@ -808,7 +808,10 @@ document.getElementById("lockBtn").addEventListener("click", async () => {
     return;
   }
   try {
-    await setDoc(globalLockRef, { lockTimestamp: Date.now() });
+    await setDoc(globalLockRef, { trigger: Date.now() });
+    setTimeout(async () => {
+      try { await deleteDoc(globalLockRef); } catch(err){}
+    }, 1500);
   } catch(e) {
     alert("FAILED TO EXECUTE LOCK COMMAND");
   }
@@ -977,13 +980,15 @@ function initChat(){
     }
   });
 
-  // LISTEN FOR GLOBAL LOCK TRIGGER TO KICK USERS BACK TO PASSWORD SCREEN
+  // الاستماع لأمر الخروج اللحظي فقط عند ضغط الزر
+  let initialGlobalLockCheck = true;
   onSnapshot(globalLockRef, (snap) => {
+    if(initialGlobalLockCheck) {
+      initialGlobalLockCheck = false;
+      return;
+    }
     if(snap.exists()){
-      const lockData = snap.data();
-      if(lockData && lockData.lockTimestamp) {
-        window.location.reload();
-      }
+      window.location.reload();
     }
   });
 
