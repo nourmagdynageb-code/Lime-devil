@@ -609,14 +609,11 @@ body{
 #app{
   position:relative;
   z-index:1;
-
   display:none;
   flex-direction:column;
-
   width:100%;
   height:100vh;
   height:100dvh;
-
   min-height:0;
   overflow:hidden;
 }
@@ -627,22 +624,15 @@ body{
 
 header{
   flex:0 0 auto;
-
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:8px;
-
   width:100%;
-
   padding:10px 12px;
-
   background:linear-gradient(180deg,#0a0c0a,#060706);
-
   border-bottom:1px solid var(--lime-dim);
-
   flex-wrap:wrap;
-
   position:relative;
   z-index:5;
 }
@@ -661,7 +651,6 @@ header{
   font-size:11px;
   flex-wrap:wrap;
   justify-content:flex-end;
-
   min-width:0;
 }
 
@@ -669,13 +658,10 @@ header{
   background:var(--panel-2);
   border:1px solid var(--lime-dim);
   border-radius:20px;
-
   padding:5px 10px;
-
   display:flex;
   align-items:center;
   gap:5px;
-
   letter-spacing:0.5px;
   white-space:nowrap;
 }
@@ -702,35 +688,21 @@ header{
 #unlockBtn,
 #sendBtn{
   background:linear-gradient(135deg,#0d1a0d,#050a05);
-
   border:1px solid var(--lime-dim);
-
   color:var(--lime-glow);
-
   font-family:var(--mono);
   font-weight:800;
-
   padding:7px 11px;
-
   border-radius:6px;
-
   cursor:pointer;
-
   font-size:11px;
-
   letter-spacing:0.5px;
-
   position:relative;
-
   overflow:hidden;
-
-  transition:
-    all 0.2s cubic-bezier(0.4,0,0.2,1);
-
+  transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
   box-shadow:
     0 0 12px rgba(57,255,20,0.08),
     inset 0 0 6px rgba(57,255,20,0.06);
-
   white-space:nowrap;
 }
 
@@ -738,15 +710,11 @@ header{
 #unlockBtn::after,
 #sendBtn::after{
   content:'';
-
   position:absolute;
-
   top:-50%;
   left:-50%;
-
   width:200%;
   height:200%;
-
   background:
     linear-gradient(
       45deg,
@@ -754,9 +722,7 @@ header{
       rgba(57,255,20,0.15),
       transparent
     );
-
   transform:rotate(45deg) translateX(-100%);
-
   transition:transform 0.5s ease;
 }
 
@@ -772,9 +738,7 @@ header{
   background:var(--lime-dim);
   color:#031403;
   border-color:var(--lime);
-
   box-shadow:0 0 22px var(--lime);
-
   transform:translateY(-1px);
 }
 
@@ -814,19 +778,13 @@ header{
 
 main{
   flex:1 1 auto;
-
   min-height:0;
-
   width:100%;
-
   overflow-y:auto;
   overflow-x:hidden;
-
   padding:14px 10px 8px;
-
   display:flex;
   flex-direction:column;
-
   gap:8px;
 }
 
@@ -841,56 +799,37 @@ main::-webkit-scrollbar-thumb{
 
 .sys-msg{
   align-self:center;
-
   color:var(--lime-dim);
-
   font-size:11px;
-
   border:1px dashed var(--lime-dim);
-
   padding:4px 12px;
-
   border-radius:20px;
-
   background:rgba(57,255,20,0.03);
-
   max-width:95%;
-
   text-align:center;
 }
 
 .msg{
   max-width:85%;
-
   background:var(--panel-2);
-
   border:1px solid #1c231c;
-
   border-left:3px solid var(--lime-dim);
-
   border-radius:4px;
-
   padding:8px 10px;
-
   word-break:break-word;
 }
 
 .msg.mine{
   align-self:flex-end;
-
   border-left-color:var(--crimson);
-
   background:#12100f;
 }
 
 .msg-meta{
   display:flex;
   justify-content:space-between;
-
   gap:10px;
-
   font-size:10px;
-
   margin-bottom:3px;
 }
 
@@ -900,11 +839,8 @@ main::-webkit-scrollbar-thumb{
 
 .msg-text{
   font-size:13px;
-
   word-break:break-word;
-
   color:#dfffe0;
-
   line-height:1.45;
 }
 
@@ -914,15 +850,10 @@ main::-webkit-scrollbar-thumb{
 
 #typingIndicator{
   flex:0 0 auto;
-
   width:100%;
-
   min-height:18px;
-
   padding:0 12px 4px;
-
   color:var(--lime-dim);
-
   font-size:10px;
 }
 
@@ -932,41 +863,25 @@ main::-webkit-scrollbar-thumb{
 
 form#composer{
   flex:0 0 auto;
-
   display:flex;
-
   width:100%;
-
   gap:8px;
-
   padding:10px;
-
   background:#080a08;
-
   border-top:1px solid var(--lime-dim);
 }
 
 #msgInput{
   flex:1 1 auto;
-
   min-width:0;
-
   width:100%;
-
   background:#0b0e0b;
-
   border:1px solid var(--lime-dim);
-
   border-radius:5px;
-
   color:var(--text);
-
   font-family:var(--mono);
-
   font-size:13px;
-
   padding:10px 12px;
-
   outline:none;
 }
 
@@ -976,9 +891,7 @@ form#composer{
 
 #sendBtn{
   flex:0 0 auto;
-
   padding:0 20px;
-
   font-size:13px;
 }
 
@@ -988,17 +901,11 @@ form#composer{
 
 .footnote{
   flex:0 0 auto;
-
   width:100%;
-
   text-align:center;
-
   font-size:9px;
-
   color:#33452f;
-
   padding:4px 0 6px;
-
   overflow:hidden;
 }
 
@@ -1009,82 +916,55 @@ form#composer{
 .custom-modal{
   position:fixed;
   inset:0;
-
   z-index:9999;
-
   background:rgba(0,0,0,0.85);
-
   display:none;
-
   align-items:center;
   justify-content:center;
-
   padding:15px;
 }
 
 .modal-box{
   width:min(95vw,480px);
-
   background:
     linear-gradient(
       180deg,
       var(--panel),
       #08090a
     );
-
   border:1px solid var(--lime-dim);
-
   border-radius:6px;
-
   padding:16px;
-
   display:flex;
-
   flex-direction:column;
-
   max-height:80vh;
   max-height:80dvh;
 }
 
 .modal-title{
   font-size:13px;
-
   font-weight:800;
-
   color:var(--lime-glow);
-
   margin-bottom:10px;
-
   border-bottom:1px dashed var(--lime-dim);
-
   padding-bottom:5px;
 }
 
 .modal-content-area{
   flex:1;
-
   overflow-y:auto;
-
   display:flex;
-
   flex-direction:column;
-
   gap:6px;
-
   font-size:11px;
-
   margin-bottom:12px;
 }
 
 .log-item{
   background:var(--panel-2);
-
   padding:7px 9px;
-
   border-radius:4px;
-
   border-left:3px solid var(--lime-dim);
-
   word-break:break-all;
 }
 
@@ -1094,21 +974,13 @@ form#composer{
 
 .close-modal-btn{
   width:100%;
-
   background:var(--panel-2);
-
   border:1px solid var(--lime-dim);
-
   color:var(--text);
-
   padding:8px;
-
   border-radius:4px;
-
   cursor:pointer;
-
   font-weight:700;
-
   font-size:11px;
 }
 
@@ -1124,65 +996,43 @@ form#composer{
     min-height:100dvh;
   }
 
-  /* Header stays visible */
   header{
     display:flex;
-
     flex-direction:column;
-
     align-items:stretch;
     justify-content:center;
-
     gap:7px;
-
     width:100%;
-
     padding:
       8px
       max(8px, env(safe-area-inset-right))
       8px
       max(8px, env(safe-area-inset-left));
-
     min-height:auto;
-
     flex:0 0 auto;
   }
 
-  /* Logo centered */
   .logo{
     width:100%;
-
     text-align:center;
-
     font-size:15px;
-
     line-height:1.2;
-
     letter-spacing:1px;
   }
 
-  /* Controls */
   .header-stats{
     width:100%;
-
     display:flex;
-
     align-items:center;
-
     justify-content:center;
-
     gap:5px;
-
     flex-wrap:wrap;
-
     min-width:0;
   }
 
   .stat-chip{
     padding:5px 8px;
-
     font-size:10px;
-
     min-height:29px;
   }
 
@@ -1194,47 +1044,32 @@ form#composer{
 
   .action-btn{
     padding:6px 8px;
-
     min-height:29px;
-
     font-size:9px;
-
     letter-spacing:0.3px;
   }
 
-  /* Message area */
   main{
     flex:1 1 auto;
-
     min-height:0;
-
     width:100%;
-
     overflow-y:auto;
     overflow-x:hidden;
-
     padding:10px 8px 6px;
-
     gap:7px;
   }
 
   .sys-msg{
     max-width:95%;
-
     font-size:9px;
-
     line-height:1.4;
-
     padding:5px 9px;
-
     text-align:center;
-
     word-break:break-word;
   }
 
   .msg{
     max-width:90%;
-
     padding:7px 9px;
   }
 
@@ -1244,54 +1079,38 @@ form#composer{
 
   .msg-text{
     font-size:12px;
-
     line-height:1.45;
   }
 
-  /* Typing */
   #typingIndicator{
     flex:0 0 auto;
-
     min-height:17px;
-
     padding:
       2px
       10px
       3px;
-
     font-size:9px;
   }
 
-  /* Composer */
   form#composer{
     flex:0 0 auto;
-
     display:flex;
-
     width:100%;
-
     gap:6px;
-
     padding:
       7px
       max(7px, env(safe-area-inset-right))
       7px
       max(7px, env(safe-area-inset-left));
-
     min-height:60px;
   }
 
   #msgInput{
     flex:1 1 auto;
-
     min-width:0;
-
     width:100%;
-
     height:46px;
-
     font-size:12px;
-
     padding:10px;
   }
 
@@ -1301,37 +1120,25 @@ form#composer{
 
   #sendBtn{
     flex:0 0 92px;
-
     width:92px;
-
     min-width:92px;
-
     height:46px;
-
     padding:0 8px;
-
     font-size:11px;
   }
 
-  /* Footer */
   .footnote{
     flex:0 0 auto;
-
     font-size:7px;
-
     padding:
       3px
       5px
       max(5px, env(safe-area-inset-bottom));
-
     white-space:nowrap;
-
     overflow:hidden;
-
     text-overflow:ellipsis;
   }
 
-  /* Modals */
   .custom-modal{
     padding:
       10px
@@ -1342,10 +1149,8 @@ form#composer{
 
   .modal-box{
     width:94vw;
-
     max-height:82vh;
     max-height:82dvh;
-
     padding:13px;
   }
 
@@ -1370,23 +1175,18 @@ form#composer{
 
   .stat-chip{
     padding:4px 6px;
-
     font-size:9px;
   }
 
   .action-btn{
     padding:5px 6px;
-
     font-size:8px;
   }
 
   #sendBtn{
     flex-basis:82px;
-
     width:82px;
-
     min-width:82px;
-
     font-size:10px;
   }
 
@@ -1403,24 +1203,19 @@ form#composer{
 
   header{
     flex-direction:row;
-
     align-items:center;
-
     padding-top:6px;
     padding-bottom:6px;
   }
 
   .logo{
     width:auto;
-
     text-align:left;
-
     font-size:14px;
   }
 
   .header-stats{
     width:auto;
-
     justify-content:flex-end;
   }
 
@@ -1917,8 +1712,6 @@ import {
   getDocs,
   writeBatch,
   runTransaction,
-  updateDoc,
-  deleteDoc,
   getDoc,
   limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1927,7 +1720,6 @@ import {
   getAuth,
   signInAnonymously
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
 
 /* =========================
    FIREBASE
@@ -2531,6 +2323,14 @@ document
    LOCK
    ========================= */
 
+/*
+  IMPORTANT:
+
+  LOCK writes a new version to Firestore.
+  Every initialized client listens to this document
+  and reacts only when the version increases.
+*/
+
 async function triggerLock(){
 
   const pwd =
@@ -2551,27 +2351,44 @@ async function triggerLock(){
 
   try{
 
-    const snap =
-      await getDoc(globalLockRef);
+    await runTransaction(
+      db,
+      async (transaction) => {
 
-    let currentVer =
-      snap.exists()
-        ? (
-            snap.data().version ||
-            0
-          )
-        : 0;
+        const snap =
+          await transaction.get(
+            globalLockRef
+          );
 
-    await setDoc(
-      globalLockRef,
-      {
-        version:currentVer + 1
+        const currentVer =
+          snap.exists() &&
+          typeof snap.data().version === "number"
+            ? snap.data().version
+            : 0;
+
+        transaction.set(
+          globalLockRef,
+          {
+            version:currentVer + 1,
+            updatedAt:Date.now()
+          },
+          {
+            merge:true
+          }
+        );
       }
     );
 
   }catch(e){
 
-    alert("FAILED");
+    console.error(
+      "LOCK ERROR:",
+      e
+    );
+
+    alert(
+      "FAILED TO LOCK"
+    );
   }
 }
 
@@ -2875,7 +2692,9 @@ function initChat(){
   }
 
 
-  /* Messages */
+  /* =========================
+     Messages
+     ========================= */
 
   onSnapshot(
     query(
@@ -2931,7 +2750,9 @@ function initChat(){
   );
 
 
-  /* Presence */
+  /* =========================
+     Presence
+     ========================= */
 
   onSnapshot(
     presenceCol,
@@ -2991,7 +2812,9 @@ function initChat(){
   );
 
 
-  /* Typing */
+  /* =========================
+     Typing
+     ========================= */
 
   onSnapshot(
     typingCol,
@@ -2999,7 +2822,9 @@ function initChat(){
   );
 
 
-  /* Global stealth */
+  /* =========================
+     Global stealth
+     ========================= */
 
   onSnapshot(
     globalStealthRef,
@@ -3025,7 +2850,150 @@ function initChat(){
   );
 
 
-  /* Purge */
+  /* =========================
+     GLOBAL LOCK
+     =========================
+
+     The first Firestore snapshot only establishes
+     the current version.
+
+     We DO NOT lock on that first snapshot.
+
+     After that, a higher version means that someone
+     triggered the LOCK button and this client must
+     return to the lock screen.
+     */
+
+  let lastLockVersion = null;
+
+  onSnapshot(
+    globalLockRef,
+    (snap) => {
+
+      if(!snap.exists()){
+        return;
+      }
+
+      const data =
+        snap.data();
+
+      const version =
+        data.version;
+
+      if(
+        typeof version !== "number"
+      ){
+        return;
+      }
+
+      /*
+        Initial state:
+        remember the current version but don't lock.
+      */
+
+      if(
+        lastLockVersion === null
+      ){
+
+        lastLockVersion =
+          version;
+
+        return;
+      }
+
+      /*
+        A newer version means a new global LOCK
+        command was issued.
+      */
+
+      if(
+        version >
+        lastLockVersion
+      ){
+
+        lastLockVersion =
+          version;
+
+        /*
+          Close every open modal.
+        */
+
+        document
+          .querySelectorAll(
+            ".custom-modal"
+          )
+          .forEach(
+            modal => {
+              modal.style.display =
+                "none";
+            }
+          );
+
+        /*
+          Hide the application.
+        */
+
+        document
+          .getElementById(
+            "app"
+          )
+          .style.display =
+          "none";
+
+        /*
+          Reset password/error state.
+        */
+
+        passInput.value = "";
+
+        lockError.textContent = "";
+
+        /*
+          Remove the unlock animation class
+          in case the previous unlock animation
+          has already finished or is still present.
+        */
+
+        lockScreen.classList.remove(
+          "lock-dissolve"
+        );
+
+        /*
+          Force the lock screen back to its
+          original visible state.
+        */
+
+        lockScreen.style.display =
+          "flex";
+
+        lockScreen.style.opacity =
+          "1";
+
+        lockScreen.style.filter =
+          "none";
+
+        lockScreen.style.transform =
+          "none";
+
+        /*
+          Focus the password field shortly after
+          the screen becomes visible.
+        */
+
+        setTimeout(
+          () => {
+            passInput.focus();
+          },
+          100
+        );
+      }
+    }
+  );
+
+
+  /* =========================
+     Purge
+     ========================= */
 
   setInterval(
     tickPurge,
@@ -3035,7 +3003,9 @@ function initChat(){
   tickPurge();
 
 
-  /* Presence heartbeat */
+  /* =========================
+     Presence heartbeat
+     ========================= */
 
   setInterval(
     () =>
@@ -3129,6 +3099,21 @@ async function attemptUnlock(){
 
   }catch(e){}
 
+  /*
+    Remove any old lock animation before
+    starting a fresh unlock animation.
+  */
+
+  lockScreen.classList.remove(
+    "lock-dissolve"
+  );
+
+  /*
+    Start unlock animation.
+  */
+
+  void lockScreen.offsetWidth;
+
   lockScreen.classList.add(
     "lock-dissolve"
   );
@@ -3137,6 +3122,15 @@ async function attemptUnlock(){
     () => {
 
       lockScreen.style.display =
+        "none";
+
+      lockScreen.style.opacity =
+        "1";
+
+      lockScreen.style.filter =
+        "none";
+
+      lockScreen.style.transform =
         "none";
 
       document.getElementById(
@@ -3254,9 +3248,9 @@ async function openLogsAction(){
 
         html += `
           <div class="log-item">
-            STATUS: ${escapeHTML(d.status)}
+            STATUS: ${escapeHTML(d.status || "")}
             |
-            DEVICE: ${escapeHTML(d.device)}
+            DEVICE: ${escapeHTML(d.device || "")}
           </div>
         `;
       }
@@ -3267,6 +3261,11 @@ async function openLogsAction(){
       '<div class="log-item">No logs.</div>';
 
   }catch(e){
+
+    console.error(
+      "LOGS ERROR:",
+      e
+    );
 
     container.innerHTML =
       '<div class="log-item">ERROR</div>';
