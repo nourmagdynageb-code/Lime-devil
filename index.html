@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/UAParser.js/1.0.37/ua-parser.min.js"></script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&family=Cairo:wght@400;700&display=swap');
 
   :root{
     --void:#050505;
@@ -198,12 +198,6 @@
     margin-bottom:20px;
     text-align:center;
     letter-spacing:1px;
-    animation:pulseHint 2.4s infinite;
-  }
-
-  @keyframes pulseHint{
-    0%,100%{ box-shadow:0 0 0 rgba(255,23,68,0); }
-    50%{ box-shadow:0 0 14px rgba(255,23,68,0.35); }
   }
 
   .pass-row{
@@ -223,12 +217,6 @@
     text-align:center;
     padding:14px 10px;
     outline:none;
-    transition:box-shadow 0.15s, border-color 0.15s;
-  }
-
-  #passInput:focus{
-    border-color:var(--lime-glow);
-    box-shadow:0 0 16px rgba(0,255,102,0.5);
   }
 
   #unlockBtn{
@@ -240,13 +228,6 @@
     padding:0 18px;
     border-radius:4px;
     cursor:pointer;
-    letter-spacing:1px;
-    transition:transform 0.1s, box-shadow 0.15s;
-  }
-
-  #unlockBtn:hover{
-    box-shadow:0 0 18px rgba(57,255,20,0.6);
-    transform:translateY(-1px);
   }
 
   .lock-error{
@@ -255,13 +236,9 @@
     color:var(--crimson);
     font-size:12px;
     min-height:16px;
-    letter-spacing:1px;
   }
 
-  .shake{
-    animation:shake 0.35s;
-  }
-
+  .shake{ animation:shake 0.35s; }
   @keyframes shake{
     0%,100%{ transform:translateX(0); }
     20%{ transform:translateX(-8px); }
@@ -270,338 +247,231 @@
     80%{ transform:translateX(5px); }
   }
 
-  .lock-dissolve{
-    animation:dissolveOut 0.7s forwards;
-  }
-
+  .lock-dissolve{ animation:dissolveOut 0.7s forwards; }
   @keyframes dissolveOut{
     0%{ opacity:1; filter:blur(0) brightness(1); }
     40%{ opacity:0.7; filter:blur(2px) brightness(3) hue-rotate(30deg); }
     100%{ opacity:0; filter:blur(10px) brightness(0.2); transform:scale(1.04); }
   }
 
-  /* ================= APP LAYOUT ================= */
-
-  #app{
-    position:relative;
-    z-index:1;
-    display:none;
-    flex-direction:column;
-    height:100vh;
-    animation:fadeIn 0.6s ease;
+  /* ================= STEALTH / MAKEUP FAKE SCREEN ================= */
+  #stealthScreen {
+    position: fixed; inset: 0; z-index: 30000;
+    background: #fff0f5;
+    color: #4a2e35;
+    font-family: 'Cairo', sans-serif;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .makeup-header {
+    background: #ffffff;
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border-bottom: 2px solid #f8bbd0;
+  }
+  .makeup-logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #d81b60;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .makeup-search-box {
+    display: flex;
+    align-items: center;
+    background: #fce4ec;
+    border: 1px solid #f48fb1;
+    border-radius: 30px;
+    padding: 6px 15px;
+    width: 320px;
+  }
+  .makeup-search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-family: 'Cairo', sans-serif;
+    font-size: 14px;
+    color: #880e4f;
+    text-align: right;
+  }
+  .makeup-search-box button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #d81b60;
+    font-size: 16px;
+  }
+  .makeup-nav {
+    display: flex;
+    gap: 25px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+  }
+  .makeup-nav span:hover { color: #d81b60; }
+  
+  .makeup-hero {
+    text-align: center;
+    padding: 70px 20px;
+    background: linear-gradient(135deg, #ffe4e1, #fff0f5);
+  }
+  .makeup-hero h1 {
+    font-size: 40px;
+    color: #c2185b;
+    margin-bottom: 15px;
+  }
+  .makeup-hero p {
+    color: #666;
+    font-size: 17px;
+    margin-bottom: 30px;
+  }
+  .makeup-hero button {
+    background: #d81b60;
+    color: #fff;
+    border: none;
+    padding: 12px 35px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(216,27,96,0.3);
   }
 
-  @keyframes fadeIn{
-    from{ opacity:0; }
-    to{ opacity:1; }
+  .makeup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 25px;
+    padding: 50px 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .makeup-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    text-align: center;
+    border: 1px solid #fce4ec;
+  }
+  .makeup-img-placeholder {
+    height: 160px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+  .makeup-card h3 { color: #880e4f; margin-bottom: 8px; font-size: 18px; }
+  .makeup-card p { color: #777; font-size: 13px; margin-bottom: 15px; }
+  .makeup-card button {
+    background: #e91e63;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Cairo', sans-serif;
+  }
+  
+  .makeup-footer-note {
+    text-align: center;
+    padding: 20px;
+    background: #f8bbd0;
+    color: #880e4f;
+    font-size: 13px;
+    margin-top: auto;
+    font-weight: bold;
+  }
+
+  /* ================= APP LAYOUT ================= */
+  #app{
+    position:relative; z-index:1;
+    display:none; flex-direction:column; height:100vh;
   }
 
   header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:10px 14px;
-    background:linear-gradient(180deg, #0a0c0a, #060706);
-    border-bottom:1px solid var(--lime-dim);
-    flex-wrap:wrap;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 14px; background:linear-gradient(180deg, #0a0c0a, #060706);
+    border-bottom:1px solid var(--lime-dim); flex-wrap:wrap;
   }
 
-  .logo{
-    font-size:20px;
-    font-weight:800;
-    letter-spacing:2px;
-  }
-
-  .header-stats{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:11px;
-    flex-wrap:wrap;
-  }
+  .logo{ font-size:20px; font-weight:800; letter-spacing:2px; }
+  .header-stats{ display:flex; align-items:center; gap:10px; font-size:11px; flex-wrap:wrap; }
 
   .stat-chip{
-    background:var(--panel-2);
-    border:1px solid var(--lime-dim);
-    border-radius:20px;
-    padding:5px 10px;
-    display:flex;
-    align-items:center;
-    gap:6px;
-    letter-spacing:1px;
+    background:var(--panel-2); border:1px solid var(--lime-dim); border-radius:20px;
+    padding:5px 10px; display:flex; align-items:center; gap:6px; letter-spacing:1px;
   }
+  .stat-chip.clickable { cursor: pointer; }
 
-  .stat-chip.clickable {
-    cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .stat-chip.clickable:hover {
-    border-color: var(--lime-glow);
-    box-shadow: 0 0 10px rgba(0,255,102,0.3);
-  }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--lime-glow); box-shadow:0 0 8px var(--lime-glow); }
 
-  .dot{
-    width:7px;
-    height:7px;
-    border-radius:50%;
-    background:var(--lime-glow);
-    box-shadow:0 0 8px var(--lime-glow);
-    animation:blink 1.6s infinite;
-  }
-
-  @keyframes blink{
-    50%{ opacity:0.25; }
-  }
-
-  #purgeTimerContainer {
-    cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  #purgeTimerContainer:hover {
-    border-color: var(--crimson);
-    box-shadow: 0 0 10px rgba(255,23,68,0.4);
-  }
-
-  #purgeTimer{
-    color:var(--crimson);
-    text-shadow:0 0 8px rgba(255,23,68,0.7);
-    font-weight:700;
-  }
+  #purgeTimer{ color:var(--crimson); font-weight:700; }
 
   .action-btn{
-    background:var(--panel-2);
-    border:1px solid var(--lime-dim);
-    color:var(--lime-glow);
-    font-family:var(--mono);
-    font-weight:800;
-    padding:5px 10px;
-    border-radius:4px;
-    cursor:pointer;
-    letter-spacing:1px;
-    box-shadow:0 0 8px rgba(57,255,20,0.2);
-    transition:transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+    background:var(--panel-2); border:1px solid var(--lime-dim); color:var(--lime-glow);
+    font-family:var(--mono); font-weight:800; padding:5px 10px; border-radius:4px; cursor:pointer;
   }
-
-  .action-btn:hover{
-    border-color:var(--lime-glow);
-    box-shadow:0 0 16px rgba(57,255,20,0.6);
-    transform:translateY(-1px);
-  }
-
-  #emergencyBtn{
-    background:var(--crimson);
-    border:1px solid var(--crimson);
-    color:#fff;
-    box-shadow:0 0 10px rgba(255,23,68,0.35);
-  }
-  #emergencyBtn:hover{
-    box-shadow:0 0 18px rgba(255,23,68,0.75);
-    border-color:var(--crimson);
-  }
+  #emergencyBtn{ background:var(--crimson); border-color:var(--crimson); color:#fff; }
+  #endBtn{ background:#1e1416; border-color:var(--crimson-dim); color:var(--crimson); }
+  #endBtn:hover{ border-color:var(--crimson); color:#fff; }
 
   main{
-    flex:1;
-    overflow-y:auto;
-    padding:18px 14px 10px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    scroll-behavior:smooth;
+    flex:1; overflow-y:auto; padding:18px 14px 10px; display:flex; flex-direction:column; gap:10px;
   }
-
   main::-webkit-scrollbar{ width:8px; }
   main::-webkit-scrollbar-thumb{ background:var(--lime-dim); border-radius:4px; }
-  main::-webkit-scrollbar-track{ background:transparent; }
 
   .sys-msg{
-    align-self:center;
-    color:var(--lime-dim);
-    font-size:11px;
-    letter-spacing:1px;
-    border:1px dashed var(--lime-dim);
-    padding:4px 12px;
-    border-radius:20px;
-    background:rgba(57,255,20,0.03);
+    align-self:center; color:var(--lime-dim); font-size:11px;
+    border:1px dashed var(--lime-dim); padding:4px 12px; border-radius:20px; background:rgba(57,255,20,0.03);
   }
 
   .msg{
-    max-width:78%;
-    background:var(--panel-2);
-    border:1px solid #1c231c;
-    border-left:3px solid var(--lime-dim);
-    border-radius:4px;
-    padding:8px 12px;
-    animation:msgIn 0.25s ease;
+    max-width:78%; background:var(--panel-2); border:1px solid #1c231c;
+    border-left:3px solid var(--lime-dim); border-radius:4px; padding:8px 12px;
   }
-
-  @keyframes msgIn{
-    from{ opacity:0; transform:translateY(8px); }
-    to{ opacity:1; transform:translateY(0); }
-  }
-
-  .msg.mine{
-    align-self:flex-end;
-    border-left:3px solid var(--crimson);
-    background:#12100f;
-  }
-
-  .msg-meta{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    font-size:11px;
-    margin-bottom:3px;
-    letter-spacing:0.5px;
-  }
-
+  .msg.mine{ align-self:flex-end; border-left-color:var(--crimson); background:#12100f; }
+  .msg-meta{ display:flex; justify-content:space-between; gap:12px; font-size:11px; margin-bottom:3px; }
   .msg-user{ font-weight:700; }
-  .msg-time{ color:#5a6a5a; }
-  .msg-text{ font-size:14px; word-break:break-word; line-height:1.4; color:#dfffe0; }
+  .msg-text{ font-size:14px; word-break:break-word; color:#dfffe0; }
 
-  #typingIndicator{
-    min-height:20px;
-    padding:0 16px 4px;
-    color:var(--lime-dim);
-    font-size:10px;
-    letter-spacing:1px;
-    text-align:left;
-    text-shadow:0 0 7px rgba(57,255,20,0.35);
-    pointer-events:none;
-  }
-  #typingIndicator:empty{ min-height:0; padding:0; }
-
-  .typing-user{ color:var(--lime-glow); font-weight:700; }
-  .typing-dots{
-    display:inline-block;
-    width:18px;
-    overflow:hidden;
-    vertical-align:bottom;
-    animation:typingDots 1.2s steps(4,end) infinite;
-  }
-
-  @keyframes typingDots{
-    0%{ width:0; }
-    100%{ width:18px; }
-  }
+  #typingIndicator{ min-height:20px; padding:0 16px 4px; color:var(--lime-dim); font-size:10px; }
 
   form#composer{
-    display:flex;
-    gap:10px;
-    padding:14px;
-    background:#080a08;
-    border-top:1px solid var(--lime-dim);
+    display:flex; gap:10px; padding:14px; background:#080a08; border-top:1px solid var(--lime-dim);
   }
-
   #msgInput{
-    flex:1;
-    background:#0b0e0b;
-    border:1px solid var(--lime-dim);
-    border-radius:5px;
-    color:var(--text);
-    font-family:var(--mono);
-    font-size:14px;
-    padding:12px 14px;
-    outline:none;
-    transition:box-shadow 0.15s, border-color 0.15s;
+    flex:1; background:#0b0e0b; border:1px solid var(--lime-dim); border-radius:5px;
+    color:var(--text); font-family:var(--mono); font-size:14px; padding:12px 14px; outline:none;
   }
+  #sendBtn{ background:var(--lime); border:none; color:#031403; font-weight:800; padding:0 20px; border-radius:5px; cursor:pointer; }
 
-  #msgInput:focus{
-    border-color:var(--lime-glow);
-    box-shadow:0 0 14px rgba(0,255,102,0.35);
-  }
+  .footnote{ text-align:center; font-size:10px; color:#33452f; padding:4px 0 8px; }
 
-  #sendBtn{
-    background:var(--lime);
-    border:none;
-    color:#031403;
-    font-family:var(--mono);
-    font-weight:800;
-    padding:0 20px;
-    border-radius:5px;
-    cursor:pointer;
-    letter-spacing:1px;
-    transition:transform 0.1s, box-shadow 0.15s;
-  }
-
-  #sendBtn:hover{
-    box-shadow:0 0 16px rgba(57,255,20,0.6);
-    transform:translateY(-1px);
-  }
-
-  .footnote{
-    text-align:center;
-    font-size:10px;
-    color:#33452f;
-    padding:4px 0 8px;
-    letter-spacing:1px;
-  }
-
-  /* Modals (Generic) */
   .custom-modal {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,0.85);
-    display: none;
-    align-items: center;
-    justify-content: center;
+    position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center;
   }
   .modal-box {
-    width: min(92vw, 480px);
-    background: linear-gradient(180deg, var(--panel), #08090a);
-    border: 1px solid var(--lime-dim);
-    border-radius: 6px;
-    padding: 20px;
-    box-shadow: 0 0 30px rgba(57,255,20,0.2);
-    display: flex;
-    flex-direction: column;
-    max-height: 80vh;
+    width: min(92vw, 480px); background: linear-gradient(180deg, var(--panel), #08090a);
+    border: 1px solid var(--lime-dim); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; max-height: 80vh;
   }
-  .modal-title {
-    font-size: 14px;
-    font-weight: 800;
-    color: var(--lime-glow);
-    margin-bottom: 12px;
-    letter-spacing: 2px;
-    border-bottom: 1px dashed var(--lime-dim);
-    padding-bottom: 6px;
-  }
-  .modal-content-area {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 12px;
-    margin-bottom: 16px;
-  }
-  .log-item {
-    background: var(--panel-2);
-    padding: 8px 10px;
-    border-radius: 4px;
-    border-left: 3px solid var(--lime-dim);
-    line-height: 1.4;
-  }
-  .log-item.failed {
-    border-left-color: var(--crimson);
-    background: rgba(255,23,68,0.04);
-  }
-  .log-time { color: #788a78; font-size: 10px; }
-  .close-modal-btn {
-    width: 100%;
-    background: var(--panel-2);
-    border: 1px solid var(--lime-dim);
-    color: var(--text);
-    font-family: var(--mono);
-    padding: 9px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
-  .close-modal-btn:hover {
-    border-color: var(--lime-glow);
-    color: var(--lime-glow);
-  }
+  .modal-title { font-size: 14px; font-weight: 800; color: var(--lime-glow); margin-bottom: 12px; border-bottom: 1px dashed var(--lime-dim); padding-bottom: 6px; }
+  .modal-content-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 12px; margin-bottom: 16px; }
+  .log-item { background: var(--panel-2); padding: 8px 10px; border-radius: 4px; border-left: 3px solid var(--lime-dim); }
+  .log-item.failed { border-left-color: var(--crimson); }
+  .close-modal-btn { width: 100%; background: var(--panel-2); border: 1px solid var(--lime-dim); color: var(--text); padding: 9px; border-radius: 4px; cursor: pointer; font-weight: 700; }
 </style>
 </head>
 
@@ -610,6 +480,54 @@
 <canvas id="matrixCanvas"></canvas>
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
+
+<!-- صفحة المكياج الوهمية (تظهر لكل المستخدمين عند تفعيل زر END) -->
+<div id="stealthScreen">
+  <div class="makeup-header">
+    <div class="makeup-logo">✨ Glow & Glam Beauty</div>
+    <div class="makeup-nav">
+      <span>الرئيسية</span>
+      <span>منتجات الشفاه</span>
+      <span>العناية بالبشرة</span>
+      <span>العروض</span>
+    </div>
+    <div class="makeup-search-box">
+      <input type="text" id="stealthInput" placeholder="ابحثي عن منتج أو ماركة..." autocomplete="off">
+      <button id="stealthBtn">🔍</button>
+    </div>
+  </div>
+
+  <div class="makeup-hero">
+    <h1>أسرار التألق وجمال البشرة الطبيعي</h1>
+    <p>اكتشفي أحدث صيحات الماكياج ومنتجات العناية المصممة خصيصاً لتبرز جمالك الساحر كل يوم.</p>
+    <button>تسوقي تشكيلة الخريف</button>
+  </div>
+
+  <div class="makeup-grid">
+    <div class="makeup-card">
+      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #f48fb1, #ad1457);">مجموعة أحمر الشفاه المخملي</div>
+      <h3>مجموعة التوت الملكي</h3>
+      <p>تركيبة ثابتة ومقاومة للمياه تدوم طوال اليوم بدون جفاف.</p>
+      <button>اضيفي للسلة</button>
+    </div>
+    <div class="makeup-card">
+      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #ff80ab, #c2185b);">باليت ظلال العيون اللامعة</div>
+      <h3>باليت الوادي الوردي</h3>
+      <p>ألوان متألقة وعصرية تناسب كافة المناسبات والسهرات الخاصة.</p>
+      <button>اضيفي للسلة</button>
+    </div>
+    <div class="makeup-card">
+      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #f06292, #880e4f);">سيروم النضارة بالفيتامينات</div>
+      <h3>سيروم الإشراق السحري</h3>
+      <p>يغذي البشرة بعمق ويمنحك إضاءة طبيعية ونعومة فائقة.</p>
+      <button>اضيفي للسلة</button>
+    </div>
+  </div>
+
+  <div class="makeup-footer-note">
+    جميع حقوق العرض والتوزيع محفوظة © 2026 Glow & Glam Cosmetics. الشحن مجاني للطلبات فوق 500 جنيه.
+  </div>
+</div>
 
 <!-- Modal نافذة الأونلاين -->
 <div id="usersModal" class="custom-modal">
@@ -623,7 +541,7 @@
 <!-- Modal نافذة سجلات الدخول الأمنية -->
 <div id="logsModal" class="custom-modal">
   <div class="modal-box" style="width:min(94vw, 540px);">
-    <div class="modal-title">// SECURITY ACCESS LOGS (LOGIN ATTEMPTS)</div>
+    <div class="modal-title">// SECURITY ACCESS LOGS</div>
     <div id="accessLogsList" class="modal-content-area"></div>
     <button class="close-modal-btn" data-modal="logsModal">CLOSE [X]</button>
   </div>
@@ -650,19 +568,18 @@
         <span class="dot"></span>
         <span id="userCount">1</span> ONLINE
       </div>
-      <div class="stat-chip clickable" id="purgeTimerContainer" title="Click to toggle auto-purge">
+      <div class="stat-chip clickable" id="purgeTimerContainer">
         PURGE IN: <span id="purgeTimer">10:00</span>
       </div>
-      <!-- زر logs المباشر والفعال -->
       <button class="action-btn" id="openLogsBtn" type="button">LOGS</button>
       <div class="stat-chip" id="myNameChip">YOU: —</div>
       <button class="action-btn" id="emergencyBtn" type="button">EMERGENCY</button>
       <button class="action-btn" id="lockBtn" type="button">LOCK</button>
+      <button class="action-btn" id="endBtn" type="button">END</button>
     </div>
   </header>
 
   <main id="feed"></main>
-
   <div id="typingIndicator"></div>
 
   <form id="composer" autocomplete="off">
@@ -670,9 +587,7 @@
     <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
 
-  <div class="footnote">
-    ALL TRAFFIC ROUTED THROUGH LOCAL NODE // ZERO-LOG PROTOCOL // AUTO-WIPE EVERY 10 MIN
-  </div>
+  <div class="footnote">ALL TRAFFIC ROUTED THROUGH LOCAL NODE // GLOBAL STEALTH ENABLED</div>
 </div>
 
 <script type="module">
@@ -700,6 +615,7 @@ const typingCol = collection(db, "typing");
 const accessLogsCol = collection(db, "accessLogs");
 const purgeRef = doc(db, "meta", "purge");
 const globalLockRef = doc(db, "meta", "globalLock");
+const globalStealthRef = doc(db, "meta", "globalStealth");
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playKeyClickSound() {
@@ -754,29 +670,23 @@ drawMatrix();
 
 const PASSWORD = "181";
 const LOGS_PASSWORD = "1312";
+const END_PASSWORD = "sos";
 const PURGE_MS = 10 * 60 * 1000;
 const EMERGENCY_PASSWORD = "101";
-const PURGE_DISABLE_PASSWORD = "1280";
 const LOCK_BUTTON_PASSWORD = "lime1280";
 
 const PREFIXES = ["Devil", "Lime", "Void", "Ghost", "Shadow", "Cipher", "Wraith", "Static"];
-function generateCodename(){
-  return `${PREFIXES[Math.floor(Math.random() * PREFIXES.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
-}
+function generateCodename(){ return `${PREFIXES[Math.floor(Math.random() * PREFIXES.length)]}_${Math.floor(1000 + Math.random() * 8999)}`; }
 const myName = generateCodename();
 const myColor = ["#39FF14", "#ff1744", "#00eaff", "#ffd600", "#ff6e40", "#b388ff"][Math.floor(Math.random() * 6)];
 const myId = myName + "_" + Math.random().toString(36).slice(2,8);
 document.getElementById('myNameChip').textContent = "YOU: " + myName;
 
-// جلب تفاصيل الجهاز بأمان
 let deviceSignature = "Unknown Device";
 try {
   const parser = new UAParser();
   const uaResult = parser.getResult();
-  const deviceType = uaResult.device.type ? uaResult.device.type.toUpperCase() : "PC/DESKTOP";
-  const browserName = uaResult.browser.name || "Unknown Browser";
-  const osName = uaResult.os.name || "Unknown OS";
-  deviceSignature = `${deviceType} (${osName} - ${browserName})`;
+  deviceSignature = `${uaResult.device.type ? uaResult.device.type.toUpperCase() : "PC"} (${uaResult.os.name || ""} - ${uaResult.browser.name || ""})`;
 } catch(e) {}
 
 const feed = document.getElementById('feed');
@@ -812,18 +722,41 @@ async function sendMessage(text){
 }
 
 async function logAccessAttempt(status, enteredPass){
+  try { await addDoc(accessLogsCol, { status, enteredCode: enteredPass, device: deviceSignature, codename: myName, ts: Date.now() }); } catch(e){}
+}
+
+// تفعيل زر الـ END الجماعي
+const endBtn = document.getElementById('endBtn');
+const stealthScreen = document.getElementById('stealthScreen');
+const stealthInput = document.getElementById('stealthInput');
+const stealthBtn = document.getElementById('stealthBtn');
+
+endBtn.addEventListener('click', async () => {
   try {
-    await addDoc(accessLogsCol, {
-      status: status,
-      enteredCode: enteredPass,
-      device: deviceSignature,
-      codename: myName,
-      ts: Date.now()
-    });
-  } catch(e){
-    console.error("Log error:", e);
+    await setDoc(globalStealthRef, { active: true, version: Date.now() });
+  } catch(e) {
+    alert("FAILED TO INITIATE GLOBAL STEALTH MODE");
+  }
+});
+
+async function checkStealthUnlock(){
+  if(stealthInput.value.trim() === END_PASSWORD){
+    try {
+      await setDoc(globalStealthRef, { active: false, version: Date.now() });
+    } catch(e){}
+    stealthInput.value = '';
+  } else {
+    // لو كتب كلام تاني في خانة البحث بيظهر له إن مفيش نتائج بحث عشان تظهر طبيعية 100%
+    const queryVal = stealthInput.value.trim();
+    if(queryVal !== ''){
+      alert(`عذراً، لا توجد نتائج مطابقة لـ "${queryVal}"`);
+    }
+    stealthInput.value = '';
   }
 }
+
+stealthBtn.addEventListener('click', checkStealthUnlock);
+stealthInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkStealthUnlock(); });
 
 document.getElementById("emergencyBtn").addEventListener("click", async () => {
   const pwd = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
@@ -839,47 +772,18 @@ document.getElementById("emergencyBtn").addEventListener("click", async () => {
 
 document.getElementById("lockBtn").addEventListener("click", async () => {
   const pwd = prompt("ENTER LOCK PASSWORD:");
-  if(pwd !== LOCK_BUTTON_PASSWORD) {
-    if(pwd !== null) alert("ACCESS DENIED — INVALID PASSWORD");
-    return;
-  }
+  if(pwd !== LOCK_BUTTON_PASSWORD) { if(pwd !== null) alert("ACCESS DENIED"); return; }
   try {
     const snap = await getDoc(globalLockRef);
-    let currentVer = 0;
-    if(snap.exists() && typeof snap.data().version === 'number'){
-      currentVer = snap.data().version;
-    }
+    let currentVer = snap.exists() ? (snap.data().version || 0) : 0;
     await setDoc(globalLockRef, { version: currentVer + 1 });
-  } catch(e) {
-    alert("FAILED TO EXECUTE LOCK COMMAND");
-  }
+  } catch(e) { alert("FAILED"); }
 });
 
 const purgeTimerEl = document.getElementById('purgeTimer');
-const purgeTimerContainer = document.getElementById('purgeTimerContainer');
 let purgeStart = Date.now();
 let purging = false;
 let purgeDisabled = false;
-
-purgeTimerContainer.addEventListener('click', async () => {
-  const actionName = purgeDisabled ? "ENABLE" : "DISABLE";
-  const pwd = prompt(`ENTER CLEARANCE CODE (1280) TO ${actionName} AUTO-PURGE:`);
-  if (pwd !== PURGE_DISABLE_PASSWORD) {
-    if (pwd !== null) alert("ACCESS DENIED — INVALID CODE");
-    return;
-  }
-  try {
-    const newState = !purgeDisabled;
-    const updates = { disabled: newState };
-    if (!newState) {
-      updates.purgeStart = Date.now();
-    }
-    await updateDoc(purgeRef, updates);
-    await pushSystemMessage(`[ SYSTEM ALERT: AUTO-PURGE ${newState ? 'DISABLED' : 'RE-ENABLED'} BY NODE ADMIN ]`);
-  } catch(e) {
-    alert("FAILED TO UPDATE SERVER STATE");
-  }
-});
 
 async function tryPurge(){
   if(purging || purgeDisabled) return;
@@ -900,7 +804,7 @@ async function tryPurge(){
       const batch = writeBatch(db);
       msgsSnap.forEach(d => batch.delete(d.ref));
       await batch.commit();
-      await pushSystemMessage("[ SYSTEM PURGE COMPLETE — ALL LOGS WIPED ]");
+      await pushSystemMessage("[ SYSTEM PURGE COMPLETE ]");
     }
   } catch(e){} finally { purging = false; }
 }
@@ -908,11 +812,7 @@ async function tryPurge(){
 function tickPurge(){
   if (purgeDisabled) return;
   const remaining = PURGE_MS - (Date.now() - purgeStart);
-  if(remaining <= 0){
-    purgeTimerEl.textContent = "00:00";
-    tryPurge();
-    return;
-  }
+  if(remaining <= 0){ purgeTimerEl.textContent = "00:00"; tryPurge(); return; }
   const mins = Math.floor(remaining / 60000);
   const secs = Math.floor((remaining % 60000) / 1000);
   purgeTimerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
@@ -946,11 +846,10 @@ function renderTyping(snapshot){
   });
   if(!typers.length){ typingIndicator.textContent = ""; return; }
   if(typers.length === 1){
-    typingIndicator.innerHTML = `<span class="typing-user">${escapeHTML(typers[0].user)}</span> IS TYPING<span class="typing-dots">...</span>`;
+    typingIndicator.innerHTML = `<span style="color:var(--lime-glow)">${escapeHTML(typers[0].user)}</span> IS TYPING...`;
     return;
   }
-  const names = typers.slice(0,3).map(u => `<span class="typing-user">${escapeHTML(u.user)}</span>`).join(", ");
-  typingIndicator.innerHTML = `${names} ARE TYPING<span class="typing-dots">...</span>`;
+  typingIndicator.innerHTML = `MULTIPLE USERS ARE TYPING...`;
 }
 
 let chatInitialized = false;
@@ -960,9 +859,7 @@ function initChat(){
   if(chatInitialized) return;
   chatInitialized = true;
 
-  if("Notification" in window && Notification.permission !== "granted"){
-    Notification.requestPermission();
-  }
+  if("Notification" in window && Notification.permission !== "granted") Notification.requestPermission();
 
   onSnapshot(query(messagesCol, orderBy("ts")), (snapshot) => {
     if(lastMessageCount > 0 && snapshot.docs.length > lastMessageCount){
@@ -970,13 +867,9 @@ function initChat(){
       if(newestDoc && newestDoc.type !== 'system' && newestDoc.userId !== myId){
         playNotificationSound();
         if("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
-        if(document.hidden && "Notification" in window && Notification.permission === "granted"){
-          new Notification(`LIME DEVIL // ${newestDoc.user}`, { body: newestDoc.text || "New message received." });
-        }
       }
     }
     lastMessageCount = snapshot.docs.length;
-
     feed.innerHTML = '';
     snapshot.forEach(docSnap => renderMessageDoc(docSnap.data()));
     scrollToBottom();
@@ -998,45 +891,13 @@ function initChat(){
 
   onSnapshot(typingCol, renderTyping);
 
-  onSnapshot(purgeRef, (snap) => {
+  onSnapshot(globalStealthRef, (snap) => {
     if(snap.exists()){
       const data = snap.data();
-      if(typeof data.purgeStart === 'number') purgeStart = data.purgeStart;
-      
-      if(data.disabled === true){
-        purgeDisabled = true;
-        purgeTimerEl.textContent = "DISABLED";
-        purgeTimerContainer.style.borderColor = "var(--crimson)";
-        purgeTimerContainer.style.boxShadow = "0 0 12px rgba(255,23,68,0.4)";
+      if(data.active === true){
+        stealthScreen.style.display = 'flex';
       } else {
-        purgeDisabled = false;
-        purgeTimerContainer.style.borderColor = "";
-        purgeTimerContainer.style.boxShadow = "";
-      }
-    } else {
-      setDoc(purgeRef, { purgeStart: Date.now(), disabled: false }).catch(()=>{});
-    }
-  });
-
-  let initialLockCheck = true;
-  let baseLockVersion = null;
-
-  onSnapshot(globalLockRef, (snap) => {
-    if(initialLockCheck){
-      initialLockCheck = false;
-      if(snap.exists() && typeof snap.data().version === 'number'){
-        baseLockVersion = snap.data().version;
-      } else {
-        baseLockVersion = 0;
-      }
-      return;
-    }
-
-    if(snap.exists()){
-      const data = snap.data();
-      const newVersion = typeof data.version === 'number' ? data.version : 0;
-      if(baseLockVersion !== null && newVersion > baseLockVersion){
-        window.location.href = window.location.pathname + '?lock=' + Date.now();
+        stealthScreen.style.display = 'none';
       }
     }
   });
@@ -1056,16 +917,13 @@ async function attemptUnlock(){
   const val = passInput.value.trim();
   if(val !== PASSWORD){
     await logAccessAttempt('FAILED_MAIN', val);
-
     lockError.textContent = "ACCESS DENIED — INVALID CLEARANCE CODE";
     lockBox.classList.add('shake');
     setTimeout(() => lockBox.classList.remove('shake'), 350);
     passInput.value = '';
     return;
   }
-
   await logAccessAttempt('SUCCESS_MAIN', '****');
-
   try { await signInAnonymously(auth); } catch(e){}
   lockScreen.classList.add('lock-dissolve');
   setTimeout(() => {
@@ -1083,60 +941,35 @@ document.getElementById('openUsersModalBtn').addEventListener('click', () => {
   document.getElementById('usersModal').style.display = 'flex';
 });
 
-// تفعيل زر الـ LOGS المباشر بكلمة مرور 1312
 const openLogsBtn = document.getElementById('openLogsBtn');
 if(openLogsBtn){
   openLogsBtn.addEventListener('click', async () => {
     const pwd = prompt("ENTER SECURITY LOGS PASSWORD (1312):");
-    if(pwd !== LOGS_PASSWORD){
-      if(pwd !== null) alert("ACCESS DENIED — INVALID LOGS PASSWORD");
-      return;
-    }
-
+    if(pwd !== LOGS_PASSWORD){ alert("ACCESS DENIED"); return; }
     const modal = document.getElementById('logsModal');
     const container = document.getElementById('accessLogsList');
-    container.innerHTML = '<div class="log-item">Loading security telemetry...</div>';
+    container.innerHTML = '<div class="log-item">Loading telemetry...</div>';
     modal.style.display = 'flex';
-
     try {
       const q = query(accessLogsCol, orderBy("ts", "desc"), limit(30));
       const querySnapshot = await getDocs(q);
       let html = '';
-      if(querySnapshot.empty){
-        html = '<div class="log-item">No access telemetry recorded yet.</div>';
-      } else {
-        querySnapshot.forEach(docSnap => {
-          const d = docSnap.data();
-          const isFailed = d.status && d.status.includes('FAILED');
-          html += `
-            <div class="log-item ${isFailed ? 'failed' : ''}">
-              <div style="display:flex; justify-content:space-between; font-weight:700;">
-                <span>STATUS: ${escapeHTML(d.status || 'UNKNOWN')} ${isFailed ? `(Tried: "${escapeHTML(d.enteredCode || '')}")` : ''}</span>
-                <span class="log-time">${fmtTime(d.ts || Date.now())}</span>
-              </div>
-              <div style="color:#a5d6a7; margin-top:3px;">DEVICE: ${escapeHTML(d.device || 'Unknown')}</div>
-              <div style="color:#81c784; font-size:11px;">CODENAME: ${escapeHTML(d.codename || 'Anonymous')}</div>
-            </div>
-          `;
-        });
-      }
-      container.innerHTML = html;
-    } catch(e) {
-      console.error(e);
-      container.innerHTML = '<div class="log-item" style="color:var(--crimson)">FAILED TO FETCH LOGS. CHECK FIRESTORE RULES OR NETWORK CONNECTION.</div>';
-    }
+      querySnapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        html += `<div class="log-item">STATUS: ${escapeHTML(d.status)} | DEVICE: ${escapeHTML(d.device)}</div>`;
+      });
+      container.innerHTML = html || '<div class="log-item">No logs.</div>';
+    } catch(e){ container.innerHTML = '<div class="log-item">ERROR</div>'; }
   });
 }
 
 document.querySelectorAll('.close-modal-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const modalId = btn.getAttribute('data-modal');
-    document.getElementById(modalId).style.display = 'none';
+    document.getElementById(btn.getAttribute('data-modal')).style.display = 'none';
   });
 });
 
 const msgInput = document.getElementById('msgInput');
-
 msgInput.addEventListener('input', () => {
   playKeyClickSound();
   if(msgInput.value.trim()) startTyping(); else stopTyping();
