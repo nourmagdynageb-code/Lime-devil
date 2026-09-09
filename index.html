@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Glow & Glam Cosmetics // متجر مستحضرات التجميل والعناية بالبشرة</title>
 
 <!-- مكتبة معرفة نوع الجهاز والمتصفح بدقة -->
@@ -151,27 +151,6 @@
     position:relative;
   }
 
-  .lock-box::before{
-    content:'';
-    position:absolute;
-    inset:-1px;
-    border-radius:6px;
-    padding:1px;
-    background:linear-gradient(
-      135deg,
-      var(--lime),
-      transparent 40%,
-      var(--crimson-dim)
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite:xor;
-    mask-composite:exclude;
-    opacity:0.5;
-    pointer-events:none;
-  }
-
   .lock-title{
     font-size:clamp(28px,6vw,40px);
     font-weight:800;
@@ -274,7 +253,6 @@
     text-align: center;
     padding: 6px;
     font-weight: 600;
-    letter-spacing: 0.5px;
   }
 
   .makeup-header {
@@ -305,7 +283,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    letter-spacing: -0.5px;
   }
   .makeup-logo span { color: #e91e63; font-weight: 300; }
 
@@ -402,9 +379,7 @@
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(173,20,87,0.25);
-    transition: background 0.2s;
   }
-  .makeup-hero button:hover { background: #880e4f; }
 
   .section-title {
     font-size: 18px;
@@ -435,11 +410,6 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .makeup-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
   }
 
   .makeup-img-container {
@@ -471,19 +441,10 @@
   .makeup-card h3 { color: #222; margin: 10px 0 4px; font-size: 14px; font-weight: 700; }
   .makeup-card p { color: #777; font-size: 11px; margin-bottom: 8px; line-height: 1.4; }
   
-  .rating-stars {
-    color: #ffc107;
-    font-size: 11px;
-    margin-bottom: 6px;
-  }
+  .rating-stars { color: #ffc107; font-size: 11px; margin-bottom: 6px; }
   .rating-stars span { color: #888; margin-right: 4px; }
 
-  .price-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
+  .price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .current-price { font-weight: 800; color: #ad1457; font-size: 14px; }
   .old-price { text-decoration: line-through; color: #aaa; font-size: 11px; }
 
@@ -496,110 +457,70 @@
     cursor: pointer;
     font-weight: 700;
     font-size: 12px;
-    font-family: 'Cairo', sans-serif;
-    transition: all 0.2s;
     width: 100%;
   }
-  .makeup-card button:hover {
-    background: #ad1457;
-    color: #fff;
-  }
+  .makeup-card button:hover { background: #ad1457; color: #fff; }
 
-  .reviews-section {
-    background: #fdf2f4;
-    padding: 30px 15px;
-    margin-top: 20px;
-    border-top: 1px solid #f8bbd0;
-  }
+  .reviews-section { background: #fdf2f4; padding: 30px 15px; margin-top: 20px; border-top: 1px solid #f8bbd0; }
   .reviews-title { text-align: center; font-size: 18px; font-weight: 800; color: #880e4f; margin-bottom: 20px; }
-  .reviews-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-  .review-card {
-    background: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-    border: 1px solid #fce4ec;
-  }
+  .reviews-grid { display: grid; grid-template-columns: 1fr; gap: 15px; max-width: 1000px; margin: 0 auto; }
+  .review-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec; }
   .review-author { font-weight: 700; font-size: 12px; color: #333; margin-bottom: 4px; display: flex; justify-content: space-between; }
   .review-text { font-size: 11px; color: #666; line-height: 1.5; }
 
-  .makeup-footer {
-    background: #2b1820;
-    color: #ddd;
-    padding: 30px 20px 20px;
-    font-size: 12px;
-    margin-top: auto;
-  }
-  .footer-content {
-    max-width: 1100px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
-  }
+  .makeup-footer { background: #2b1820; color: #ddd; padding: 30px 20px 20px; font-size: 12px; margin-top: auto; }
+  .footer-content { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
   .footer-col h4 { color: #fff; font-size: 14px; margin-bottom: 10px; font-weight: 700; }
   .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 6px; color: #bbb; }
-  .footer-col ul li:hover { color: #fff; cursor: pointer; }
-  .footer-bottom {
-    text-align: center;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 15px;
-    color: #999;
-    font-size: 11px;
-  }
+  .footer-bottom { text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; color: #999; font-size: 11px; }
 
   @media (min-width: 768px) {
     .makeup-header { padding: 12px 40px; }
     .makeup-search-box { max-width: 400px; }
-    .makeup-header-top { display: flex; justify-content: space-between; }
     .makeup-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0 25px 30px; }
     .reviews-grid { grid-template-columns: repeat(3, 1fr); }
     .footer-content { grid-template-columns: repeat(3, 1fr); }
-    .makeup-hero h1 { font-size: 34px; }
   }
 
   /* ================= APP LAYOUT ================= */
   #app{
     position:relative; z-index:1;
-    display:none; flex-direction:column; height:100vh;
+    display:none; flex-direction:column; height:100vh; width: 100vw; overflow: hidden;
   }
 
   header{
     display:flex; align-items:center; justify-content:space-between; gap:6px;
     padding:8px 12px; background:linear-gradient(180deg, #0a0c0a, #060706);
     border-bottom:1px solid var(--lime-dim);
+    flex-wrap: nowrap;
+    width: 100%;
   }
 
-  .logo{ font-size:16px; font-weight:800; letter-spacing:2px; }
-  .header-stats{ display:flex; align-items:center; gap:5px; font-size:10px; }
+  .logo{ font-size:14px; font-weight:800; letter-spacing:1px; white-space: nowrap; }
+  .header-stats{ display:flex; align-items:center; gap:4px; font-size:10px; flex-shrink: 0; }
 
   .stat-chip{
     background:var(--panel-2); border:1px solid var(--lime-dim); border-radius:20px;
-    padding:4px 8px; display:flex; align-items:center; gap:4px; letter-spacing:1px; white-space:nowrap;
+    padding:3px 6px; display:flex; align-items:center; gap:3px; letter-spacing:0.5px; white-space:nowrap; font-size: 10px;
   }
   .stat-chip.clickable { cursor: pointer; }
 
-  .dot{ width:6px; height:6px; border-radius:50%; background:var(--lime-glow); box-shadow:0 0 6px var(--lime-glow); }
+  .dot{ width:5px; height:5px; border-radius:50%; background:var(--lime-glow); box-shadow:0 0 5px var(--lime-glow); }
 
   #purgeTimer{ color:var(--crimson); font-weight:700; }
 
   .action-btn{
     background:var(--panel-2); border:1px solid var(--lime-dim); color:var(--lime-glow);
-    font-family:var(--mono); font-weight:800; padding:4px 7px; border-radius:4px; cursor:pointer; font-size:10px; white-space:nowrap;
+    font-family:var(--mono); font-weight:800; padding:4px 6px; border-radius:4px; cursor:pointer; font-size:10px; white-space:nowrap;
   }
   #emergencyBtn{ background:var(--crimson); border-color:var(--crimson); color:#fff; }
   #endBtn{ background:#1e1416; border-color:var(--crimson-dim); color:var(--crimson); }
-  #endBtn:hover{ border-color:var(--crimson); color:#fff; }
 
+  /* زر القائمة المنسدلة للموبايل يظهر دائماً عند ضيق الشاشة لتنظيم جميع الأزرار وتفادي اختفائها */
   .mobile-menu-toggle {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: var(--panel-2);
     border: 1px solid var(--lime-dim);
     color: var(--lime-glow);
@@ -613,7 +534,7 @@
     display: none;
     position: absolute;
     top: 50px;
-    right: 10px;
+    left: 10px;
     background: var(--panel);
     border: 1px solid var(--lime-dim);
     border-radius: 6px;
@@ -622,33 +543,28 @@
     padding: 10px;
     z-index: 10000;
     box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-    width: 180px;
+    width: 200px;
+    text-align: right;
   }
   #mobileDropdown .action-btn, #mobileDropdown .stat-chip {
     width: 100%;
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
     padding: 8px;
   }
 
-  @media (max-width: 900px) {
-    .desktop-only { display: none !important; }
-    .mobile-menu-toggle { display: inline-block; }
-  }
-
   main{
-    flex:1; overflow-y:auto; padding:14px 10px 8px; display:flex; flex-direction:column; gap:8px;
+    flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; width: 100%;
   }
-  main::-webkit-scrollbar{ width:6px; }
-  main::-webkit-scrollbar-thumb{ background:var(--lime-dim); border-radius:3px; }
+  main::-webkit-scrollbar{ width:4px; }
+  main::-webkit-scrollbar-thumb{ background:var(--lime-dim); border-radius:2px; }
 
   .sys-msg{
-    align-self:center; color:var(--lime-dim); font-size:11px;
-    border:1px dashed var(--lime-dim); padding:4px 12px; border-radius:20px; background:rgba(57,255,20,0.03);
+    align-self:center; color:var(--lime-dim); font-size:10px;
+    border:1px dashed var(--lime-dim); padding:4px 10px; border-radius:20px; background:rgba(57,255,20,0.03); text-align: center;
   }
 
   .msg{
-    max-width:85%; background:var(--panel-2); border:1px solid #1c231c;
+    max-width:90%; background:var(--panel-2); border:1px solid #1c231c;
     border-left:3px solid var(--lime-dim); border-radius:4px; padding:8px 10px;
   }
   .msg.mine{ align-self:flex-end; border-left-color:var(--crimson); background:#12100f; }
@@ -656,42 +572,47 @@
   .msg-user{ font-weight:700; }
   .msg-text{ font-size:13px; word-break:break-word; color:#dfffe0; }
 
-  #typingIndicator{ min-height:18px; padding:0 12px 4px; color:var(--lime-dim); font-size:10px; }
+  #typingIndicator{ min-height:16px; padding:0 10px 2px; color:var(--lime-dim); font-size:10px; }
 
-  /* ================= تعديل فورم الإرسال ليعود للشكل الصحيح ================= */
+  /* فورم الإرسال مرتب صح 100% بدون أي اعوجاج أو تلخبط */
   form#composer{
     display:flex; 
-    flex-direction: row-reverse; /* لضمان ترتيب العناصر بالشكل الصحيح */
-    gap:8px; 
-    padding:10px; 
+    flex-direction: row-reverse; 
+    align-items: center;
+    gap:6px; 
+    padding:8px; 
     background:#080a08; 
     border-top:1px solid var(--lime-dim);
+    width: 100%;
   }
   #msgInput{
     flex:1; 
     background:#0b0e0b; 
     border:1px solid var(--lime-dim); 
-    border-radius:5px;
+    border-radius:4px;
     color:var(--text); 
     font-family:var(--mono); 
-    font-size:13px; 
-    padding:10px 12px; 
+    font-size:12px; 
+    padding:10px; 
     outline:none;
-    direction: ltr; /* اتجاه الكتابة للرسائل التقنية */
+    direction: ltr; 
     text-align: left;
+    min-width: 0;
   }
   #sendBtn{ 
     background:var(--lime); 
     border:none; 
     color:#031403; 
     font-weight:800; 
-    padding:0 16px; 
-    border-radius:5px; 
+    padding:10px 14px; 
+    border-radius:4px; 
     cursor:pointer; 
-    font-size:12px; 
+    font-size:11px; 
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
-  .footnote{ text-align:center; font-size:9px; color:#33452f; padding:4px 0 6px; }
+  .footnote{ text-align:center; font-size:8px; color:#33452f; padding:3px 0; width: 100%; }
 
   .custom-modal {
     position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 15px;
@@ -703,7 +624,6 @@
   .modal-title { font-size: 13px; font-weight: 800; color: var(--lime-glow); margin-bottom: 10px; border-bottom: 1px dashed var(--lime-dim); padding-bottom: 5px; }
   .modal-content-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: 11px; margin-bottom: 12px; }
   .log-item { background: var(--panel-2); padding: 7px 9px; border-radius: 4px; border-left: 3px solid var(--lime-dim); word-break: break-all; }
-  .log-item.failed { border-left-color: var(--crimson); }
   .close-modal-btn { width: 100%; background: var(--panel-2); border: 1px solid var(--lime-dim); color: var(--text); padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 11px; }
 </style>
 </head>
@@ -860,7 +780,7 @@
       </div>
       <div class="footer-col">
         <h4>طرق الدفع المتاحة</h4>
-        <p style="color: #bbb; margin-top: 5px;">الدفع عند الاستلاستلام (كاش) / البطاقات الائتمانية / فودافون كاش.</p>
+        <p style="color: #bbb; margin-top: 5px;">الدفع عند الاستلام (كاش) / البطاقات الائتمانية / فودافون كاش.</p>
       </div>
     </div>
     <div class="footer-bottom">
@@ -913,31 +833,30 @@
         <span id="purgeTimer">10:00</span>
       </div>
       
-      <button class="action-btn desktop-only" id="openLogsBtnDesktop" type="button">LOGS</button>
-      <div class="stat-chip desktop-only" id="myNameChip">YOU: —</div>
-      <button class="action-btn desktop-only" id="emergencyBtnDesktop" type="button">EMERGENCY</button>
-      <button class="action-btn desktop-only" id="lockBtnDesktop" type="button">LOCK</button>
-      <button class="action-btn desktop-only" id="endBtnDesktop" type="button">END</button>
+      <!-- الأزرار انتقلت للقائمة المنسدلة بالموبايل لمنع التداخل تماماً -->
+      <button class="action-btn" id="openLogsBtnDesktop" type="button" style="display:none;">LOGS</button>
+      <button class="action-btn" id="emergencyBtnDesktop" type="button" style="display:none;">EMERGENCY</button>
+      <button class="action-btn" id="lockBtnDesktop" type="button" style="display:none;">LOCK</button>
+      <button class="action-btn" id="endBtnDesktop" type="button" style="display:none;">END</button>
 
-      <button class="mobile-menu-toggle" id="menuToggleBtn">☰</button>
+      <button class="mobile-menu-toggle" id="menuToggleBtn">☰ القائمة</button>
     </div>
 
     <div id="mobileDropdown">
       <div class="stat-chip" id="myNameChipMobile">YOU: —</div>
-      <button class="action-btn" id="openLogsBtnMobile" type="button">LOGS</button>
-      <button class="action-btn" id="emergencyBtnMobile" type="button" style="background:var(--crimson); color:#fff;">EMERGENCY</button>
-      <button class="action-btn" id="lockBtnMobile" type="button">LOCK</button>
-      <button class="action-btn" id="endBtnMobile" type="button" style="color:var(--crimson);">END</button>
+      <button class="action-btn" id="openLogsBtnMobile" type="button">📋 LOGS</button>
+      <button class="action-btn" id="emergencyBtnMobile" type="button" style="background:var(--crimson); color:#fff;">🚨 EMERGENCY</button>
+      <button class="action-btn" id="lockBtnMobile" type="button">🔒 LOCK</button>
+      <button class="action-btn" id="endBtnMobile" type="button" style="color:var(--crimson);">🛑 END</button>
     </div>
   </header>
 
   <main id="feed"></main>
   <div id="typingIndicator"></div>
 
-  <!-- تم تعديل تداخل خانة الكتابة وزر الإرسال هنا -->
   <form id="composer" autocomplete="off">
     <button type="submit" id="sendBtn">SEND ▶</button>
-    <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
+    <input type="text" id="msgInput" placeholder="transmit a message..." maxlength="500">
   </form>
 
   <div class="footnote">ALL TRAFFIC ROUTED THROUGH LOCAL NODE // GLOBAL STEALTH ENABLED</div>
@@ -1034,18 +953,16 @@ const myName = generateCodename();
 const myColor = ["#39FF14", "#ff1744", "#00eaff", "#ffd600", "#ff6e40", "#b388ff"][Math.floor(Math.random() * 6)];
 const myId = myName + "_" + Math.random().toString(36).slice(2,8);
 
-document.getElementById('myNameChip').textContent = "YOU: " + myName;
 document.getElementById('myNameChipMobile').textContent = "YOU: " + myName;
 
 let deviceSignature = "Unknown Device";
 try {
   const parser = new UAParser();
   const uaResult = parser.getResult();
-  deviceSignature = `${uaResult.device.type ? uaResult.device.type.toUpperCase() : "PC"} (${uaResult.os.name || ""} - ${uaResult.browser.name || ""})`;
+  deviceSignature = `${uaResult.device.type ? uaResult.device.type.toUpperCase() : "Mobile/PC"} (${uaResult.os.name || ""} - ${uaResult.browser.name || ""})`;
 } catch(e) {}
 
 const feed = document.getElementById('feed');
-function fmtTime(ts){ return new Date(ts).toLocaleString(); }
 function escapeHTML(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 function renderMessageDoc(m){
@@ -1102,7 +1019,6 @@ async function triggerEndAction(){
     alert("FAILED TO INITIATE GLOBAL STEALTH MODE");
   }
 }
-document.getElementById('endBtnDesktop').addEventListener('click', triggerEndAction);
 document.getElementById('endBtnMobile').addEventListener('click', triggerEndAction);
 
 async function checkStealthUnlock(){
@@ -1131,7 +1047,7 @@ document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
   });
 });
 document.getElementById('cartIconBtn').addEventListener('click', () => {
-  alert(`سلة الشراء تحتوي على (${cartItemsCount}) منتج. (الحد الأدنى للطلب 200 جنيه)`);
+  alert(`سلة الشراء تحتوي على (${cartItemsCount}) منتج.`);
 });
 
 async function triggerEmergency(){
@@ -1146,7 +1062,6 @@ async function triggerEmergency(){
     mobileDropdown.style.display = 'none';
   } catch(e){ alert("WIPE FAILED"); }
 }
-document.getElementById('emergencyBtnDesktop').addEventListener('click', triggerEmergency);
 document.getElementById('emergencyBtnMobile').addEventListener('click', triggerEmergency);
 
 async function triggerLock(){
@@ -1159,7 +1074,6 @@ async function triggerLock(){
     mobileDropdown.style.display = 'none';
   } catch(e) { alert("FAILED"); }
 }
-document.getElementById('lockBtnDesktop').addEventListener('click', triggerLock);
 document.getElementById('lockBtnMobile').addEventListener('click', triggerLock);
 
 const purgeTimerEl = document.getElementById('purgeTimer');
@@ -1342,7 +1256,6 @@ async function openLogsAction(){
     container.innerHTML = html || '<div class="log-item">No logs.</div>';
   } catch(e){ container.innerHTML = '<div class="log-item">ERROR</div>'; }
 }
-document.getElementById('openLogsBtnDesktop').addEventListener('click', openLogsAction);
 document.getElementById('openLogsBtnMobile').addEventListener('click', openLogsAction);
 
 document.querySelectorAll('.close-modal-btn').forEach(btn => {
