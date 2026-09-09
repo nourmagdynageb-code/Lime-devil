@@ -27,7 +27,14 @@ service cloud.firestore {
 
     match /meta/globalLock {
       allow read, create, update: if request.auth != null;
-      allow delete: if true;
+      allow delete: if false;
+    }
+
+    // القاعدة الجديدة الخاصة بـ accessLogs عشان زر الـ Logs يسجل ويقرا من غير مشاكل
+    match /accessLogs/{logId} {
+      allow read: if request.auth != null;
+      allow create: if true; // مسموح للجميع بتسجيل المحاولات (حتى قبل تسجيل الدخول)
+      allow update, delete: if false;
     }
   }
 }
