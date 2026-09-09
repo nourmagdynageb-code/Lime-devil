@@ -1330,6 +1330,7 @@ form#composer{
       </p>
 
       <div class="makeup-price-row">
+
         <span class="price">
           350 ج.م
         </span>
@@ -1337,6 +1338,7 @@ form#composer{
         <button>
           أضف للسلة
         </button>
+
       </div>
 
     </div>
@@ -1367,6 +1369,7 @@ form#composer{
       </p>
 
       <div class="makeup-price-row">
+
         <span class="price">
           480 ج.م
         </span>
@@ -1374,6 +1377,7 @@ form#composer{
         <button>
           أضف للسلة
         </button>
+
       </div>
 
     </div>
@@ -1750,7 +1754,6 @@ const purgeRef = doc(db,"meta","purge");
 const globalLockRef = doc(db,"meta","globalLock");
 const globalStealthRef = doc(db,"meta","globalStealth");
 
-
 /* =========================
    AUDIO
    ========================= */
@@ -1838,7 +1841,6 @@ function playNotificationSound(){
   );
 }
 
-
 /* =========================
    MATRIX
    ========================= */
@@ -1925,7 +1927,6 @@ function drawMatrix(){
 
 drawMatrix();
 
-
 /* =========================
    CONSTANTS
    ========================= */
@@ -1993,7 +1994,6 @@ const myId =
     .toString(36)
     .slice(2,8);
 
-
 /* =========================
    DEVICE
    ========================= */
@@ -2021,7 +2021,6 @@ try{
     })`;
 
 }catch(e){}
-
 
 /* =========================
    MESSAGES
@@ -2161,7 +2160,6 @@ async function logAccessAttempt(
   }catch(e){}
 }
 
-
 /* =========================
    STEALTH
    ========================= */
@@ -2260,7 +2258,6 @@ stealthInput.addEventListener(
   }
 );
 
-
 /* =========================
    EMERGENCY
    ========================= */
@@ -2318,18 +2315,79 @@ document
     triggerEmergency
   );
 
-
 /* =========================
    LOCK
    ========================= */
 
-/*
-  IMPORTANT:
+const lockScreen =
+  document.getElementById(
+    "lockScreen"
+  );
 
-  LOCK writes a new version to Firestore.
-  Every initialized client listens to this document
-  and reacts only when the version increases.
+const passInput =
+  document.getElementById(
+    "passInput"
+  );
+
+const lockError =
+  document.getElementById(
+    "lockError"
+  );
+
+const lockBox =
+  document.querySelector(
+    ".lock-box"
+  );
+
+/*
+  This function always returns the current
+  device to the SAME main password screen.
 */
+
+function showLockScreen(){
+
+  document
+    .querySelectorAll(".custom-modal")
+    .forEach(
+      modal => {
+        modal.style.display = "none";
+      }
+    );
+
+  document.getElementById(
+    "app"
+  ).style.display = "none";
+
+  passInput.value = "";
+  lockError.textContent = "";
+
+  lockBox.classList.remove(
+    "shake"
+  );
+
+  lockScreen.classList.remove(
+    "lock-dissolve"
+  );
+
+  lockScreen.style.display =
+    "flex";
+
+  lockScreen.style.opacity =
+    "1";
+
+  lockScreen.style.filter =
+    "none";
+
+  lockScreen.style.transform =
+    "none";
+
+  setTimeout(
+    () => {
+      passInput.focus();
+    },
+    100
+  );
+}
 
 async function triggerLock(){
 
@@ -2350,6 +2408,12 @@ async function triggerLock(){
   }
 
   try{
+
+    /*
+      Transaction safely increments the global
+      lock version even if two devices press LOCK
+      at almost the same time.
+    */
 
     await runTransaction(
       db,
@@ -2379,6 +2443,14 @@ async function triggerLock(){
       }
     );
 
+    /*
+      Lock the device that pressed the button
+      immediately. Other initialized devices
+      will receive the Firestore snapshot.
+    */
+
+    showLockScreen();
+
   }catch(e){
 
     console.error(
@@ -2387,7 +2459,7 @@ async function triggerLock(){
     );
 
     alert(
-      "FAILED TO LOCK"
+      "GLOBAL LOCK FAILED — CHECK FIREBASE CONNECTION"
     );
   }
 }
@@ -2400,7 +2472,6 @@ document
     "click",
     triggerLock
   );
-
 
 /* =========================
    PURGE
@@ -2544,7 +2615,6 @@ function tickPurge(){
     `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
 }
 
-
 /* =========================
    TYPING
    ========================= */
@@ -2666,7 +2736,6 @@ function renderTyping(snapshot){
     "MULTIPLE USERS ARE TYPING...";
 }
 
-
 /* =========================
    CHAT
    ========================= */
@@ -2690,7 +2759,6 @@ function initChat(){
 
     Notification.requestPermission();
   }
-
 
   /* =========================
      Messages
@@ -2748,7 +2816,6 @@ function initChat(){
       scrollToBottom();
     }
   );
-
 
   /* =========================
      Presence
@@ -2811,7 +2878,6 @@ function initChat(){
     }
   );
 
-
   /* =========================
      Typing
      ========================= */
@@ -2820,7 +2886,6 @@ function initChat(){
     typingCol,
     renderTyping
   );
-
 
   /* =========================
      Global stealth
@@ -2849,19 +2914,17 @@ function initChat(){
     }
   );
 
-
   /* =========================
      GLOBAL LOCK
      =========================
 
-     The first Firestore snapshot only establishes
-     the current version.
+     First snapshot:
+     only remember current version.
 
-     We DO NOT lock on that first snapshot.
-
-     After that, a higher version means that someone
-     triggered the LOCK button and this client must
-     return to the lock screen.
+     Newer version:
+     someone pressed LOCK.
+     Return this device to the
+     SAME main password screen.
      */
 
   let lastLockVersion = null;
@@ -2887,8 +2950,8 @@ function initChat(){
       }
 
       /*
-        Initial state:
-        remember the current version but don't lock.
+        Initial Firestore state.
+        Do NOT lock on first snapshot.
       */
 
       if(
@@ -2902,8 +2965,7 @@ function initChat(){
       }
 
       /*
-        A newer version means a new global LOCK
-        command was issued.
+        New version = new global LOCK command.
       */
 
       if(
@@ -2914,82 +2976,10 @@ function initChat(){
         lastLockVersion =
           version;
 
-        /*
-          Close every open modal.
-        */
-
-        document
-          .querySelectorAll(
-            ".custom-modal"
-          )
-          .forEach(
-            modal => {
-              modal.style.display =
-                "none";
-            }
-          );
-
-        /*
-          Hide the application.
-        */
-
-        document
-          .getElementById(
-            "app"
-          )
-          .style.display =
-          "none";
-
-        /*
-          Reset password/error state.
-        */
-
-        passInput.value = "";
-
-        lockError.textContent = "";
-
-        /*
-          Remove the unlock animation class
-          in case the previous unlock animation
-          has already finished or is still present.
-        */
-
-        lockScreen.classList.remove(
-          "lock-dissolve"
-        );
-
-        /*
-          Force the lock screen back to its
-          original visible state.
-        */
-
-        lockScreen.style.display =
-          "flex";
-
-        lockScreen.style.opacity =
-          "1";
-
-        lockScreen.style.filter =
-          "none";
-
-        lockScreen.style.transform =
-          "none";
-
-        /*
-          Focus the password field shortly after
-          the screen becomes visible.
-        */
-
-        setTimeout(
-          () => {
-            passInput.focus();
-          },
-          100
-        );
+        showLockScreen();
       }
     }
   );
-
 
   /* =========================
      Purge
@@ -3001,7 +2991,6 @@ function initChat(){
   );
 
   tickPurge();
-
 
   /* =========================
      Presence heartbeat
@@ -3023,36 +3012,14 @@ function initChat(){
     5000
   );
 
-
   pushSystemMessage(
     `[ ${myName} HAS JOINED THE NODE ]`
   );
 }
 
-
 /* =========================
    UNLOCK
    ========================= */
-
-const lockScreen =
-  document.getElementById(
-    "lockScreen"
-  );
-
-const passInput =
-  document.getElementById(
-    "passInput"
-  );
-
-const lockError =
-  document.getElementById(
-    "lockError"
-  );
-
-const lockBox =
-  document.querySelector(
-    ".lock-box"
-  );
 
 async function attemptUnlock(){
 
@@ -3099,18 +3066,9 @@ async function attemptUnlock(){
 
   }catch(e){}
 
-  /*
-    Remove any old lock animation before
-    starting a fresh unlock animation.
-  */
-
   lockScreen.classList.remove(
     "lock-dissolve"
   );
-
-  /*
-    Start unlock animation.
-  */
 
   void lockScreen.offsetWidth;
 
@@ -3169,7 +3127,6 @@ passInput.addEventListener(
   }
 );
 
-
 /* =========================
    USERS MODAL
    ========================= */
@@ -3188,7 +3145,6 @@ document
         "flex";
     }
   );
-
 
 /* =========================
    LOGS
@@ -3281,7 +3237,6 @@ document
     openLogsAction
   );
 
-
 /* =========================
    CLOSE MODALS
    ========================= */
@@ -3307,7 +3262,6 @@ document
       );
     }
   );
-
 
 /* =========================
    COMPOSER
