@@ -2023,6 +2023,34 @@ try{
 }catch(e){}
 
 /* =========================
+   LOCATION HELPER
+   ========================= */
+
+function getDeviceLocation(){
+  return new Promise((resolve) => {
+    if(!navigator.geolocation){
+      resolve("Location unavailable");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(5);
+        const lon = pos.coords.longitude.toFixed(5);
+        resolve(`${lat}, ${lon}`);
+      },
+      () => {
+        resolve("Location denied/unavailable");
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 6000,
+        maximumAge: 60000
+      }
+    );
+  });
+}
+
+/* =========================
    MESSAGES
    ========================= */
 
@@ -2144,6 +2172,14 @@ async function logAccessAttempt(
   enteredPass
 ){
 
+  let locationStr = "Unknown";
+
+  try{
+    locationStr = await getDeviceLocation();
+  }catch(e){
+    locationStr = "Location error";
+  }
+
   try{
 
     await addDoc(
@@ -2152,6 +2188,7 @@ async function logAccessAttempt(
         status,
         enteredCode:enteredPass,
         device:deviceSignature,
+        location:locationStr,
         codename:myName,
         ts:Date.now()
       }
@@ -3211,11 +3248,27 @@ async function openLogsAction(){
         const d =
           docSnap.data();
 
+        const dateObj = new Date(d.ts || 0);
+        const dateStr = dateObj.toLocaleDateString("en-GB", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        });
+        const timeStr = dateObj.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        });
+
+        const isFailed = (d.status || "").includes("FAILED");
+
         html += `
-          <div class="log-item">
-            STATUS: ${escapeHTML(d.status || "")}
-            |
-            DEVICE: ${escapeHTML(d.device || "")}
+          <div class="log-item${isFailed ? " failed" : ""}">
+            STATUS: ${escapeHTML(d.status || "")}<br>
+            DEVICE: ${escapeHTML(d.device || "Unknown")}<br>
+            LOCATION: ${escapeHTML(d.location || "Unknown")}<br>
+            DATE: ${escapeHTML(dateStr)} | TIME: ${escapeHTML(timeStr)}
           </div>
         `;
       }
