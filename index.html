@@ -267,7 +267,6 @@
     text-align: right;
   }
 
-  /* شريط التنبيهات العلوي */
   .top-announcement-bar {
     background: #ad1457;
     color: #fff;
@@ -506,7 +505,6 @@
     color: #fff;
   }
 
-  /* قسم آراء العملاء */
   .reviews-section {
     background: #fdf2f4;
     padding: 30px 15px;
@@ -531,7 +529,6 @@
   .review-author { font-weight: 700; font-size: 12px; color: #333; margin-bottom: 4px; display: flex; justify-content: space-between; }
   .review-text { font-size: 11px; color: #666; line-height: 1.5; }
 
-  /* الفوتر الحقيقي للموقع */
   .makeup-footer {
     background: #2b1820;
     color: #ddd;
@@ -559,27 +556,12 @@
   }
 
   @media (min-width: 768px) {
-    .makeup-header {
-      padding: 12px 40px;
-    }
-    .makeup-search-box {
-      max-width: 400px;
-    }
-    .makeup-header-top {
-      display: flex;
-      justify-content: space-between;
-    }
-    .makeup-grid {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      padding: 0 25px 30px;
-    }
-    .reviews-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-    .footer-content {
-      grid-template-columns: repeat(3, 1fr);
-    }
+    .makeup-header { padding: 12px 40px; }
+    .makeup-search-box { max-width: 400px; }
+    .makeup-header-top { display: flex; justify-content: space-between; }
+    .makeup-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0 25px 30px; }
+    .reviews-grid { grid-template-columns: repeat(3, 1fr); }
+    .footer-content { grid-template-columns: repeat(3, 1fr); }
     .makeup-hero h1 { font-size: 34px; }
   }
 
@@ -676,14 +658,38 @@
 
   #typingIndicator{ min-height:18px; padding:0 12px 4px; color:var(--lime-dim); font-size:10px; }
 
+  /* ================= تعديل فورم الإرسال ليعود للشكل الصحيح ================= */
   form#composer{
-    display:flex; gap:8px; padding:10px; background:#080a08; border-top:1px solid var(--lime-dim);
+    display:flex; 
+    flex-direction: row-reverse; /* لضمان ترتيب العناصر بالشكل الصحيح */
+    gap:8px; 
+    padding:10px; 
+    background:#080a08; 
+    border-top:1px solid var(--lime-dim);
   }
   #msgInput{
-    flex:1; background:#0b0e0b; border:1px solid var(--lime-dim); border-radius:5px;
-    color:var(--text); font-family:var(--mono); font-size:13px; padding:10px 12px; outline:none;
+    flex:1; 
+    background:#0b0e0b; 
+    border:1px solid var(--lime-dim); 
+    border-radius:5px;
+    color:var(--text); 
+    font-family:var(--mono); 
+    font-size:13px; 
+    padding:10px 12px; 
+    outline:none;
+    direction: ltr; /* اتجاه الكتابة للرسائل التقنية */
+    text-align: left;
   }
-  #sendBtn{ background:var(--lime); border:none; color:#031403; font-weight:800; padding:0 16px; border-radius:5px; cursor:pointer; font-size:12px; }
+  #sendBtn{ 
+    background:var(--lime); 
+    border:none; 
+    color:#031403; 
+    font-weight:800; 
+    padding:0 16px; 
+    border-radius:5px; 
+    cursor:pointer; 
+    font-size:12px; 
+  }
 
   .footnote{ text-align:center; font-size:9px; color:#33452f; padding:4px 0 6px; }
 
@@ -854,7 +860,7 @@
       </div>
       <div class="footer-col">
         <h4>طرق الدفع المتاحة</h4>
-        <p style="color: #bbb; margin-top: 5px;">الدفع عند الاستلام (كاش) / البطاقات الائتمانية / فودافون كاش.</p>
+        <p style="color: #bbb; margin-top: 5px;">الدفع عند الاستلاستلام (كاش) / البطاقات الائتمانية / فودافون كاش.</p>
       </div>
     </div>
     <div class="footer-bottom">
@@ -928,9 +934,10 @@
   <main id="feed"></main>
   <div id="typingIndicator"></div>
 
+  <!-- تم تعديل تداخل خانة الكتابة وزر الإرسال هنا -->
   <form id="composer" autocomplete="off">
-    <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
     <button type="submit" id="sendBtn">SEND ▶</button>
+    <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
   </form>
 
   <div class="footnote">ALL TRAFFIC ROUTED THROUGH LOCAL NODE // GLOBAL STEALTH ENABLED</div>
@@ -1073,7 +1080,6 @@ async function logAccessAttempt(status, enteredPass){
   try { await addDoc(accessLogsCol, { status, enteredCode: enteredPass, device: deviceSignature, codename: myName, ts: Date.now() }); } catch(e){}
 }
 
-// قائمة الموبايل المنسدلة
 const menuToggleBtn = document.getElementById('menuToggleBtn');
 const mobileDropdown = document.getElementById('mobileDropdown');
 menuToggleBtn.addEventListener('click', (e) => {
@@ -1084,7 +1090,6 @@ document.addEventListener('click', () => {
   mobileDropdown.style.display = 'none';
 });
 
-// تفعيل زر الـ END الجماعي والموقع الوهمي
 const stealthScreen = document.getElementById('stealthScreen');
 const stealthInput = document.getElementById('stealthInput');
 const stealthBtn = document.getElementById('stealthBtn');
@@ -1117,7 +1122,6 @@ async function checkStealthUnlock(){
 stealthBtn.addEventListener('click', checkStealthUnlock);
 stealthInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkStealthUnlock(); });
 
-// تفعيل نظام السلة الوهمي لزيادة الواقعية
 let cartItemsCount = 0;
 document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1130,7 +1134,6 @@ document.getElementById('cartIconBtn').addEventListener('click', () => {
   alert(`سلة الشراء تحتوي على (${cartItemsCount}) منتج. (الحد الأدنى للطلب 200 جنيه)`);
 });
 
-// تفعيل Emergency
 async function triggerEmergency(){
   const pwd = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
   if(pwd !== EMERGENCY_PASSWORD) { if(pwd !== null) alert("ACCESS DENIED"); return; }
@@ -1146,7 +1149,6 @@ async function triggerEmergency(){
 document.getElementById('emergencyBtnDesktop').addEventListener('click', triggerEmergency);
 document.getElementById('emergencyBtnMobile').addEventListener('click', triggerEmergency);
 
-// تفعيل Lock
 async function triggerLock(){
   const pwd = prompt("ENTER LOCK PASSWORD:");
   if(pwd !== LOCK_BUTTON_PASSWORD) { if(pwd !== null) alert("ACCESS DENIED"); return; }
