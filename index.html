@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/UAParser.js/1.0.37/ua-parser.min.js"></script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&family=Cairo:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700;800&family=Cairo:wght@400;600;700;900&display=swap');
 
   :root{
     --void:#050505;
@@ -232,7 +232,7 @@
     0%,100%{ transform:translateX(0); }
     20%{ transform:translateX(-8px); }
     40%{ transform:translateX(8px); }
-    60%{ transform:translateX(-5px); }
+    60%{ transform:downloadsX(-5px); }
     80%{ transform:translateX(5px); }
   }
 
@@ -243,43 +243,64 @@
     100%{ opacity:0; filter:blur(10px) brightness(0.2); transform:scale(1.04); }
   }
 
-  /* ================= STEALTH / MAKEUP FAKE SCREEN ================= */
+  /* ================= REALISTIC MAKEUP E-COMMERCE STEALTH SCREEN ================= */
   #stealthScreen {
     position: fixed; inset: 0; z-index: 30000;
-    background: #fff0f5;
-    color: #4a2e35;
+    background: #faf6f8;
+    color: #3b2a32;
     font-family: 'Cairo', sans-serif;
     display: none;
     flex-direction: column;
     overflow-y: auto;
   }
+  
+  .makeup-top-banner {
+    background: #4a1525;
+    color: #ffccd5;
+    text-align: center;
+    font-size: 11px;
+    padding: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
   .makeup-header {
     background: #ffffff;
-    padding: 12px 15px;
+    padding: 12px 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    align-items: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    border-bottom: 2px solid #f8bbd0;
+    gap: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    border-bottom: 1px solid #f2e3e9;
   }
-  .makeup-logo {
-    font-size: 22px;
-    font-weight: bold;
-    color: #d81b60;
+
+  .makeup-header-main {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
   }
+
+  .makeup-logo {
+    font-size: 20px;
+    font-weight: 900;
+    color: #7b113a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.5px;
+  }
+
   .makeup-search-box {
     display: flex;
     align-items: center;
-    background: #fce4ec;
-    border: 1px solid #f48fb1;
-    border-radius: 30px;
-    padding: 5px 12px;
+    background: #fff0f3;
+    border: 1px solid #f8b4cb;
+    border-radius: 25px;
+    padding: 6px 14px;
     width: 100%;
-    max-width: 280px;
+    max-width: 400px;
+    margin: 0 auto;
   }
   .makeup-search-box input {
     border: none;
@@ -288,122 +309,185 @@
     width: 100%;
     font-family: 'Cairo', sans-serif;
     font-size: 13px;
-    color: #880e4f;
+    color: #5a1827;
     text-align: right;
   }
   .makeup-search-box button {
     background: none;
     border: none;
     cursor: pointer;
-    color: #d81b60;
+    color: #a61c4d;
     font-size: 15px;
+    padding-left: 4px;
   }
+
   .makeup-nav {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     font-size: 13px;
-    font-weight: 600;
-    color: #666;
-    flex-wrap: wrap;
+    font-weight: 700;
+    color: #555;
     justify-content: center;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid #fcf2f5;
   }
-  .makeup-nav span:hover { color: #d81b60; }
+  .makeup-nav span { cursor: pointer; transition: color 0.2s; }
+  .makeup-nav span:hover { color: #a61c4d; }
   
   .makeup-hero {
     text-align: center;
-    padding: 40px 15px;
-    background: linear-gradient(135deg, #ffe4e1, #fff0f5);
+    padding: 45px 20px;
+    background: linear-gradient(135deg, #fce8ef, #f7d6e2);
+    border-bottom: 1px solid #f0cbd8;
   }
   .makeup-hero h1 {
-    font-size: 24px;
-    color: #c2185b;
+    font-size: 26px;
+    color: #5a1827;
     margin-bottom: 10px;
+    font-weight: 900;
   }
   .makeup-hero p {
-    color: #666;
+    color: #6a4c55;
     font-size: 14px;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .makeup-hero button {
-    background: #d81b60;
+    background: #9e1b43;
     color: #fff;
     border: none;
-    padding: 10px 25px;
+    padding: 11px 28px;
     border-radius: 30px;
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(216,27,96,0.3);
+    box-shadow: 0 4px 15px rgba(158,27,67,0.3);
+    font-family: 'Cairo', sans-serif;
+    transition: transform 0.2s;
+  }
+  .makeup-hero button:hover { transform: translateY(-2px); }
+
+  .makeup-section-title {
+    text-align: center;
+    margin: 30px 0 10px;
+    font-size: 20px;
+    font-weight: 900;
+    color: #5a1827;
   }
 
   .makeup-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
-    padding: 20px 15px;
-    max-width: 1100px;
+    padding: 15px 25px 40px;
+    max-width: 1200px;
     margin: 0 auto;
+    width: 100%;
   }
+
   .makeup-card {
     background: #fff;
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-    text-align: center;
-    border: 1px solid #fce4ec;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 5px 18px rgba(0,0,0,0.04);
+    text-align: right;
+    border: 1px solid #f1dbe3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
+
   .makeup-img-placeholder {
-    height: 150px;
-    border-radius: 10px;
+    height: 160px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-weight: bold;
-    font-size: 15px;
+    font-weight: 700;
+    font-size: 14px;
     margin-bottom: 12px;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: relative;
   }
-  .makeup-card h3 { color: #880e4f; margin-bottom: 6px; font-size: 17px; }
-  .makeup-card p { color: #777; font-size: 12px; margin-bottom: 12px; }
+  .makeup-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #9e1b43;
+    color: #fff;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .makeup-card h3 { color: #5a1827; margin-bottom: 4px; font-size: 16px; font-weight: 700; }
+  .makeup-card .rating { color: #f59e0b; font-size: 12px; margin-bottom: 6px; }
+  .makeup-card p { color: #775c65; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+  
+  .makeup-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px dashed #f5e1e8;
+  }
+  .price { font-weight: 900; color: #9e1b43; font-size: 15px; }
+  
   .makeup-card button {
-    background: #e91e63;
+    background: #9e1b43;
     color: #fff;
     border: none;
-    padding: 7px 18px;
+    padding: 6px 16px;
     border-radius: 20px;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 700;
     font-family: 'Cairo', sans-serif;
+    font-size: 12px;
+    transition: background 0.2s;
   }
+  .makeup-card button:hover { background: #7b113a; }
   
+  .makeup-footer {
+    background: #2b0c16;
+    color: #e2c1cc;
+    padding: 30px 20px 20px;
+    margin-top: auto;
+    font-size: 12px;
+  }
+  .makeup-footer-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .makeup-footer h4 { color: #fff; margin-bottom: 10px; font-size: 14px; }
+  .makeup-footer p, .makeup-footer li { color: #c4a4b0; margin-bottom: 6px; list-style: none; font-size: 11px; }
   .makeup-footer-note {
     text-align: center;
-    padding: 15px;
-    background: #f8bbd0;
-    color: #880e4f;
-    font-size: 12px;
-    margin-top: auto;
-    font-weight: bold;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    color: #a3828e;
+    font-size: 11px;
   }
 
   @media (min-width: 768px) {
     .makeup-header {
-      flex-direction: row;
-      justify-content: space-between;
       padding: 15px 40px;
     }
+    .makeup-header-main {
+      justify-content: space-between;
+    }
     .makeup-search-box {
+      margin: 0;
       width: 320px;
-    }
-    .makeup-grid {
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      padding: 50px 40px;
-    }
-    .makeup-hero h1 {
-      font-size: 40px;
-    }
-    .makeup-hero p {
-      font-size: 17px;
     }
   }
 
@@ -432,18 +516,18 @@
 
   #purgeTimer{ color:var(--crimson); font-weight:700; }
 
-  /* ================= HACKER BUTTONS REWORK (BIG & FIERCE) ================= */
+  /* ================= HACKER BUTTONS REWORK (RESPONSIVE & CLEAR FOR MOBILE) ================= */
   .action-btn, #unlockBtn, #sendBtn {
     background: linear-gradient(135deg, #0d1a0d, #050a05);
     border: 1px solid var(--lime-dim);
     color: var(--lime-glow);
     font-family: var(--mono);
     font-weight: 800;
-    padding: 8px 16px;
+    padding: 8px 14px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
-    letter-spacing: 1.5px;
+    font-size: 11px;
+    letter-spacing: 1px;
     position: relative;
     overflow: hidden;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -451,7 +535,6 @@
     white-space: nowrap;
   }
 
-  /* لمعة متطورة عند مرور الماوس */
   .action-btn::after, #unlockBtn::after, #sendBtn::after {
     content: '';
     position: absolute;
@@ -472,13 +555,8 @@
     background: var(--lime-dim);
     color: #031403;
     border-color: var(--lime);
-    box-shadow: 0 0 25px var(--lime), 0 0 12px rgba(57,255,20,0.9);
-    transform: translateY(-2px);
-  }
-
-  .action-btn:active, #unlockBtn:active, #sendBtn:active {
-    transform: translateY(1px);
-    box-shadow: 0 0 8px var(--lime);
+    box-shadow: 0 0 22px var(--lime);
+    transform: translateY(-1px);
   }
 
   /* أزرار الطوارئ والخروج بلون دموي فخم */
@@ -486,13 +564,12 @@
     background: linear-gradient(135deg, #26050a, #0a0103) !important;
     border-color: var(--crimson-dim) !important;
     color: var(--crimson) !important;
-    box-shadow: 0 0 12px rgba(255,23,68,0.12) !important;
   }
   #emergencyBtnDesktop:hover, #emergencyBtnMobile:hover {
     background: var(--crimson) !important;
     color: #fff !important;
     border-color: var(--crimson) !important;
-    box-shadow: 0 0 30px var(--crimson), 0 0 15px rgba(255,23,68,0.9) !important;
+    box-shadow: 0 0 25px var(--crimson) !important;
   }
 
   #endBtnDesktop, #endBtnMobile {
@@ -504,34 +581,28 @@
     background: #ff1744 !important;
     color: #fff !important;
     border-color: #ff1744 !important;
-    box-shadow: 0 0 25px #ff1744 !important;
+    box-shadow: 0 0 22px #ff1744 !important;
   }
 
-  /* زر القائمة للموبايل */
+  /* زر القائمة للموبايل المحسّن */
   .mobile-menu-toggle {
     display: none;
     background: linear-gradient(135deg, #0d1a0d, #050a05);
     border: 1px solid var(--lime-dim);
     color: var(--lime-glow);
-    padding: 8px 14px;
+    padding: 7px 12px;
     border-radius: 6px;
     font-size: 16px;
     cursor: pointer;
-    box-shadow: 0 0 12px rgba(57,255,20,0.1);
-    transition: all 0.2s;
-  }
-  .mobile-menu-toggle:hover {
-    background: var(--lime-dim);
-    color: #031403;
-    box-shadow: 0 0 20px var(--lime);
+    box-shadow: 0 0 10px rgba(57,255,20,0.15);
   }
 
   /* قائمة الموبايل المنسدلة */
   #mobileDropdown {
     display: none;
     position: absolute;
-    top: 60px;
-    right: 15px;
+    top: 55px;
+    right: 12px;
     background: var(--panel);
     border: 1px solid var(--lime-dim);
     border-radius: 8px;
@@ -540,18 +611,19 @@
     padding: 12px;
     z-index: 10000;
     box-shadow: 0 8px 25px rgba(0,0,0,0.9);
-    width: 200px;
+    width: 210px;
   }
   #mobileDropdown .action-btn, #mobileDropdown .stat-chip {
     width: 100%;
     justify-content: center;
     text-align: center;
-    padding: 10px;
+    padding: 9px;
   }
 
-  @media (max-width: 950px) {
+  /* تخصيص العرض حسب الشاشات لتظهر الزراير بوضوح تام بدون اختفاء */
+  @media (max-width: 980px) {
     .desktop-only { display: none !important; }
-    .mobile-menu-toggle { display: inline-block; }
+    .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
   }
 
   main{
@@ -608,51 +680,104 @@
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<!-- صفحة المكياج الوهمية -->
+<!-- صفحة مكياج واقعية واحترافية تماماً -->
 <div id="stealthScreen">
+  <div class="makeup-top-banner">
+    ✨ شحن مجاني لكافة المحافظات للطلبات التي تتجاوز 500 جنيه | استمتعي بعروض الموسم الحصريّة
+  </div>
+
   <div class="makeup-header">
-    <div class="makeup-logo">✨ Glow & Glam Beauty</div>
+    <div class="makeup-header-main">
+      <div class="makeup-logo">💄 Lumina Glow</div>
+      
+      <div class="makeup-search-box">
+        <input type="text" id="stealthInput" placeholder="ابحثي عن أحمر شفاه، سيروم، باليت..." autocomplete="off">
+        <button id="stealthBtn">🔍</button>
+      </div>
+    </div>
+
     <div class="makeup-nav">
       <span>الرئيسية</span>
-      <span>منتجات الشفاه</span>
+      <span>مكياج العيون</span>
       <span>العناية بالبشرة</span>
-      <span>العروض</span>
-    </div>
-    <div class="makeup-search-box">
-      <input type="text" id="stealthInput" placeholder="ابحثي عن منتج أو ماركة..." autocomplete="off">
-      <button id="stealthBtn">🔍</button>
+      <span>أحمر الشفاه</span>
+      <span>العروض الخاصة</span>
     </div>
   </div>
 
   <div class="makeup-hero">
     <h1>أسرار التألق وجمال البشرة الطبيعي</h1>
-    <p>اكتشفي أحدث صيحات الماكياج ومنتجات العناية المصممة خصيصاً لتبرز جمالك الساحر كل يوم.</p>
-    <button>تسوقي تشكيلة الخريف</button>
+    <p>اكتشفي تشكيلتنا الفاخرة المصممة خصيصاً لتمنحك إشراقة ساحرة وثقة تدوم طوال اليوم بكل تناغم ونعومة.</p>
+    <button>تسوقي تشكيلة الخريف الجديدة</button>
   </div>
+
+  <div class="makeup-section-title">✨ المنتجات الأكثر مبيعاً هذا الأسبوع</div>
 
   <div class="makeup-grid">
     <div class="makeup-card">
-      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #f48fb1, #ad1457);">مجموعة أحمر الشفاه المخملي</div>
-      <h3>مجموعة التوت الملكي</h3>
-      <p>تركيبة ثابتة ومقاومة للمياه تدوم طوال اليوم بدون جفاف.</p>
-      <button>اضيفي للسلة</button>
+      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #e91e63, #880e4f);">
+        <span class="makeup-badge">الأكثر طلباً</span>
+        مجموعة التوت الملكي المخملي
+      </div>
+      <h3>مجموعة أحمر الشفاه الثابت</h3>
+      <div class="rating">★★★★★ (142 تقييم)</div>
+      <p>تركيبة مقاومة للمياه تدوم حتى 16 ساعة بدون جفاف أو تقشر، تناسب كافة السهرات.</p>
+      <div class="makeup-price-row">
+        <span class="price">350 ج.م</span>
+        <button>أضف للسلة</button>
+      </div>
     </div>
+
     <div class="makeup-card">
-      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #ff80ab, #c2185b);">باليت ظلال العيون اللامعة</div>
-      <h3>باليت الوادي الوردي</h3>
-      <p>ألوان متألقة وعصرية تناسب كافة المناسبات والسهرات الخاصة.</p>
-      <button>اضيفي للسلة</button>
+      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #ec407a, #ad1457);">
+        <span class="makeup-badge">جديد</span>
+        باليت الوادي الوردي اللامع
+      </div>
+      <h3>باليت ظلال العيون المتألقة</h3>
+      <div class="rating">★★★★★ (98 تقييم)</div>
+      <p>12 درجة لونية مميزة تمتزج بسلاسة فائقة لتمنحك عيوناً جذابة وإطلالة عصرية ساحرة.</p>
+      <div class="makeup-price-row">
+        <span class="price">480 ج.م</span>
+        <button>أضف للسلة</button>
+      </div>
     </div>
+
     <div class="makeup-card">
-      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #f06292, #880e4f);">سيروم النضارة بالفيتامينات</div>
-      <h3>سيروم الإشراق السحري</h3>
-      <p>يغذي البشرة بعمق ويمنحك إضاءة طبيعية ونعومة فائقة.</p>
-      <button>اضيفي للسلة</button>
+      <div class="makeup-img-placeholder" style="background: linear-gradient(135deg, #f06292, #6a1b9a);">
+        <span class="makeup-badge">عناية مكثفة</span>
+        سيروم النضارة بالفيتامينات
+      </div>
+      <h3>سيروم الإشراق السحري سي</h3>
+      <div class="rating">★★★★★ (215 تقييم)</div>
+      <p>يغذي البشرة بعمق، يوحد اللون، ويمنحك إضاءة طبيعية ونعومة كالحرير من الاستخدام الأول.</p>
+      <div class="makeup-price-row">
+        <span class="price">520 ج.م</span>
+        <button>أضف للسلة</button>
+      </div>
     </div>
   </div>
 
-  <div class="makeup-footer-note">
-    جميع حقوق العرض والتوزيع محفوظة © 2026 Glow & Glam Cosmetics. الشحن مجاني للطلبات فوق 500 جنيه.
+  <div class="makeup-footer">
+    <div class="makeup-footer-content">
+      <div>
+        <h4>عن متجر Lumina Glow</h4>
+        <p>علامة تجارية رائدة تقدم مستحضرات تجميل أصلية وآمنة تماماً على البشرة بمواصفات عالمية.</p>
+      </div>
+      <div>
+        <h4>روابط سريعة</h4>
+        <p>سياسة الاسترجاع والشحن</p>
+        <p>تتبع طلبك الآن</p>
+        <p>فروعنا في الجمهورية</p>
+      </div>
+      <div>
+        <h4>خدمة العملاء</h4>
+        <p>الخط الساخن: 19882</p>
+        <p>دعم الواتساب متاح 24/7</p>
+      </div>
+    </div>
+    <div class="makeup-footer-note">
+      جميع حقوق النشر والتوزيع محفوظة © 2026 Lumina Glow Cosmetics Egypt.
+    </div>
   </div>
 </div>
 
@@ -700,7 +825,7 @@
         <span id="purgeTimer">10:00</span>
       </div>
       
-      <!-- الأزرار الأساسية تظهر على الكمبيوتر ومخفية داخل القائمة في الموبايل -->
+      <!-- الأزرار الأساسية تظهر بوضوح على الشاشات الكبيرة -->
       <button class="action-btn desktop-only" id="openLogsBtnDesktop" type="button">LOGS</button>
       <div class="stat-chip desktop-only" id="myNameChip">YOU: —</div>
       <button class="action-btn desktop-only" id="emergencyBtnDesktop" type="button">EMERGENCY</button>
@@ -711,7 +836,7 @@
       <button class="mobile-menu-toggle" id="menuToggleBtn">☰</button>
     </div>
 
-    <!-- قائمة الموبايل المنسدلة -->
+    <!-- قائمة الموبايل المنسدلة المرتبة -->
     <div id="mobileDropdown">
       <div class="stat-chip" id="myNameChipMobile">YOU: —</div>
       <button class="action-btn" id="openLogsBtnMobile" type="button">LOGS</button>
@@ -897,15 +1022,15 @@ document.getElementById('endBtnDesktop').addEventListener('click', triggerEndAct
 document.getElementById('endBtnMobile').addEventListener('click', triggerEndAction);
 
 async function checkStealthUnlock(){
-  if(stealthInput.value.trim() === END_PASSWORD){
+  const val = stealthInput.value.trim().toLowerCase();
+  if(val === END_PASSWORD){
     try {
       await setDoc(globalStealthRef, { active: false, version: Date.now() });
     } catch(e){}
     stealthInput.value = '';
   } else {
-    const queryVal = stealthInput.value.trim();
-    if(queryVal !== ''){
-      alert(`عذراً، لا توجد نتائج مطابقة لـ "${queryVal}"`);
+    if(val !== ''){
+      alert(`عذراً، لا توجد نتائج مطابقة لـ "${stealthInput.value}" في المتجر حالياً.`);
     }
     stealthInput.value = '';
   }
