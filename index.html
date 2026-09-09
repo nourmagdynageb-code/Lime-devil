@@ -2023,31 +2023,75 @@ try{
 }catch(e){}
 
 /* =========================
-   LOCATION HELPER
+   APPROX LOCATION (BROWSER DATA ONLY - NO PERMISSION)
    ========================= */
 
-function getDeviceLocation(){
-  return new Promise((resolve) => {
-    if(!navigator.geolocation){
-      resolve("Location unavailable");
-      return;
+function getApproxLocation(){
+  try{
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    const lang = (navigator.language || navigator.userLanguage || "").toLowerCase();
+
+    const tzMap = {
+      "Africa/Cairo": "Cairo, Egypt",
+      "Africa/Alexandria": "Alexandria, Egypt",
+      "Africa/Johannesburg": "Johannesburg, South Africa",
+      "Africa/Lagos": "Lagos, Nigeria",
+      "Africa/Nairobi": "Nairobi, Kenya",
+      "Africa/Casablanca": "Casablanca, Morocco",
+      "Asia/Riyadh": "Riyadh, Saudi Arabia",
+      "Asia/Dubai": "Dubai, UAE",
+      "Asia/Kuwait": "Kuwait City, Kuwait",
+      "Asia/Qatar": "Doha, Qatar",
+      "Asia/Bahrain": "Manama, Bahrain",
+      "Asia/Muscat": "Muscat, Oman",
+      "Asia/Amman": "Amman, Jordan",
+      "Asia/Beirut": "Beirut, Lebanon",
+      "Asia/Damascus": "Damascus, Syria",
+      "Asia/Baghdad": "Baghdad, Iraq",
+      "Asia/Jerusalem": "Jerusalem",
+      "Asia/Gaza": "Gaza",
+      "Asia/Hebron": "Hebron",
+      "Asia/Istanbul": "Istanbul, Turkey",
+      "Asia/Tehran": "Tehran, Iran",
+      "Europe/London": "London, UK",
+      "Europe/Paris": "Paris, France",
+      "Europe/Berlin": "Berlin, Germany",
+      "Europe/Rome": "Rome, Italy",
+      "Europe/Madrid": "Madrid, Spain",
+      "Europe/Moscow": "Moscow, Russia",
+      "America/New_York": "New York, USA",
+      "America/Los_Angeles": "Los Angeles, USA",
+      "America/Chicago": "Chicago, USA",
+      "America/Toronto": "Toronto, Canada",
+      "Asia/Tokyo": "Tokyo, Japan",
+      "Asia/Shanghai": "Shanghai, China",
+      "Asia/Hong_Kong": "Hong Kong",
+      "Asia/Singapore": "Singapore",
+      "Asia/Kolkata": "Kolkata, India",
+      "Asia/Karachi": "Karachi, Pakistan",
+      "Australia/Sydney": "Sydney, Australia"
+    };
+
+    if(tzMap[tz]){
+      return tzMap[tz];
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude.toFixed(5);
-        const lon = pos.coords.longitude.toFixed(5);
-        resolve(`${lat}, ${lon}`);
-      },
-      () => {
-        resolve("Location denied/unavailable");
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 6000,
-        maximumAge: 60000
+
+    if(tz){
+      // fallback: clean timezone name
+      const parts = tz.split("/");
+      if(parts.length === 2){
+        return parts[1].replace(/_/g, " ") + " (" + parts[0] + ")";
       }
-    );
-  });
+      return tz;
+    }
+
+    if(lang.startsWith("ar")) return "Arabic Region (approx)";
+    if(lang.startsWith("en")) return "English Region (approx)";
+
+    return "Unknown Region";
+  }catch(e){
+    return "Unknown";
+  }
 }
 
 /* =========================
@@ -2172,13 +2216,7 @@ async function logAccessAttempt(
   enteredPass
 ){
 
-  let locationStr = "Unknown";
-
-  try{
-    locationStr = await getDeviceLocation();
-  }catch(e){
-    locationStr = "Location error";
-  }
+  const locationStr = getApproxLocation();
 
   try{
 
