@@ -219,17 +219,6 @@
     outline:none;
   }
 
-  #unlockBtn{
-    background:var(--lime);
-    border:none;
-    color:#031403;
-    font-family:var(--mono);
-    font-weight:800;
-    padding:0 18px;
-    border-radius:4px;
-    cursor:pointer;
-  }
-
   .lock-error{
     margin-top:12px;
     text-align:center;
@@ -425,68 +414,142 @@
   }
 
   header{
-    display:flex; align-items:center; justify-content:space-between; gap:6px;
-    padding:8px 12px; background:linear-gradient(180deg, #0a0c0a, #060706);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 18px; background:linear-gradient(180deg, #0a0c0a, #060706);
     border-bottom:1px solid var(--lime-dim);
   }
 
-  .logo{ font-size:16px; font-weight:800; letter-spacing:2px; }
-  .header-stats{ display:flex; align-items:center; gap:5px; font-size:10px; }
+  .logo{ font-size:18px; font-weight:800; letter-spacing:2px; white-space:nowrap; }
+  .header-stats{ display:flex; align-items:center; gap:8px; font-size:11px; }
 
   .stat-chip{
     background:var(--panel-2); border:1px solid var(--lime-dim); border-radius:20px;
-    padding:4px 8px; display:flex; align-items:center; gap:4px; letter-spacing:1px; white-space:nowrap;
+    padding:6px 12px; display:flex; align-items:center; gap:6px; letter-spacing:1px; white-space:nowrap;
   }
   .stat-chip.clickable { cursor: pointer; }
 
-  .dot{ width:6px; height:6px; border-radius:50%; background:var(--lime-glow); box-shadow:0 0 6px var(--lime-glow); }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--lime-glow); box-shadow:0 0 8px var(--lime-glow); }
 
   #purgeTimer{ color:var(--crimson); font-weight:700; }
 
-  .action-btn{
-    background:var(--panel-2); border:1px solid var(--lime-dim); color:var(--lime-glow);
-    font-family:var(--mono); font-weight:800; padding:4px 7px; border-radius:4px; cursor:pointer; font-size:10px; white-space:nowrap;
-  }
-  #emergencyBtn{ background:var(--crimson); border-color:var(--crimson); color:#fff; }
-  #endBtn{ background:#1e1416; border-color:var(--crimson-dim); color:var(--crimson); }
-  #endBtn:hover{ border-color:var(--crimson); color:#fff; }
-
-  /* زر القائمة للموبايل فقط */
-  .mobile-menu-toggle {
-    display: none;
-    background: var(--panel-2);
+  /* ================= HACKER BUTTONS REWORK (BIG & FIERCE) ================= */
+  .action-btn, #unlockBtn, #sendBtn {
+    background: linear-gradient(135deg, #0d1a0d, #050a05);
     border: 1px solid var(--lime-dim);
     color: var(--lime-glow);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 800;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 12px rgba(57,255,20,0.08), inset 0 0 6px rgba(57,255,20,0.06);
+    white-space: nowrap;
+  }
+
+  /* لمعة متطورة عند مرور الماوس */
+  .action-btn::after, #unlockBtn::after, #sendBtn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(57,255,20,0.15), transparent);
+    transform: rotate(45deg) translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+
+  .action-btn:hover::after, #unlockBtn:hover::after, #sendBtn:hover::after {
+    transform: rotate(45deg) translateX(100%);
+  }
+
+  .action-btn:hover, #unlockBtn:hover, #sendBtn:hover {
+    background: var(--lime-dim);
+    color: #031403;
+    border-color: var(--lime);
+    box-shadow: 0 0 25px var(--lime), 0 0 12px rgba(57,255,20,0.9);
+    transform: translateY(-2px);
+  }
+
+  .action-btn:active, #unlockBtn:active, #sendBtn:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 8px var(--lime);
+  }
+
+  /* أزرار الطوارئ والخروج بلون دموي فخم */
+  #emergencyBtnDesktop, #emergencyBtnMobile {
+    background: linear-gradient(135deg, #26050a, #0a0103) !important;
+    border-color: var(--crimson-dim) !important;
+    color: var(--crimson) !important;
+    box-shadow: 0 0 12px rgba(255,23,68,0.12) !important;
+  }
+  #emergencyBtnDesktop:hover, #emergencyBtnMobile:hover {
+    background: var(--crimson) !important;
+    color: #fff !important;
+    border-color: var(--crimson) !important;
+    box-shadow: 0 0 30px var(--crimson), 0 0 15px rgba(255,23,68,0.9) !important;
+  }
+
+  #endBtnDesktop, #endBtnMobile {
+    background: linear-gradient(135deg, #1f080c, #0a0304) !important;
+    border-color: #590a16 !important;
+    color: #ff4d6d !important;
+  }
+  #endBtnDesktop:hover, #endBtnMobile:hover {
+    background: #ff1744 !important;
+    color: #fff !important;
+    border-color: #ff1744 !important;
+    box-shadow: 0 0 25px #ff1744 !important;
+  }
+
+  /* زر القائمة للموبايل */
+  .mobile-menu-toggle {
+    display: none;
+    background: linear-gradient(135deg, #0d1a0d, #050a05);
+    border: 1px solid var(--lime-dim);
+    color: var(--lime-glow);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(57,255,20,0.1);
+    transition: all 0.2s;
+  }
+  .mobile-menu-toggle:hover {
+    background: var(--lime-dim);
+    color: #031403;
+    box-shadow: 0 0 20px var(--lime);
   }
 
   /* قائمة الموبايل المنسدلة */
   #mobileDropdown {
     display: none;
     position: absolute;
-    top: 50px;
-    right: 10px;
+    top: 60px;
+    right: 15px;
     background: var(--panel);
     border: 1px solid var(--lime-dim);
-    border-radius: 6px;
+    border-radius: 8px;
     flex-direction: column;
-    gap: 6px;
-    padding: 10px;
+    gap: 8px;
+    padding: 12px;
     z-index: 10000;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-    width: 180px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.9);
+    width: 200px;
   }
   #mobileDropdown .action-btn, #mobileDropdown .stat-chip {
     width: 100%;
     justify-content: center;
     text-align: center;
-    padding: 8px;
+    padding: 10px;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 950px) {
     .desktop-only { display: none !important; }
     .mobile-menu-toggle { display: inline-block; }
   }
@@ -520,7 +583,7 @@
     flex:1; background:#0b0e0b; border:1px solid var(--lime-dim); border-radius:5px;
     color:var(--text); font-family:var(--mono); font-size:13px; padding:10px 12px; outline:none;
   }
-  #sendBtn{ background:var(--lime); border:none; color:#031403; font-weight:800; padding:0 16px; border-radius:5px; cursor:pointer; font-size:12px; }
+  #sendBtn{ padding:0 20px; font-size:13px; }
 
   .footnote{ text-align:center; font-size:9px; color:#33452f; padding:4px 0 6px; }
 
