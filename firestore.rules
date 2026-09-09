@@ -30,10 +30,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // القاعدة الجديدة الخاصة بـ accessLogs عشان زر الـ Logs يسجل ويقرا من غير مشاكل
+    // القاعدة الجديدة الخاصة بوضع الـ Stealth الجماعي (زر END)
+    match /meta/globalStealth {
+      allow read, create, update: if request.auth != null;
+      allow delete: if false;
+    }
+
     match /accessLogs/{logId} {
       allow read: if request.auth != null;
-      allow create: if true; // مسموح للجميع بتسجيل المحاولات (حتى قبل تسجيل الدخول)
+      allow create: if true;
       allow update, delete: if false;
     }
   }
