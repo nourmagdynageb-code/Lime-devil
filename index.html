@@ -1,10 +1,3 @@
-معليش يا حج، غالباً المشكلة إن اسم الجدول (`accessLogs`) في قاعدة البيانات محتاج قواعد أمان (Firestore Security Rules) عشان يسمح بكتابة وقراءة السجلات، أو إن مكتبة الـ `UAParser` أو الـ Event Listener محتاجة تتظبط بحيث الـ Event مايبقاش جواه مشكلة منع (Event Propagation).
-
-تم تعديل وتثبيت كود الـ **LOGS** بالكامل ليعمل بشكل فوري ومستقر (مع إضافة معالجة للأخطاء وتأكيد ربط الزر):
-
-### الكود المحدث والكامل `index.html`:
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1159,5 +1152,3 @@ document.getElementById('composer').addEventListener('submit', (e) => {
 </script>
 </body>
 </html>
-
-```
