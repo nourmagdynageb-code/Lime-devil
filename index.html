@@ -1627,7 +1627,7 @@ form#composer{
         id="purgeTimerContainer"
       >
         <span id="purgeTimer">
-          05:00
+          10:00
         </span>
       </div>
 
@@ -1938,9 +1938,7 @@ const LOGS_PASSWORD = "1312";
 const END_PASSWORD = "sos";
 
 const PURGE_MS =
-  5 * 60 * 1000; // 5 دقائق
-
-let purgeDisabled = false;
+  10 * 60 * 1000;
 
 const EMERGENCY_PASSWORD = "101";
 
@@ -2459,7 +2457,7 @@ document
   );
 
 /* =========================
-   PURGE
+   PURGE (ON / OFF & SYNC)
    ========================= */
 
 const purgeTimerEl =
@@ -2467,10 +2465,36 @@ const purgeTimerEl =
     "purgeTimer"
   );
 
+const purgeTimerContainer =
+  document.getElementById(
+    "purgeTimerContainer"
+  );
+
 let purgeStart =
   Date.now();
 
 let purging = false;
+
+let purgeDisabled = false;
+
+// إمكانية التحكم في تشغيل وإيقاف العداد عبر الضغط ومزامنتها على فايبربيس
+purgeTimerContainer.addEventListener("click", async () => {
+  const choice = prompt("التحكم في عداد الحذف التلقائي:\nاكتب (on) لتشغيل العداد\nاكتب (off) لإيقاف العداد");
+  if (choice) {
+    const val = choice.trim().toLowerCase();
+    if (val === "off" || val === "on") {
+      const isDisabled = (val === "off");
+      try {
+        await setDoc(purgeRef, {
+          disabled: isDisabled,
+          purgeStart: Date.now()
+        }, { merge: true });
+      } catch(e) {
+        alert("فشل تحديث حالة العداد في القاعدة");
+      }
+    }
+  }
+});
 
 async function tryPurge(){
 
@@ -2598,25 +2622,6 @@ function tickPurge(){
   purgeTimerEl.textContent =
     `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
 }
-
-// تحديث حالة العداد (On / Off) لتخزينها في قاعدة البيانات مباشرة لتسمع بكل الأجهزة
-document.getElementById("purgeTimerContainer").addEventListener("click", async () => {
-  const choice = prompt("التحكم في عداد الحذف التلقائي:\nاكتب (on) لتشغيل العداد\nاكتب (off) لإيقاف العداد");
-  if (choice) {
-    const val = choice.trim().toLowerCase();
-    if (val === "off" || val === "on") {
-      const isDisabled = (val === "off");
-      try {
-        await setDoc(purgeRef, {
-          disabled: isDisabled,
-          purgeStart: Date.now()
-        }, { merge: true });
-      } catch(e) {
-        alert("فشل تحديث حالة العداد في القاعدة");
-      }
-    }
-  }
-});
 
 /* =========================
    TYPING
@@ -2967,26 +2972,26 @@ function initChat(){
   );
 
   /* =========================
-     Purge Sync (مزامنة حالة العداد والتشغيل والإيقاف بين الأجهزة)
+     Purge Sync (Realtime On/Off)
      ========================= */
 
   onSnapshot(purgeRef, (snap) => {
-    if(snap.exists()){
+    if (snap.exists()) {
       const data = snap.data();
-      if(typeof data.disabled === "boolean"){
+      if (typeof data.disabled === "boolean") {
         purgeDisabled = data.disabled;
-        if(purgeDisabled){
+        if (purgeDisabled) {
           purgeTimerEl.textContent = "OFF";
         }
       }
-      if(typeof data.purgeStart === "number"){
+      if (typeof data.purgeStart === "number") {
         purgeStart = data.purgeStart;
       }
     }
   });
 
   /* =========================
-     Purge Timer Tick
+     Purge Timer Interval
      ========================= */
 
   setInterval(
