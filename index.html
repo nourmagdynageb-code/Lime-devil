@@ -3694,19 +3694,38 @@ document
   }
 
   if(q === SECRET){
+    // "سليم" يفتح الصفحة الرئيسية مباشرةً بدون المرور على شاشة القفل.
     facade.classList.add("hide");
+
     setTimeout(() => {
       facade.style.display = "none";
+
       if (lockScreen) {
-        lockScreen.style.display = "flex";
+        lockScreen.style.display = "none";
         lockScreen.style.opacity = "1";
-        lockScreen.style.visibility = "visible";
+        lockScreen.style.visibility = "hidden";
         lockScreen.style.filter = "none";
         lockScreen.style.transform = "none";
       }
-      const pass = document.getElementById("passInput");
-      if(pass) setTimeout(() => pass.focus(), 150);
+
+      const app = document.getElementById("app");
+      if (app) {
+        app.style.display = "flex";
+        app.style.visibility = "visible";
+        app.style.opacity = "1";
+      }
+
+      // تهيئة التطبيق مرة واحدة عند الدخول المباشر.
+      if (typeof initChat === "function") {
+        initChat();
+      }
+
+      const msgInput = document.getElementById("msgInput");
+      if (msgInput) {
+        setTimeout(() => msgInput.focus(), 100);
+      }
     }, 550);
+
     return;
   }
 
