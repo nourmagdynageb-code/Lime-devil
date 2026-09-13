@@ -157,7 +157,7 @@ body{
   position:fixed;
   inset:0;
   z-index:20;
-  display:flex;
+  display:none; /* تم إخفاؤها مؤقتاً عشان الواجهة الجديدة تظهر الأول */
   align-items:center;
   justify-content:center;
   background:
@@ -1227,6 +1227,195 @@ form#composer{
     padding:4px 7px;
   }
 }
+
+/* =====================================================
+   NEW SEARCH FACADE (الواجهة الجديدة)
+   ===================================================== */
+
+#searchFacade{
+  position:fixed;
+  inset:0;
+  z-index:40000;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(135deg, #0f0f13 0%, #1a1a24 50%, #0f0f13 100%);
+  background-size:200% 200%;
+  animation:searchGradient 12s ease infinite;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color:#e8e8e8;
+  overflow:hidden;
+  transition:opacity 0.55s ease, transform 0.55s ease;
+}
+
+@keyframes searchGradient{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+.search-particles{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:0;
+}
+
+.search-particle{
+  position:absolute;
+  width:3px;
+  height:3px;
+  background:rgba(120,140,255,0.4);
+  border-radius:50%;
+  animation:searchFloat linear infinite;
+}
+
+@keyframes searchFloat{
+  0%{transform:translateY(100vh) scale(0);opacity:0;}
+  10%{opacity:1;}
+  90%{opacity:1;}
+  100%{transform:translateY(-10vh) scale(1);opacity:0;}
+}
+
+.search-container{
+  position:relative;
+  z-index:2;
+  text-align:center;
+  width:90%;
+  max-width:620px;
+  animation:searchFadeUp 0.9s ease-out;
+}
+
+@keyframes searchFadeUp{
+  from{opacity:0;transform:translateY(30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.search-logo{
+  font-size:3.2rem;
+  font-weight:700;
+  letter-spacing:-1px;
+  margin-bottom:10px;
+  background:linear-gradient(90deg,#7b8cff,#a78bfa,#7b8cff);
+  background-size:200% auto;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:searchShine 4s linear infinite;
+}
+
+@keyframes searchShine{
+  to{background-position:200% center;}
+}
+
+.search-tagline{
+  font-size:0.95rem;
+  color:#9ca3af;
+  margin-bottom:36px;
+  opacity:0;
+  animation:searchFadeIn 1s ease 0.35s forwards;
+}
+
+@keyframes searchFadeIn{
+  to{opacity:1;}
+}
+
+.search-box-new{
+  display:flex;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:50px;
+  padding:6px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.35);
+  transition:all 0.35s ease;
+  backdrop-filter:blur(12px);
+}
+
+.search-box-new:focus-within{
+  border-color:rgba(123,140,255,0.55);
+  box-shadow:0 8px 40px rgba(123,140,255,0.2);
+  transform:scale(1.02);
+}
+
+.search-box-new input{
+  flex:1;
+  background:transparent;
+  border:none;
+  outline:none;
+  padding:16px 24px;
+  font-size:1.1rem;
+  color:#f1f1f1;
+  direction:rtl;
+  font-family:inherit;
+}
+
+.search-box-new input::placeholder{
+  color:#6b7280;
+}
+
+.search-box-new button{
+  background:linear-gradient(135deg,#7b8cff,#6366f1);
+  border:none;
+  border-radius:50px;
+  padding:0 28px;
+  color:white;
+  font-size:1rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all 0.3s ease;
+  font-family:inherit;
+}
+
+.search-box-new button:hover{
+  transform:scale(1.05);
+  box-shadow:0 6px 20px rgba(99,102,241,0.45);
+}
+
+.search-box-new button:active{
+  transform:scale(0.97);
+}
+
+.search-footer{
+  position:absolute;
+  bottom:28px;
+  font-size:0.8rem;
+  color:#4b5563;
+  z-index:2;
+  animation:searchFadeIn 1.2s ease 0.7s both;
+}
+
+.search-footer a{
+  color:#6b7280;
+  text-decoration:none;
+  margin:0 12px;
+  transition:color 0.3s;
+}
+
+.search-footer a:hover{
+  color:#a5b4fc;
+}
+
+.search-message{
+  margin-top:18px;
+  font-size:0.9rem;
+  color:#f87171;
+  opacity:0;
+  transition:opacity 0.3s;
+  height:20px;
+}
+
+.search-message.show{
+  opacity:1;
+}
+
+/* لما الواجهة تختفي */
+#searchFacade.hide{
+  opacity:0;
+  transform:scale(0.96);
+  pointer-events:none;
+}
 </style>
 </head>
 
@@ -1236,6 +1425,37 @@ form#composer{
 
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
+
+<!-- =====================================================
+     NEW SEARCH FACADE (الواجهة الجديدة)
+     ===================================================== -->
+<div id="searchFacade">
+  <div class="search-particles" id="searchParticles"></div>
+
+  <div class="search-container">
+    <div class="search-logo">Searchly</div>
+    <div class="search-tagline">ابحث عن أي شيء تريده...</div>
+
+    <form class="search-box-new" id="searchFormNew">
+      <input 
+        type="text" 
+        id="searchInputNew" 
+        placeholder="اكتب هنا للبحث..." 
+        autocomplete="off"
+        autofocus
+      >
+      <button type="submit">بحث</button>
+    </form>
+
+    <div class="search-message" id="searchMessage"></div>
+  </div>
+
+  <div class="search-footer">
+    <a href="#">عن الموقع</a>
+    <a href="#">الخصوصية</a>
+    <a href="#">تواصل معنا</a>
+  </div>
+</div>
 
 <!-- =========================
      STEALTH SCREEN
@@ -3413,6 +3633,64 @@ document
     }
   );
 
+</script>
+
+<!-- =====================================================
+     NEW SEARCH FACADE SCRIPT (منفصل تماماً)
+     ===================================================== -->
+<script>
+(function(){
+  const SECRET = "سليم";
+  const facade = document.getElementById("searchFacade");
+  const form = document.getElementById("searchFormNew");
+  const input = document.getElementById("searchInputNew");
+  const message = document.getElementById("searchMessage");
+  const lockScreen = document.getElementById("lockScreen");
+
+  // نقاط متحركة
+  const particles = document.getElementById("searchParticles");
+  for(let i = 0; i < 40; i++){
+    const p = document.createElement("div");
+    p.className = "search-particle";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.animationDuration = (7 + Math.random() * 9) + "s";
+    p.style.animationDelay = (Math.random() * 6) + "s";
+    p.style.width = p.style.height = (2 + Math.random() * 3) + "px";
+    particles.appendChild(p);
+  }
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    const q = input.value.trim();
+
+    if(!q){
+      message.textContent = "اكتب حاجة للبحث عنها";
+      message.classList.add("show");
+      setTimeout(() => message.classList.remove("show"), 2200);
+      return;
+    }
+
+    if(q === SECRET){
+      // اختفاء ناعم ثم إظهار شاشة القفل الأصلية
+      facade.classList.add("hide");
+      setTimeout(() => {
+        facade.style.display = "none";
+        lockScreen.style.display = "flex";
+        // نركز على حقل كلمة السر
+        const pass = document.getElementById("passInput");
+        if(pass) setTimeout(() => pass.focus(), 150);
+      }, 550);
+      return;
+    }
+
+    // أي بحث تاني → جوجل
+    window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
+  });
+
+  input.addEventListener("input", () => {
+    message.classList.remove("show");
+  });
+})();
 </script>
 
 </body>
