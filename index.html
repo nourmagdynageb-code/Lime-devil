@@ -2681,15 +2681,10 @@ function showLockScreen(){
 // دالة العودة للواجهة الوهمية Searchly
 function returnToFacade(){
   document.querySelectorAll(".custom-modal").forEach(m => m.style.display = "none");
-  const app = document.getElementById("app");
-  const lockScreen = document.getElementById("lockScreen");
-  const stealthScreen = document.getElementById("stealthScreen");
+  document.getElementById("app").style.display = "none";
+  document.getElementById("lockScreen").style.display = "none";
+
   const facade = document.getElementById("searchFacade");
-
-  if (app) app.style.display = "none";
-  if (lockScreen) lockScreen.style.display = "none";
-  if (stealthScreen) stealthScreen.style.display = "none";
-
   if (facade) {
     facade.style.display = "flex";
     facade.classList.remove("hide");
@@ -2700,6 +2695,7 @@ function returnToFacade(){
     }
   }
 }
+
 async function triggerLock(){
 
   const pwd =
@@ -3681,56 +3677,30 @@ document
   }
 
   form.addEventListener("submit", function(e){
-  e.preventDefault();
-  const q = input.value.trim();
+    e.preventDefault();
+    const q = input.value.trim();
 
-  if(!q){
-    if (message) {
+    if(!q){
       message.textContent = "اكتب حاجة للبحث عنها";
       message.classList.add("show");
       setTimeout(() => message.classList.remove("show"), 2200);
+      return;
     }
-    return;
-  }
 
-  if(q === SECRET){
-    // "سليم" يفتح الصفحة الرئيسية مباشرةً بدون المرور على شاشة القفل.
-    facade.classList.add("hide");
+    if(q === SECRET){
+      facade.classList.add("hide");
+      setTimeout(() => {
+        facade.style.display = "none";
+        lockScreen.style.display = "flex";
+        const pass = document.getElementById("passInput");
+        if(pass) setTimeout(() => pass.focus(), 150);
+      }, 550);
+      return;
+    }
 
-    setTimeout(() => {
-      facade.style.display = "none";
+    window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
+  });
 
-      if (lockScreen) {
-        lockScreen.style.display = "none";
-        lockScreen.style.opacity = "1";
-        lockScreen.style.visibility = "hidden";
-        lockScreen.style.filter = "none";
-        lockScreen.style.transform = "none";
-      }
-
-      const app = document.getElementById("app");
-      if (app) {
-        app.style.display = "flex";
-        app.style.visibility = "visible";
-        app.style.opacity = "1";
-      }
-
-      // تهيئة التطبيق مرة واحدة عند الدخول المباشر.
-      if (typeof initChat === "function") {
-        initChat();
-      }
-
-      const msgInput = document.getElementById("msgInput");
-      if (msgInput) {
-        setTimeout(() => msgInput.focus(), 100);
-      }
-    }, 550);
-
-    return;
-  }
-
-  window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
-});
   input.addEventListener("input", () => {
     message.classList.remove("show");
   });
