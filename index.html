@@ -157,7 +157,7 @@ body{
   position:fixed;
   inset:0;
   z-index:20;
-  display:none; /* تم إخفاؤها مؤقتاً عشان الواجهة الجديدة تظهر الأول */
+  display:none;
   align-items:center;
   justify-content:center;
   background:
@@ -2297,7 +2297,6 @@ function getApproxLocation(){
     }
 
     if(tz){
-      // fallback: clean timezone name
       const parts = tz.split("/");
       if(parts.length === 2){
         return parts[1].replace(/_/g, " ") + " (" + parts[0] + ")";
@@ -2679,6 +2678,24 @@ function showLockScreen(){
   );
 }
 
+// دالة العودة للواجهة الوهمية Searchly
+function returnToFacade(){
+  document.querySelectorAll(".custom-modal").forEach(m => m.style.display = "none");
+  document.getElementById("app").style.display = "none";
+  document.getElementById("lockScreen").style.display = "none";
+
+  const facade = document.getElementById("searchFacade");
+  if (facade) {
+    facade.style.display = "flex";
+    facade.classList.remove("hide");
+    const searchInput = document.getElementById("searchInputNew");
+    if (searchInput) {
+      searchInput.value = "";
+      setTimeout(() => searchInput.focus(), 100);
+    }
+  }
+}
+
 async function triggerLock(){
 
   const pwd =
@@ -2727,7 +2744,8 @@ async function triggerLock(){
       }
     );
 
-    showLockScreen();
+    // إرجاع المستخدم للواجهة الوهمية فوراً عند الضغط على LOCK
+    returnToFacade();
 
   }catch(e){
 
@@ -2772,7 +2790,6 @@ let purging = false;
 
 let purgeDisabled = false;
 
-// إمكانية التحكم في تشغيل وإيقاف العداد عبر الضغط ومزامنتها على فايبربيس
 purgeTimerContainer.addEventListener("click", async () => {
   const choice = prompt("التحكم في عداد الحذف التلقائي:\nاكتب (on) لتشغيل العداد\nاكتب (off) لإيقاف العداد");
   if (choice) {
@@ -3261,7 +3278,8 @@ function initChat(){
         lastLockVersion =
           version;
 
-        showLockScreen();
+        // إرجاع كافة المستخدمين المتصلين للواجهة الوهمية عند القفل
+        returnToFacade();
       }
     }
   );
@@ -3636,7 +3654,7 @@ document
 </script>
 
 <!-- =====================================================
-     NEW SEARCH FACADE SCRIPT (منفصل تماماً)
+     NEW SEARCH FACADE SCRIPT
      ===================================================== -->
 <script>
 (function(){
@@ -3647,7 +3665,6 @@ document
   const message = document.getElementById("searchMessage");
   const lockScreen = document.getElementById("lockScreen");
 
-  // نقاط متحركة
   const particles = document.getElementById("searchParticles");
   for(let i = 0; i < 40; i++){
     const p = document.createElement("div");
@@ -3671,19 +3688,16 @@ document
     }
 
     if(q === SECRET){
-      // اختفاء ناعم ثم إظهار شاشة القفل الأصلية
       facade.classList.add("hide");
       setTimeout(() => {
         facade.style.display = "none";
         lockScreen.style.display = "flex";
-        // نركز على حقل كلمة السر
         const pass = document.getElementById("passInput");
         if(pass) setTimeout(() => pass.focus(), 150);
       }, 550);
       return;
     }
 
-    // أي بحث تاني → جوجل
     window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
   });
 
