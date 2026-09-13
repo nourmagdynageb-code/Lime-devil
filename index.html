@@ -773,113 +773,6 @@ header{
 }
 
 /* =========================
-   VOICE & VIDEO CALL OVERLAY
-   ========================= */
-#callOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50000;
-  background: rgba(5, 8, 5, 0.95);
-  backdrop-filter: blur(10px);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px;
-}
-
-.call-header {
-  text-align: center;
-  margin-top: 10px;
-}
-
-.call-header h2 {
-  font-size: 20px;
-  color: var(--lime-glow);
-  letter-spacing: 2px;
-}
-
-.call-status {
-  font-size: 12px;
-  color: var(--lime-dim);
-  margin-top: 4px;
-}
-
-.call-video-container {
-  position: relative;
-  width: 100%;
-  max-width: 640px;
-  height: 380px;
-  background: #000;
-  border: 1px solid var(--lime-dim);
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
-}
-
-#localVideo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.video-placeholder {
-  position: absolute;
-  color: var(--lime-dim);
-  font-size: 14px;
-  text-align: center;
-}
-
-.call-controls {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.call-btn {
-  background: var(--panel-2);
-  border: 1px solid var(--lime-dim);
-  color: var(--lime-glow);
-  font-family: var(--mono);
-  padding: 10px 18px;
-  border-radius: 30px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.call-btn:hover {
-  background: var(--lime-dim);
-  color: #000;
-  box-shadow: 0 0 15px var(--lime);
-}
-
-.call-btn.off {
-  border-color: var(--crimson-dim);
-  color: var(--crimson);
-}
-
-.call-btn.end-call {
-  background: var(--crimson-dim);
-  border-color: var(--crimson);
-  color: #fff;
-}
-
-.call-btn.end-call:hover {
-  background: var(--crimson);
-  box-shadow: 0 0 20px var(--crimson);
-}
-
-/* =========================
    MESSAGE AREA
    ========================= */
 
@@ -1566,8 +1459,7 @@ form#composer{
 
 <!-- =========================
      STEALTH SCREEN
-     ========================= */
--->
+     ========================= -->
 
 <div id="stealthScreen">
 
@@ -1921,29 +1813,6 @@ form#composer{
 </div>
 
 <!-- =========================
-     VOICE / VIDEO CALL OVERLAY
-     ========================= -->
-
-<div id="callOverlay">
-  <div class="call-header">
-    <h2>// ENCRYPTED VOICE / VIDEO CHANNEL</h2>
-    <div class="call-status" id="callStatusText">CONNECTING MEDIA NODE...</div>
-  </div>
-
-  <div class="call-video-container">
-    <video id="localVideo" autoplay playsinline muted></video>
-    <div class="video-placeholder" id="videoPlaceholder">CAMERA IS OFF</div>
-  </div>
-
-  <div class="call-controls">
-    <button class="call-btn" id="toggleMicBtn">🎤 MUTE MIC</button>
-    <button class="call-btn" id="toggleCamBtn">📷 TURN OFF CAM</button>
-    <button class="call-btn" id="toggleSpeakerBtn">🔊 SPEAKER: ON</button>
-    <button class="call-btn end-call" id="hangupBtn">📞 HANG UP</button>
-  </div>
-</div>
-
-<!-- =========================
      MAIN APP
      ========================= -->
 
@@ -1981,15 +1850,6 @@ form#composer{
           10:00
         </span>
       </div>
-
-      <!-- زر المكالمات المضاف بنفس الاستايل -->
-      <button
-        class="action-btn"
-        id="callBtnDesktop"
-        type="button"
-      >
-        CALL 📞
-      </button>
 
       <button
         class="action-btn"
@@ -2115,109 +1975,7 @@ const globalLockRef = doc(db,"meta","globalLock");
 const globalStealthRef = doc(db,"meta","globalStealth");
 
 /* =========================
-   AUDIO & CALL LOGIC
-   ========================= */
-
-let localStream = null;
-let isMicActive = true;
-let isCamActive = true;
-let isSpeakerActive = true;
-
-const callOverlay = document.getElementById("callOverlay");
-const localVideo = document.getElementById("localVideo");
-const videoPlaceholder = document.getElementById("videoPlaceholder");
-const callStatusText = document.getElementById("callStatusText");
-const toggleMicBtn = document.getElementById("toggleMicBtn");
-const toggleCamBtn = document.getElementById("toggleCamBtn");
-const toggleSpeakerBtn = document.getElementById("toggleSpeakerBtn");
-const hangupBtn = document.getElementById("hangupBtn");
-
-async function startCall() {
-  callOverlay.style.display = "flex";
-  callStatusText.textContent = "REQUESTING CAMERA & MIC PERMISSIONS...";
-  
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true
-    });
-    
-    localVideo.srcObject = localStream;
-    localVideo.style.display = "block";
-    videoPlaceholder.style.display = "none";
-    callStatusText.textContent = "CONNECTED TO VOICE / VIDEO CHANNEL";
-    isMicActive = true;
-    isCamActive = true;
-    updateCallUI();
-  } catch (err) {
-    console.error("Media permission error:", err);
-    callStatusText.textContent = "PERMISSION DENIED OR DEVICE NOT FOUND";
-    alert("تعذر الوصول إلى المايك أو الكاميرا. يرجى إعطاء الصلاحية من المتصفح.");
-  }
-}
-
-function stopCall() {
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-  localVideo.srcObject = null;
-  callOverlay.style.display = "none";
-}
-
-function updateCallUI() {
-  if (toggleMicBtn) {
-    toggleMicBtn.textContent = isMicActive ? "🎤 MUTE MIC" : "🎙 UNMUTE MIC";
-    toggleMicBtn.classList.toggle("off", !isMicActive);
-  }
-  if (toggleCamBtn) {
-    toggleCamBtn.textContent = isCamActive ? "📷 TURN OFF CAM" : "📹 TURN ON CAM";
-    toggleCamBtn.classList.toggle("off", !isCamActive);
-  }
-  if (toggleSpeakerBtn) {
-    toggleSpeakerBtn.textContent = isSpeakerActive ? "🔊 SPEAKER: ON" : "🔈 SPEAKER: OFF";
-    toggleSpeakerBtn.classList.toggle("off", !isSpeakerActive);
-  }
-}
-
-document.getElementById("callBtnDesktop").addEventListener("click", startCall);
-
-toggleMicBtn.addEventListener("click", () => {
-  if (localStream) {
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      isMicActive = !isMicActive;
-      audioTrack.enabled = isMicActive;
-      updateCallUI();
-    }
-  }
-});
-
-toggleCamBtn.addEventListener("click", () => {
-  if (localStream) {
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      isCamActive = !isCamActive;
-      videoTrack.enabled = isCamActive;
-      localVideo.style.display = isCamActive ? "block" : "none";
-      videoPlaceholder.style.display = isCamActive ? "none" : "block";
-      updateCallUI();
-    }
-  }
-});
-
-toggleSpeakerBtn.addEventListener("click", () => {
-  isSpeakerActive = !isSpeakerActive;
-  if (localVideo) {
-    localVideo.muted = !isSpeakerActive;
-  }
-  updateCallUI();
-});
-
-hangupBtn.addEventListener("click", stopCall);
-
-/* =========================
-   AUDIO UI SOUNDS
+   AUDIO
    ========================= */
 
 const audioCtx =
@@ -2986,6 +2744,7 @@ async function triggerLock(){
       }
     );
 
+    // إرجاع المستخدم للواجهة الوهمية فوراً عند الضغط على LOCK
     returnToFacade();
 
   }catch(e){
@@ -3519,6 +3278,7 @@ function initChat(){
         lastLockVersion =
           version;
 
+        // إرجاع كافة المستخدمين المتصلين للواجهة الوهمية عند القفل
         returnToFacade();
       }
     }
