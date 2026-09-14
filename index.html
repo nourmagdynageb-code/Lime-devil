@@ -2348,7 +2348,8 @@ const hangupBtn = document.getElementById("hangupBtn");
 const iceServers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" }
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:openrelay.metered.ca:80" } // سيرفر إضافي لتعزيز الاتصال وتجاوز قيود الـ NAT
   ]
 };
 
@@ -2447,7 +2448,7 @@ function listenForSignaling() {
         if (!data || data.from === myId) continue;
 
         // Incoming Offer
-        if (data.type === "offer" && !isCaller && !peerConnection) {
+        if (data.type === "offer" && !isCaller && !peerConnection && data.callId) {
           await handleIncomingOffer(data);
         }
 
@@ -2466,10 +2467,10 @@ function listenForSignaling() {
           }
         }
 
-        // ICE Candidate
+        // ICE Candidate (تمت إضافة الحماية للتحقق من وجود الـ Remote Description لمنع الأخطاء)
         if (data.type === "candidate" && data.callId === currentCallId && peerConnection) {
           try {
-            if (data.candidate) {
+            if (data.candidate && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
               await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
             }
           } catch (e) {
@@ -2479,6 +2480,81 @@ function listenForSignaling() {
       }
     }
   );
+}
+
+async function handleIncomingOffer(offerData) {
+  callOverlay.style.display = "flex";
+  callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
+  currentCallId = offerData.callId;
+  isCaller = false;
+
+  localVideo.srcObject = null;
+  localVideo.style.display = "none";
+  videoPlaceholder.style.display = "flex";
+  videoPlaceholder.textContent = "CAMERA IS OFF";
+
+  try {
+    if (!localStream) {
+      // Audio only — camera stays off
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
+      });
+      localVideo.srcObject = localStream;
+    }
+
+    isMicActive = true;
+    isCamActive = false;
+    updateCallUI();
+
+    peerConnection = new RTCPeerConnection(iceServers);
+
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+
+    peerConnection.ontrack = (event) => {
+      remoteVideo.srcObject = event.streams[0];
+      remotePlaceholder.style.display = "none";
+      callStatusText.textContent = "CONNECTED TO PEER";
+    };
+
+    peerConnection.onicecandidate = async (event) => {
+      if (event.candidate && currentCallId) {
+        try {
+          await addDoc(signalingCol, {
+            callId: currentCallId,
+            type: "candidate",
+            candidate: event.candidate.toJSON(),
+            from: myId,
+            ts: Date.now()
+          });
+        } catch (e) {}
+      }
+    };
+
+    await peerConnection.setRemoteDescription({
+      type: "offer",
+      sdp: offerData.sdp
+    });
+
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+
+    await addDoc(signalingCol, {
+      callId: currentCallId,
+      type: "answer",
+      sdp: answer.sdp,
+      from: myId,
+      ts: Date.now()
+    });
+
+    callStatusText.textContent = "ANSWER SENT — CONNECTING...";
+    listenForSignaling();
+
+  } catch (err) {
+    console.error("Incoming call error:", err);
+  }
 }
 
 async function handleIncomingOffer(offerData) {
