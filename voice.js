@@ -1,7 +1,6 @@
 // voice.js
-// Final bulletproof voice recorder & player renderer for desktop & mobile.
-// Fixes: duration 0:00 in webm via lazy-loaded ts-ebml + codec negotiation + watchdog.
-// SAFE: لا يوجد import مباشر — لو ts-ebml مش موجود، الكود يكمل عادي.
+// Final bulletproof voice recorder & player renderer.
+// Fixes 0:00 duration using the "currentTime = 1e101" trick — no external libraries needed.
 
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
@@ -25,98 +24,51 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isRecording = false;
   let isStopping = false;
   let recordingStartedAt = 0;
+  let lastRecordingMs = 0; // مدة آخر تسجيل (احتياطي)
   let stopWatchdog = null;
   const MIN_RECORDING_MS = 1200;
   const STOP_WATCHDOG_MS = 4000;
 
-  // وحدة ts-ebml — تُحمَّل بشكل lazy عند أول استخدام فقط.
-  let tsEbmlModule = null;
-  let tsEbmlLoadFailed = false;
-
   /**
-   * محاولة تحميل مكتبة ts-ebml بأمان.
-   * لو فشلت لأي سبب، نرجع null بدون ما نكسر باقي الكود.
+   * حيلة إصلاح المدة: نقل currentTime لرقم ضخم يجبر المتصفح
+   * على فك ترميز الملف بالكامل وحساب المدة الحقيقية.
+   * تعمل على Chrome / Edge / Firefox مع webm و mp3.
    */
-  async function loadTsEbml() {
-    if (tsEbmlModule) return tsEbmlModule;
-    if (tsEbmlLoadFailed) return null;
+  function patchAudioDuration(audioEl) {
+    const applyFix = () => {
+      if (isFinite(audioEl.duration) && audioEl.duration > 0) return;
 
-    // 1) لو المكتبة محمّلة مسبقاً على window (من CDN مثلاً)
-    if (typeof window !== "undefined") {
-      const globalLib = window.tsEBML || window.tsEml || window.TsEbml;
-      if (globalLib && globalLib.Decoder && globalLib.tools && globalLib.Reader) {
-        tsEbmlModule = globalLib;
-        return tsEbmlModule;
-      }
-    }
+      const onDurationChange = () => {
+        if (isFinite(audioEl.duration) && audioEl.duration > 0) {
+          audioEl.removeEventListener("durationchange", onDurationChange);
+          try { audioEl.currentTime = 0; } catch (_) {}
+          console.log("[VOICE] Duration patched:", audioEl.duration);
+        }
+      };
 
-    // 2) محاولة dynamic import (يعمل فقط لو المشروع فيه bundler)
-    try {
-      const mod = await import(/* @vite-ignore */ "ts-ebml");
-      if (mod && mod.Decoder && mod.tools && mod.Reader) {
-        tsEbmlModule = mod;
-        return tsEbmlModule;
-      }
-    } catch (_) {
-      // نتجاهل الخطأ بهدوء — لا نكسر المشروع
-    }
+      audioEl.addEventListener("durationchange", onDurationChange);
 
-    tsEbmlLoadFailed = true;
-    console.warn("[VOICE] ts-ebml not available — duration fix disabled.");
-    return null;
-  }
+      try {
+        // القفزة السحرية
+        audioEl.currentTime = 1e101;
+      } catch (_) {}
 
-  /**
-   * إصلاح ملفات webm بإضافة metadata المدة الصحيحة.
-   * لو المكتبة مش متاحة أو فشل الإصلاح، نرجع الـ blob الأصلي.
-   */
-  async function fixWebmDuration(blob) {
-    if (!blob || !blob.type || !blob.type.includes("webm")) {
-      return blob;
-    }
+      // احتياطي: نرجع الوقت لـ 0 بعد ثانيتين لو المتصفح ما استجابش
+      setTimeout(() => {
+        audioEl.removeEventListener("durationchange", onDurationChange);
+        if (isFinite(audioEl.duration) && audioEl.duration > 0) {
+          try { audioEl.currentTime = 0; } catch (_) {}
+        }
+      }, 2000);
+    };
 
-    const lib = await loadTsEbml();
-    if (!lib) return blob;
-
-    try {
-      const { Decoder, tools, Reader } = lib;
-      const arrayBuffer = await blob.arrayBuffer();
-      const decoder = new Decoder();
-      const reader = new Reader();
-      reader.logging = false;
-
-      const elms = decoder.decode(arrayBuffer);
-      elms.forEach((elm) => reader.read(elm));
-      reader.stop();
-
-      const refinedMetadataBuf = tools.makeMetadataSeekable(
-        reader.metadatas,
-        reader.duration,
-        reader.cues
-      );
-
-      const body = arrayBuffer.slice(reader.metadataSize);
-      const fixedBlob = new Blob([refinedMetadataBuf, body], {
-        type: blob.type
-      });
-
-      console.log(
-        "[VOICE] Duration fixed. New size:",
-        fixedBlob.size,
-        "Duration(ms):",
-        reader.duration
-      );
-
-      return fixedBlob;
-    } catch (err) {
-      console.warn("[VOICE] fixWebmDuration failed, using original blob:", err);
-      return blob;
+    if (audioEl.readyState >= 1) {
+      applyFix();
+    } else {
+      audioEl.addEventListener("loadedmetadata", applyFix, { once: true });
     }
   }
 
-  /**
-   * اختيار صيغة مدعومة مع codec صريح.
-   */
   function getSupportedMimeType() {
     const candidates = [
       "audio/webm;codecs=opus",
@@ -221,6 +173,9 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     audio.src = audioPreviewUrl;
     audio.style.width = "100%";
 
+    // ✅ إصلاح المدة
+    patchAudioDuration(audio);
+
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
 
@@ -263,6 +218,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
           type: "voice",
           audioData: dataUrl,
           audioType: audioBlob.type || "audio/webm",
+          durationMs: lastRecordingMs, // ✅ تخزين المدة الحقيقية
           from: myId,
           fromName: myName,
           userId: myId,
@@ -331,19 +287,18 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         console.error("[VOICE] MediaRecorder error:", event?.error || event);
       });
 
-      mediaRecorder.addEventListener("stop", async () => {
+      mediaRecorder.addEventListener("stop", () => {
         clearWatchdog();
+        lastRecordingMs = Date.now() - recordingStartedAt;
+
         const finalType =
           (mediaRecorder && mediaRecorder.mimeType) ||
           mimeType ||
           "audio/webm";
 
         if (audioChunks.length > 0) {
-          const rawBlob = new Blob(audioChunks, { type: finalType });
-
-          if (rawBlob.size > 0) {
-            // محاولة إصلاح المدة — لو المكتبة غير متاحة، نرجع الـ blob كما هو
-            audioBlob = await fixWebmDuration(rawBlob);
+          audioBlob = new Blob(audioChunks, { type: finalType });
+          if (audioBlob.size > 0) {
             createPreviewPopup(audioBlob);
           } else {
             alert("التسجيل قصير جداً أو فارغ.");
@@ -452,11 +407,44 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
 /**
  * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة.
+ * تستخدم نفس حيلة إصلاح المدة عشان الرسائل القديمة والجديدة تظهر صح.
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
   audio.controls = true;
   audio.preload = "metadata";
   audio.src = messageData.audioData;
+
+  // نفس الحيلة لإصلاح المدة
+  const applyFix = () => {
+    if (isFinite(audio.duration) && audio.duration > 0) return;
+
+    const onDurationChange = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        audio.removeEventListener("durationchange", onDurationChange);
+        try { audio.currentTime = 0; } catch (_) {}
+      }
+    };
+
+    audio.addEventListener("durationchange", onDurationChange);
+
+    try {
+      audio.currentTime = 1e101;
+    } catch (_) {}
+
+    setTimeout(() => {
+      audio.removeEventListener("durationchange", onDurationChange);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        try { audio.currentTime = 0; } catch (_) {}
+      }
+    }, 2000);
+  };
+
+  if (audio.readyState >= 1) {
+    applyFix();
+  } else {
+    audio.addEventListener("loadedmetadata", applyFix, { once: true });
+  }
+
   return audio;
 }
