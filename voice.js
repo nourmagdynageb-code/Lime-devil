@@ -1,12 +1,14 @@
 // voice.js
-// Final bulletproof voice recorder & player renderer for desktop & mobile (Fixed duration 0 issue).
+// Final bulletproof voice recorder & player renderer for desktop & mobile.
+// Fixed duration 0 issue + codec negotiation + stop-event watchdog.
+
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
     console.error("[VOICE] #voiceMicBtn not found.");
     return;
   }
-  
+
   if (!navigator.mediaDevices || !("MediaRecorder" in window)) {
     console.error("[VOICE] MediaRecorder or getUserMedia is not supported.");
     micBtn.disabled = true;
@@ -22,22 +24,31 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isRecording = false;
   let isStopping = false;
   let recordingStartedAt = 0;
-  const MIN_RECORDING_MS = 800;
+  let stopWatchdog = null;
+  const MIN_RECORDING_MS = 1200; // رفعناها لضمان إنتاج chunk صالح على كل المتصفحات
+  const STOP_WATCHDOG_MS = 4000; // لو stop event ما وصلش، ننضّف الواجهة
 
-  // تعديل الصيغ لإزالة المعوقات التي تسبب ظهور المدة 0:00
+  /**
+   * اختيار صيغة مدعومة مع codec صريح.
+   * الأولوية لـ webm/opus لأنه الأفضل دعماً للمدة على Chrome/Firefox/Edge.
+   * ثم mp4/aac لـ Safari/iOS.
+   */
   function getSupportedMimeType() {
     const candidates = [
+      "audio/webm;codecs=opus",
       "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mp4;codecs=mp4a.40.2",
       "audio/mp4",
-      "audio/ogg"
+      "audio/mpeg"
     ];
-
     for (const type of candidates) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        return type;
-      }
+      try {
+        if (MediaRecorder.isTypeSupported(type)) return type;
+      } catch (_) {}
     }
-    return ""; 
+    return "";
   }
 
   function cleanupStream() {
@@ -49,7 +60,15 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     mediaStream = null;
   }
 
+  function clearWatchdog() {
+    if (stopWatchdog) {
+      clearTimeout(stopWatchdog);
+      stopWatchdog = null;
+    }
+  }
+
   function cleanupRecorder() {
+    clearWatchdog();
     cleanupStream();
     mediaRecorder = null;
     isStopping = false;
@@ -84,7 +103,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     removeExistingPopup();
     revokePreviewUrl();
     audioPreviewUrl = URL.createObjectURL(blob);
-    
+
     const popup = document.createElement("div");
     popup.className = "voice-preview-popup";
     popup.style.cssText = `
@@ -117,9 +136,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     audio.preload = "auto";
     audio.src = audioPreviewUrl;
     audio.style.width = "100%";
-    if (blob.type) {
-      audio.type = blob.type;
-    }
+    // ملاحظة: لا نضبط audio.type — المتصفح يكتشف النوع من الـ Blob.
 
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
@@ -213,7 +230,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
       const mimeType = getSupportedMimeType();
       const options = mimeType ? { mimeType } : {};
-      
+
       mediaRecorder = new MediaRecorder(mediaStream, options);
       audioChunks = [];
       audioBlob = null;
@@ -227,8 +244,17 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         }
       });
 
+      mediaRecorder.addEventListener("error", event => {
+        console.error("[VOICE] MediaRecorder error:", event?.error || event);
+      });
+
       mediaRecorder.addEventListener("stop", () => {
-        const finalType = mediaRecorder?.mimeType || mimeType || "audio/webm";
+        clearWatchdog();
+        const finalType =
+          (mediaRecorder && mediaRecorder.mimeType) ||
+          mimeType ||
+          "audio/webm";
+
         if (audioChunks.length > 0) {
           audioBlob = new Blob(audioChunks, { type: finalType });
           if (audioBlob.size > 0) {
@@ -239,6 +265,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         } else {
           alert("لم يتم تسجيل أي بيانات صوتية.");
         }
+
         audioChunks = [];
         isRecording = false;
         isStopping = false;
@@ -270,11 +297,11 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     if (!isRecording || !mediaRecorder || isStopping) return;
     isStopping = true;
     const elapsed = Date.now() - recordingStartedAt;
-    
+
     const finish = () => {
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
-          try { mediaRecorder.requestData(); } catch (_) {}
+          // ✅ بدون requestData() — stop() لوحده يطلق آخر dataavailable
           mediaRecorder.stop();
         }
       } catch (err) {
@@ -291,10 +318,24 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     } else {
       finish();
     }
+
+    // watchdog: لو stop event ما وصلش خلال مدة معقولة، ننضّف الواجهة
+    clearWatchdog();
+    stopWatchdog = setTimeout(() => {
+      if (isRecording || isStopping) {
+        console.warn("[VOICE] Stop watchdog fired — cleaning up.");
+        isRecording = false;
+        isStopping = false;
+        audioChunks = [];
+        resetButton();
+        cleanupRecorder();
+      }
+    }, STOP_WATCHDOG_MS);
   }
 
   function cancelRecording() {
     if (!isRecording || !mediaRecorder) return;
+    clearWatchdog();
     try {
       if (mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
@@ -326,16 +367,23 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 }
 
 /**
- * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة
+ * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة.
+ * ملاحظة: نستخدم <source> لتحديد النوع بشكل صحيح، مع fallback تلقائي.
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
   audio.controls = true;
   audio.preload = "auto";
   audio.src = messageData.audioData;
-  if (messageData.audioType) {
-    audio.type = messageData.audioType;
-  }
+
+  // لا نضبط audio.type — المتصفح يكتشف النوع تلقائياً من الـ data URL.
+  // لو أردت تحديد النوع بشكل صريح:
+  // if (messageData.audioType) {
+  //   const source = document.createElement("source");
+  //   source.src = messageData.audioData;
+  //   source.type = messageData.audioType;
+  //   audio.appendChild(source);
+  // }
 
   return audio;
 }
