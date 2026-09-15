@@ -1,4 +1,4 @@
-// voice.js - Fixed for Mobile + Empty Audio Issue
+// voice.js - Robust Voice Notes (Fixed empty audio on Mobile)
 
 export function initVoiceSystem({
   db,
@@ -8,16 +8,15 @@ export function initVoiceSystem({
   addDoc
 }) {
   const micButton = document.getElementById("voiceMicBtn");
-
   if (!micButton) {
     console.warn("[Voice] #voiceMicBtn not found");
     return { isRecording: () => false };
   }
 
-  // فحص دعم MediaRecorder
-  if (!window.MediaRecorder) {
-    alert("جهازك أو متصفحك لا يدعم تسجيل الصوت");
-    micButton.style.display = "none";
+  if (typeof MediaRecorder === "undefined") {
+    alert("متصفحك لا يدعم تسجيل الصوت");
+    micButton.style.opacity = "0.4";
+    micButton.style.pointerEvents = "none";
     return { isRecording: () => false };
   }
 
@@ -27,6 +26,7 @@ export function initVoiceSystem({
   let audioBlob = null;
   let currentStream = null;
   let recordStartTime = 0;
+  let stopTimeout = null;
 
   // ===== Popup =====
   const actionPopup = document.createElement("div");
@@ -34,63 +34,66 @@ export function initVoiceSystem({
   actionPopup.style.cssText = `
     display: none;
     position: fixed;
-    bottom: 80px;
+    bottom: 90px;
     left: 50%;
     transform: translateX(-50%);
     background: #0c0f0c;
     border: 1px solid #39FF14;
-    padding: 10px 16px;
+    padding: 12px 18px;
     border-radius: 12px;
     z-index: 99999;
-    gap: 12px;
+    gap: 14px;
     align-items: center;
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+    box-shadow: 0 0 25px rgba(57, 255, 20, 0.35);
     font-family: 'JetBrains Mono', monospace;
   `;
-
   actionPopup.innerHTML = `
     <button id="sendVoiceConfirm" style="
-      background: #1c8a0c; color: white; border: none;
-      padding: 8px 18px; border-radius: 8px; cursor: pointer;
-      font-weight: 700; font-size: 14px;">إرسال ✓</button>
+      background:#1c8a0c;color:#fff;border:none;padding:9px 20px;
+      border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">
+      إرسال ✓
+    </button>
     <button id="cancelVoiceConfirm" style="
-      background: #7a0a1d; color: white; border: none;
-      padding: 8px 18px; border-radius: 8px; cursor: pointer;
-      font-weight: 700; font-size: 14px;">حذف ✕</button>
+      background:#7a0a1d;color:#fff;border:none;padding:9px 20px;
+      border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">
+      حذف ✕
+    </button>
   `;
   document.body.appendChild(actionPopup);
 
+  // ===== أفضل MIME Type متاح =====
+  function getSupportedMimeType() {
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/mp4",
+      "audio/aac"
+    ];
+    for (const type of candidates) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log("[Voice] Using:", type);
+        return type;
+      }
+    }
+    return ""; // خليه المتصفح يختار
+  }
+
   // ===== طلب صلاحية المايك =====
-  async function requestMicPermission() {
+  async function ensureMicPermission() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(t => t.stop());
       return true;
     } catch (err) {
-      console.error("[Voice] Permission denied:", err);
+      console.error("[Voice] Permission error:", err);
       alert("يجب السماح باستخدام الميكروفون");
       return false;
     }
   }
 
-  // نطلب الصلاحية فوراً
-  requestMicPermission();
-
-  // ===== اختيار أفضل صيغة =====
-  function getBestMimeType() {
-    const types = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-      "audio/mp4",
-      "audio/aac",
-      "audio/wav"
-    ];
-    for (const t of types) {
-      if (MediaRecorder.isTypeSupported(t)) return t;
-    }
-    return "";
-  }
+  // نطلب الصلاحية مرة واحدة في البداية
+  ensureMicPermission();
 
   // ===== بدء التسجيل =====
   async function startRecording(e) {
@@ -99,41 +102,52 @@ export function initVoiceSystem({
 
     if (isRecording) return;
 
-    // إخفاء أي popup قديم
+    // تنظيف أي حالة قديمة
     actionPopup.style.display = "none";
     audioBlob = null;
     audioChunks = [];
+    if (stopTimeout) {
+      clearTimeout(stopTimeout);
+      stopTimeout = null;
+    }
+
+    const hasPermission = await ensureMicPermission();
+    if (!hasPermission) return;
 
     try {
       currentStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
-          noiseSuppression: true
+          noiseSuppression: true,
+          autoGainControl: true
         }
       });
 
-      const mimeType = getBestMimeType();
-      const options = mimeType ? { mimeType } : {};
+      const mimeType = getSupportedMimeType();
+      const options = mimeType ? { mimeType, audioBitsPerSecond: 96000 } : { audioBitsPerSecond: 96000 };
 
       mediaRecorder = new MediaRecorder(currentStream, options);
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunks.push(e.data);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunks.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        // إيقاف المايك
+        // إيقاف الـ stream
         if (currentStream) {
           currentStream.getTracks().forEach(t => t.stop());
           currentStream = null;
         }
 
-        const duration = (Date.now() - recordStartTime) / 1000;
+        const durationSec = (Date.now() - recordStartTime) / 1000;
 
-        if (audioChunks.length === 0 || duration < 0.8) {
+        // حماية قوية ضد التسجيل الفاضي
+        if (audioChunks.length === 0 || durationSec < 0.7) {
+          console.warn("[Voice] Empty or too short recording");
           alert("التسجيل قصير جداً. اضغط مع الاستمرار لمدة ثانية على الأقل.");
+          resetButton();
           return;
         }
 
@@ -141,25 +155,25 @@ export function initVoiceSystem({
           type: mediaRecorder.mimeType || "audio/webm"
         });
 
-        if (audioBlob.size < 500) {
+        if (audioBlob.size < 800) {
+          console.warn("[Voice] Blob too small:", audioBlob.size);
           alert("التسجيل فاضي. حاول مرة أخرى.");
           audioBlob = null;
+          resetButton();
           return;
         }
 
-        console.log("[Voice] Recorded:", (audioBlob.size / 1024).toFixed(1), "KB |", duration.toFixed(1), "s");
-
-        // إظهار أزرار التأكيد في منتصف الشاشة من تحت
+        console.log(`[Voice] OK → ${(audioBlob.size / 1024).toFixed(1)} KB | ${durationSec.toFixed(1)}s`);
         actionPopup.style.display = "flex";
       };
 
       mediaRecorder.onerror = (err) => {
-        console.error("[Voice] MediaRecorder error:", err);
+        console.error("[Voice] Recorder error:", err);
         alert("حدث خطأ أثناء التسجيل");
-        stopRecording();
+        forceStop();
       };
 
-      // نبدأ التسجيل بدون timeslice عشان الموبايل
+      // مهم: نبدأ بدون timeslice عشان الموبايل
       mediaRecorder.start();
       isRecording = true;
       recordStartTime = Date.now();
@@ -167,48 +181,66 @@ export function initVoiceSystem({
       micButton.textContent = "🔴";
 
     } catch (err) {
-      console.error("[Voice] Start error:", err);
-      alert("تعذر بدء التسجيل. تأكد من صلاحية الميكروفون.");
-      isRecording = false;
-      micButton.classList.remove("recording-active");
-      micButton.textContent = "🎤";
+      console.error("[Voice] Start failed:", err);
+      alert("تعذر بدء التسجيل");
+      resetButton();
     }
   }
 
-  // ===== إيقاف التسجيل =====
+  // ===== إيقاف التسجيل (الطريقة الصحيحة) =====
   function stopRecording(e) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
-    if (!isRecording) return;
+    if (!isRecording || !mediaRecorder) return;
 
-    isRecording = false;
-    micButton.classList.remove("recording-active");
-    micButton.textContent = "🎤";
-
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      // مهم جداً: نطلب آخر جزء من البيانات قبل الإيقاف
+    // تأخير بسيط جداً عشان نضمن إن آخر البيانات اتجمعت (مهم على الموبايل)
+    stopTimeout = setTimeout(() => {
       try {
-        mediaRecorder.requestData();
-      } catch (err) {}
-      mediaRecorder.stop();
-    }
+        if (mediaRecorder.state === "recording") {
+          // نطلب آخر جزء من البيانات قبل الإيقاف
+          mediaRecorder.requestData();
+          mediaRecorder.stop();
+        }
+      } catch (err) {
+        console.warn("[Voice] stop error:", err);
+      }
+      isRecording = false;
+      resetButton();
+    }, 180); // 180ms كافية جداً
   }
 
-  // ===== الأحداث (مهمة جداً للموبايل) =====
+  function forceStop() {
+    isRecording = false;
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try { mediaRecorder.stop(); } catch (e) {}
+    }
+    if (currentStream) {
+      currentStream.getTracks().forEach(t => t.stop());
+      currentStream = null;
+    }
+    resetButton();
+  }
+
+  function resetButton() {
+    micButton.classList.remove("recording-active");
+    micButton.textContent = "🎤";
+  }
+
+  // ===== الأحداث =====
   // Desktop
   micButton.addEventListener("mousedown", startRecording);
   micButton.addEventListener("mouseup", stopRecording);
   micButton.addEventListener("mouseleave", stopRecording);
 
-  // Mobile - مهم جداً
+  // Mobile (مهم جداً)
   micButton.addEventListener("touchstart", startRecording, { passive: false });
   micButton.addEventListener("touchend", stopRecording, { passive: false });
   micButton.addEventListener("touchcancel", stopRecording, { passive: false });
 
-  // منع السكرول أثناء الضغط على الزر
+  // منع السكرول أثناء التسجيل
   micButton.addEventListener("touchmove", (e) => {
     if (isRecording) e.preventDefault();
   }, { passive: false });
@@ -226,7 +258,7 @@ export function initVoiceSystem({
         const base64 = reader.result;
 
         if (base64.length > 900000) {
-          alert("التسجيل طويل جداً.");
+          alert("التسجيل طويل جداً");
           return;
         }
 
@@ -245,7 +277,7 @@ export function initVoiceSystem({
         console.log("[Voice] Sent successfully");
       };
     } catch (err) {
-      console.error("[Voice] Send error:", err);
+      console.error("[Voice] Send failed:", err);
       alert("فشل إرسال الرسالة الصوتية");
     }
   });
