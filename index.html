@@ -45,12 +45,10 @@ body{min-width:0;}
 .search-footer{position:absolute;bottom:28px;font-size:0.8rem;color:#4b5563;z-index:2;animation:searchFadeIn 1.2s ease 0.7s both;}
 .search-footer a{color:#6b7280;text-decoration:none;margin:0 12px;transition:color 0.3s;}
 .search-footer a:hover{color:#a5b4fc;}
-.search-message{margin-top:18px;font-size:0.9rem;color:#f87171;opacity:0;transition:opacity 0.3s;height:20px;}
-.search-message.show{opacity:1;}
 #searchFacade.hide{opacity:0;transform:scale(0.96);pointer-events:none;}
 
-/* شاشة القفل */
-#lockScreen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 20%,rgba(57,255,20,0.06),transparent 60%),var(--void);}
+/* شاشة القفل الرئيسية للموقع */
+#lockScreen{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 20%,rgba(57,255,20,0.06),transparent 60%),var(--void);}
 .lock-box{width:min(92vw,460px);background:linear-gradient(180deg,var(--panel),#08090a);border:1px solid var(--lime-dim);border-radius:6px;padding:34px 30px 30px;box-shadow:0 0 40px rgba(57,255,20,0.12),inset 0 0 30px rgba(0,0,0,0.6);position:relative;}
 .lock-box::before{content:'';position:absolute;inset:-1px;border-radius:6px;padding:1px;background:linear-gradient(135deg,var(--lime),transparent 40%,var(--crimson-dim));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0.5;pointer-events:none;}
 .lock-title{font-size:clamp(28px,6vw,40px);font-weight:800;text-align:center;margin-bottom:6px;}
@@ -168,7 +166,6 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
       <input type="text" id="searchInputNew" placeholder="اكتب هنا للبحث..." autocomplete="off" autofocus>
       <button type="submit">بحث</button>
     </form>
-    <div class="search-message" id="searchMessage"></div>
   </div>
   <div class="search-footer">
     <a href="#">عن الموقع</a>
@@ -214,7 +211,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </div>
 </div>
 
-<!-- شاشة القفل -->
+<!-- شاشة القفل الرئيسية للموقع -->
 <div id="lockScreen" class="flicker">
   <div class="lock-box">
     <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
@@ -301,7 +298,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 
-// ربط واجهة البحث وشاشة القفل بالباسورد (181)
+// تعريف العناصر بالكامل
 const searchFormNew = document.getElementById('searchFormNew');
 const searchInputNew = document.getElementById('searchInputNew');
 const searchFacade = document.getElementById('searchFacade');
@@ -311,6 +308,7 @@ const unlockBtn = document.getElementById('unlockBtn');
 const stealthScreen = document.getElementById('stealthScreen');
 const app = document.getElementById('app');
 
+// 1. منطق واجهة البحث Searchly (لو 181 تودي لشاشة القفل، غير كده تودي للتمويه)
 if (searchFormNew) {
   searchFormNew.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -319,13 +317,13 @@ if (searchFormNew) {
       if (searchFacade) searchFacade.classList.add('hide');
       if (lockScreen) lockScreen.style.display = 'flex';
     } else {
-      // تفاعل افتراضي للبحث الوهمي أو إظهار التمويه
       if (searchFacade) searchFacade.classList.add('hide');
       if (stealthScreen) stealthScreen.style.display = 'flex';
     }
   });
 }
 
+// 2. منطق شاشة القفل الرئيسية للموقع (الباسورد 181 يفتح الموقع الأساسي مباشرة)
 function handleUnlock() {
   const enteredPass = passInput.value.trim();
   if (enteredPass === "181") {
@@ -333,10 +331,11 @@ function handleUnlock() {
       lockScreen.classList.add('lock-dissolve');
       setTimeout(() => {
         lockScreen.style.display = 'none';
-        if (app) app.style.display = 'flex';
+        if (app) app.style.display = 'flex'; // فتح الموقع الأساسي عدل
       }, 700);
     }
-    // تهيئة النظام بعد الدخول الصحيح
+    
+    // تسجيل الدخول وبدء الأنظمة التابعة للـ Firebase
     signInAnonymously(auth).then((cred) => {
       const myId = cred.user.uid;
       const myName = "Oper_" + myId.substring(0, 4);
