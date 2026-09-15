@@ -1,722 +1,477 @@
-// voice.js - Robust Voice Notes
-// Mobile-safe MediaRecorder implementation
+// voice.js
+// Stable press-and-hold voice recorder for desktop + mobile.
+// Uses Pointer Events so one physical interaction does not trigger
+// both mouse and touch handlers.
 
-export function initVoiceSystem({
-  db,
-  messagesCol,
-  myId,
-  myName,
-  addDoc
-}) {
-  const micButton = document.getElementById("voiceMicBtn");
+export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
+  const micBtn = document.getElementById("voiceMicBtn");
 
-  if (!micButton) {
-    console.warn("[Voice] #voiceMicBtn not found");
-    return { isRecording: () => false };
+  if (!micBtn) {
+    console.error("[VOICE] #voiceMicBtn not found.");
+    return;
   }
 
-  if (
-    typeof MediaRecorder === "undefined" ||
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-    alert("متصفحك لا يدعم تسجيل الصوت");
-    micButton.style.opacity = "0.4";
-    micButton.style.pointerEvents = "none";
-
-    return { isRecording: () => false };
+  if (!("MediaRecorder" in window)) {
+    console.error("[VOICE] MediaRecorder is not supported.");
+    micBtn.disabled = true;
+    micBtn.title = "Voice recording is not supported on this browser";
+    return;
   }
 
   let mediaRecorder = null;
-  let currentStream = null;
+  let mediaStream = null;
   let audioChunks = [];
   let audioBlob = null;
+  let audioPreviewUrl = null;
+
   let isRecording = false;
-  let recordStartTime = 0;
+  let isStopping = false;
+  let activePointerId = null;
+  let pressTimer = null;
+  let recordingStartedAt = 0;
 
-  // =========================================================
-  // Popup
-  // =========================================================
-
-  const actionPopup = document.createElement("div");
-
-  actionPopup.id = "voiceActionPopup";
-
-  actionPopup.style.cssText = `
-    display: none;
-    position: fixed;
-    bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #0c0f0c;
-    border: 1px solid #39FF14;
-    padding: 12px 18px;
-    border-radius: 12px;
-    z-index: 99999;
-    gap: 14px;
-    align-items: center;
-    box-shadow: 0 0 25px rgba(57, 255, 20, 0.35);
-    font-family: Arial, sans-serif;
-  `;
-
-  actionPopup.innerHTML = `
-    <button id="sendVoiceConfirm" style="
-      background:#1c8a0c;
-      color:#fff;
-      border:none;
-      padding:9px 20px;
-      border-radius:8px;
-      cursor:pointer;
-      font-weight:700;
-      font-size:14px;
-    ">
-      إرسال ✓
-    </button>
-
-    <button id="cancelVoiceConfirm" style="
-      background:#7a0a1d;
-      color:#fff;
-      border:none;
-      padding:9px 20px;
-      border-radius:8px;
-      cursor:pointer;
-      font-weight:700;
-      font-size:14px;
-    ">
-      حذف ✕
-    </button>
-  `;
-
-  document.body.appendChild(actionPopup);
-
-  const sendButton =
-    document.getElementById("sendVoiceConfirm");
-
-  const cancelButton =
-    document.getElementById("cancelVoiceConfirm");
-
-  // =========================================================
-  // MIME Type
-  // =========================================================
+  const LONG_PRESS_MS = 350;
+  const MIN_RECORDING_MS = 250;
 
   function getSupportedMimeType() {
-    const types = [
+    const candidates = [
       "audio/webm;codecs=opus",
       "audio/webm",
       "audio/ogg;codecs=opus",
-      "audio/mp4"
+      "audio/ogg",
+      "audio/mp4",
+      "audio/aac"
     ];
 
-    for (const type of types) {
+    for (const type of candidates) {
       try {
-        if (MediaRecorder.isTypeSupported(type)) {
-          console.log("[Voice] MIME:", type);
-          return type;
-        }
-      } catch (err) {
-        console.warn("[Voice] MIME check failed:", err);
-      }
+        if (MediaRecorder.isTypeSupported(type)) return type;
+      } catch (_) {}
     }
 
     return "";
   }
 
-  // =========================================================
-  // Reset
-  // =========================================================
+  function cleanupStream() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => {
+        try { track.stop(); } catch (_) {}
+      });
+    }
+    mediaStream = null;
+  }
+
+  function cleanupRecorder() {
+    cleanupStream();
+    mediaRecorder = null;
+    isStopping = false;
+    activePointerId = null;
+  }
+
+  function clearPressTimer() {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  }
 
   function resetButton() {
-    micButton.classList.remove("recording-active");
-    micButton.textContent = "🎤";
+    micBtn.classList.remove("recording-active");
+    micBtn.textContent = "🎤";
+    micBtn.title = "اضغط مع الاستمرار للتسجيل";
+    micBtn.setAttribute("aria-pressed", "false");
   }
 
-  function resetRecordingState() {
-    isRecording = false;
-
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => {
-        try {
-          track.stop();
-        } catch (err) {}
-      });
-
-      currentStream = null;
-    }
-
-    mediaRecorder = null;
-    audioChunks = [];
-    resetButton();
+  function setRecordingButton() {
+    micBtn.classList.add("recording-active");
+    micBtn.textContent = "⏺️";
+    micBtn.title = "اترك الزر لإيقاف التسجيل";
+    micBtn.setAttribute("aria-pressed", "true");
   }
 
-  // =========================================================
-  // Start Recording
-  // =========================================================
-
-  async function startRecording(e) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  function revokePreviewUrl() {
+    if (audioPreviewUrl) {
+      URL.revokeObjectURL(audioPreviewUrl);
+      audioPreviewUrl = null;
     }
+  }
 
-    if (isRecording) {
+  function removeExistingPopup() {
+    document.querySelectorAll(".voice-preview-popup").forEach(el => el.remove());
+  }
+
+  function createPreviewPopup(blob) {
+    removeExistingPopup();
+    revokePreviewUrl();
+
+    audioPreviewUrl = URL.createObjectURL(blob);
+
+    const popup = document.createElement("div");
+    popup.className = "voice-preview-popup";
+
+    popup.style.cssText = `
+      position:fixed;
+      left:50%;
+      bottom:max(78px, calc(env(safe-area-inset-bottom) + 70px));
+      transform:translateX(-50%);
+      z-index:60000;
+      width:min(92vw,420px);
+      background:#0c0f0c;
+      border:1px solid #1c8a0c;
+      border-radius:10px;
+      padding:12px;
+      box-shadow:0 0 25px rgba(57,255,20,.16);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    `;
+
+    const title = document.createElement("div");
+    title.textContent = "// VOICE TRANSMISSION READY";
+    title.style.cssText = `
+      color:#39FF14;
+      font:700 11px JetBrains Mono,monospace;
+      letter-spacing:.6px;
+    `;
+
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "metadata";
+    audio.src = audioPreviewUrl;
+    audio.style.width = "100%";
+    audio.setAttribute("type", blob.type || "audio/webm");
+
+    const actions = document.createElement("div");
+    actions.style.cssText = `
+      display:flex;
+      gap:8px;
+      width:100%;
+    `;
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.textContent = "DELETE";
+    deleteBtn.style.cssText = `
+      flex:1;
+      min-height:42px;
+      border:1px solid #7a0a1d;
+      background:#16070a;
+      color:#ff1744;
+      border-radius:6px;
+      font:700 11px JetBrains Mono,monospace;
+      cursor:pointer;
+      touch-action:manipulation;
+    `;
+
+    const sendBtn = document.createElement("button");
+    sendBtn.type = "button";
+    sendBtn.textContent = "SEND ▶";
+    sendBtn.style.cssText = `
+      flex:1;
+      min-height:42px;
+      border:1px solid #1c8a0c;
+      background:#0d1a0d;
+      color:#39FF14;
+      border-radius:6px;
+      font:700 11px JetBrains Mono,monospace;
+      cursor:pointer;
+      touch-action:manipulation;
+    `;
+
+    deleteBtn.addEventListener("click", () => {
+      audio.pause();
+      popup.remove();
+      revokePreviewUrl();
+      audioBlob = null;
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      if (!audioBlob) return;
+
+      sendBtn.disabled = true;
+      deleteBtn.disabled = true;
+      sendBtn.textContent = "SENDING...";
+
+      try {
+        const dataUrl = await blobToDataURL(audioBlob);
+
+        await addDoc(messagesCol, {
+          type: "voice",
+          audioData: dataUrl,
+          audioType: audioBlob.type || "audio/webm",
+          from: myId,
+          fromName: myName,
+          userId: myId,
+          user: myName,
+          ts: Date.now()
+        });
+
+        audio.pause();
+        popup.remove();
+        revokePreviewUrl();
+        audioBlob = null;
+      } catch (err) {
+        console.error("[VOICE] Failed to send voice note:", err);
+        sendBtn.disabled = false;
+        deleteBtn.disabled = false;
+        sendBtn.textContent = "SEND ▶";
+        alert("FAILED TO SEND VOICE NOTE");
+      }
+    });
+
+    actions.append(deleteBtn, sendBtn);
+    popup.append(title, audio, actions);
+    document.body.appendChild(popup);
+  }
+
+  function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = String(reader.result || "");
+        if (!result.startsWith("data:")) {
+          reject(new Error("FileReader did not return a valid Data URL."));
+          return;
+        }
+        resolve(result);
+      };
+
+      reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function startRecording(pointerId = null) {
+    if (isRecording || isStopping) return;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("MICROPHONE ACCESS IS NOT SUPPORTED ON THIS BROWSER");
       return;
     }
 
-    // إخفاء نافذة التأكيد
-    actionPopup.style.display = "none";
-
-    // تنظيف التسجيل السابق
-    audioBlob = null;
-    audioChunks = [];
-
     try {
-      currentStream =
-        await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      if (!mediaStream || !mediaStream.getAudioTracks().length) {
+        throw new Error("No microphone audio track was returned.");
+      }
 
       const mimeType = getSupportedMimeType();
 
       const options = mimeType
-        ? {
-            mimeType: mimeType,
-            audioBitsPerSecond: 96000
-          }
-        : {
-            audioBitsPerSecond: 96000
-          };
+        ? { mimeType, audioBitsPerSecond: 64000 }
+        : { audioBitsPerSecond: 64000 };
 
-      mediaRecorder = new MediaRecorder(
-        currentStream,
-        options
-      );
+      mediaRecorder = new MediaRecorder(mediaStream, options);
+      audioChunks = [];
+      audioBlob = null;
+      isStopping = false;
+      isRecording = true;
+      activePointerId = pointerId;
+      recordingStartedAt = Date.now();
 
-      console.log(
-        "[Voice] Recorder MIME:",
-        mediaRecorder.mimeType
-      );
-
-      // =====================================================
-      // Data
-      // =====================================================
-
-      mediaRecorder.ondataavailable = event => {
-        if (
-          event.data &&
-          event.data.size > 0
-        ) {
+      mediaRecorder.addEventListener("dataavailable", event => {
+        if (event.data && event.data.size > 0) {
           audioChunks.push(event.data);
-
-          console.log(
-            "[Voice] Chunk:",
-            event.data.size
-          );
         }
-      };
+      });
 
-      // =====================================================
-      // Stop
-      // =====================================================
+      mediaRecorder.addEventListener("error", event => {
+        console.error("[VOICE] MediaRecorder error:", event.error || event);
+      });
 
-      mediaRecorder.onstop = () => {
-        console.log("[Voice] Recorder stopped");
-
-        const duration =
-          (Date.now() - recordStartTime) / 1000;
-
-        // إيقاف المايك
-        if (currentStream) {
-          currentStream
-            .getTracks()
-            .forEach(track => {
-              try {
-                track.stop();
-              } catch (err) {}
-            });
-
-          currentStream = null;
-        }
-
-        resetButton();
-
-        // لا يوجد Audio Data
-        if (audioChunks.length === 0) {
-          console.warn("[Voice] No audio chunks");
-
-          audioBlob = null;
-
-          alert(
-            "لم يتم تسجيل صوت. حاول مرة أخرى."
-          );
-
-          return;
-        }
-
-        // تسجيل قصير جداً
-        if (duration < 0.7) {
-          console.warn(
-            "[Voice] Recording too short:",
-            duration
-          );
-
-          audioBlob = null;
-          audioChunks = [];
-
-          alert(
-            "التسجيل قصير جداً. اضغط لمدة ثانية على الأقل."
-          );
-
-          return;
-        }
-
-        // ===================================================
-        // Create Blob
-        // ===================================================
-
+      mediaRecorder.addEventListener("stop", () => {
+        const recorder = mediaRecorder;
         const finalType =
-          mediaRecorder?.mimeType ||
-          audioChunks[0]?.type ||
+          recorder?.mimeType ||
+          audioChunks.find(chunk => chunk.type)?.type ||
+          mimeType ||
           "audio/webm";
 
-        audioBlob = new Blob(
-          audioChunks,
-          {
-            type: finalType
+        if (audioChunks.length) {
+          audioBlob = new Blob(audioChunks, { type: finalType });
+
+          if (audioBlob.size > 0) {
+            createPreviewPopup(audioBlob);
+          } else {
+            console.error("[VOICE] Final audio blob is empty.");
           }
-        );
-
-        console.log(
-          "[Voice] Final:",
-          `${(audioBlob.size / 1024).toFixed(1)} KB`,
-          finalType,
-          `${duration.toFixed(1)} sec`
-        );
-
-        // حماية من Blob فاضي
-        if (
-          !audioBlob ||
-          audioBlob.size < 800
-        ) {
-          console.warn(
-            "[Voice] Blob too small:",
-            audioBlob?.size
-          );
-
-          audioBlob = null;
-
-          alert(
-            "التسجيل فارغ أو صغير جداً. حاول مرة أخرى."
-          );
-
-          return;
+        } else {
+          console.error("[VOICE] No audio chunks were produced.");
         }
 
-        // إظهار أزرار إرسال / حذف
-        actionPopup.style.display = "flex";
-      };
-
-      // =====================================================
-      // Error
-      // =====================================================
-
-      mediaRecorder.onerror = event => {
-        console.error(
-          "[Voice] MediaRecorder error:",
-          event
-        );
-
-        alert(
-          "حدث خطأ أثناء تسجيل الصوت."
-        );
-
-        resetRecordingState();
-      };
-
-      // =====================================================
-      // Start
-      // =====================================================
+        audioChunks = [];
+        isRecording = false;
+        isStopping = false;
+        resetButton();
+        cleanupRecorder();
+      });
 
       mediaRecorder.start(250);
-
-      isRecording = true;
-      recordStartTime = Date.now();
-
-      micButton.classList.add(
-        "recording-active"
-      );
-
-      micButton.textContent = "🔴";
-
-      console.log(
-        "[Voice] Recording started"
-      );
+      setRecordingButton();
 
     } catch (err) {
-      console.error(
-        "[Voice] Start failed:",
-        err
-      );
+      console.error("[VOICE] Could not start recording:", err);
 
-      if (
-        err.name === "NotAllowedError"
-      ) {
-        alert(
-          "يجب السماح باستخدام الميكروفون."
-        );
-      } else if (
-        err.name === "NotFoundError"
-      ) {
-        alert(
-          "لم يتم العثور على ميكروفون."
-        );
+      isRecording = false;
+      isStopping = false;
+      audioChunks = [];
+      resetButton();
+      cleanupRecorder();
+
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        alert("MICROPHONE PERMISSION WAS DENIED");
+      } else if (err?.name === "NotFoundError") {
+        alert("NO MICROPHONE WAS FOUND");
       } else {
-        alert(
-          "تعذر بدء التسجيل."
-        );
+        alert("FAILED TO START VOICE RECORDING");
       }
-
-      resetRecordingState();
     }
   }
 
-  // =========================================================
-  // Stop Recording
-  // =========================================================
+  function stopRecording() {
+    clearPressTimer();
 
-  function stopRecording(e) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    if (!isRecording || !mediaRecorder || isStopping) return;
 
-    if (
-      !isRecording ||
-      !mediaRecorder
-    ) {
-      return;
-    }
+    isStopping = true;
 
-    console.log(
-      "[Voice] Stopping..."
-    );
+    const recorder = mediaRecorder;
+    const elapsed = Date.now() - recordingStartedAt;
 
-    isRecording = false;
-
-    try {
-      if (
-        mediaRecorder.state === "recording"
-      ) {
-        mediaRecorder.stop();
-      }
-    } catch (err) {
-      console.error(
-        "[Voice] Stop error:",
-        err
-      );
-
-      resetRecordingState();
-    }
-  }
-
-  // =========================================================
-  // Force Stop
-  // =========================================================
-
-  function forceStop() {
-    isRecording = false;
-
-    try {
-      if (
-        mediaRecorder &&
-        mediaRecorder.state !== "inactive"
-      ) {
-        mediaRecorder.stop();
-      }
-    } catch (err) {
-      console.warn(
-        "[Voice] Force stop error:",
-        err
-      );
-    }
-
-    if (currentStream) {
-      currentStream
-        .getTracks()
-        .forEach(track => {
-          try {
-            track.stop();
-          } catch (err) {}
-        });
-
-      currentStream = null;
-    }
-
-    resetButton();
-  }
-
-  // =========================================================
-  // Mouse Events
-  // =========================================================
-
-  micButton.addEventListener(
-    "mousedown",
-    startRecording
-  );
-
-  micButton.addEventListener(
-    "mouseup",
-    stopRecording
-  );
-
-  micButton.addEventListener(
-    "mouseleave",
-    () => {
-      if (isRecording) {
-        stopRecording();
-      }
-    }
-  );
-
-  // =========================================================
-  // Mobile Touch Events
-  // =========================================================
-
-  micButton.addEventListener(
-    "touchstart",
-    startRecording,
-    {
-      passive: false
-    }
-  );
-
-  micButton.addEventListener(
-    "touchend",
-    stopRecording,
-    {
-      passive: false
-    }
-  );
-
-  micButton.addEventListener(
-    "touchcancel",
-    stopRecording,
-    {
-      passive: false
-    }
-  );
-
-  micButton.addEventListener(
-    "touchmove",
-    e => {
-      if (isRecording) {
-        e.preventDefault();
-      }
-    },
-    {
-      passive: false
-    }
-  );
-
-  // =========================================================
-  // Prevent Context Menu
-  // =========================================================
-
-  micButton.addEventListener(
-    "contextmenu",
-    e => {
-      e.preventDefault();
-    }
-  );
-
-  // =========================================================
-  // Send Voice
-  // =========================================================
-
-  sendButton.addEventListener(
-    "click",
-    async e => {
-      e.preventDefault();
-
-      if (!audioBlob) {
-        alert(
-          "لا يوجد تسجيل لإرساله."
-        );
-
-        return;
-      }
-
-      sendButton.disabled = true;
+    const finish = () => {
+      if (!recorder) return;
 
       try {
-        const reader =
-          new FileReader();
-
-        reader.onload = async () => {
-          try {
-            const base64 =
-              reader.result;
-
-            if (!base64) {
-              throw new Error(
-                "Empty Base64"
-              );
-            }
-
-            // حماية Firebase
-            if (
-              base64.length >
-              900000
-            ) {
-              alert(
-                "التسجيل طويل جداً."
-              );
-
-              sendButton.disabled = false;
-              return;
-            }
-
-            await addDoc(
-              messagesCol,
-              {
-                type: "voice",
-
-                audioData: base64,
-
-                audioType:
-                  audioBlob.type,
-
-                from: myId,
-
-                fromName: myName,
-
-                userId: myId,
-
-                user: myName,
-
-                color: "#39FF14",
-
-                ts: Date.now()
-              }
-            );
-
-            console.log(
-              "[Voice] Sent successfully"
-            );
-
-            audioBlob = null;
-            audioChunks = [];
-
-            actionPopup.style.display =
-              "none";
-
-          } catch (err) {
-            console.error(
-              "[Voice] Firebase error:",
-              err
-            );
-
-            alert(
-              "فشل إرسال الرسالة الصوتية."
-            );
-          }
-
-          sendButton.disabled = false;
-        };
-
-        reader.onerror = () => {
-          console.error(
-            "[Voice] FileReader error"
-          );
-
-          alert(
-            "تعذر قراءة التسجيل."
-          );
-
-          sendButton.disabled = false;
-        };
-
-        reader.readAsDataURL(
-          audioBlob
-        );
-
+        if (recorder.state !== "inactive") {
+          recorder.stop();
+        }
       } catch (err) {
-        console.error(
-          "[Voice] Send failed:",
-          err
-        );
-
-        alert(
-          "فشل إرسال الرسالة الصوتية."
-        );
-
-        sendButton.disabled = false;
+        console.error("[VOICE] Failed to stop recorder:", err);
+        isRecording = false;
+        isStopping = false;
+        resetButton();
+        cleanupRecorder();
       }
+    };
+
+    if (elapsed < MIN_RECORDING_MS) {
+      setTimeout(finish, MIN_RECORDING_MS - elapsed);
+    } else {
+      finish();
     }
-  );
+  }
 
-  // =========================================================
-  // Cancel
-  // =========================================================
+  function cancelRecording() {
+    clearPressTimer();
 
-  cancelButton.addEventListener(
-    "click",
-    e => {
-      e.preventDefault();
+    if (!isRecording || !mediaRecorder) return;
 
-      actionPopup.style.display =
-        "none";
+    const recorder = mediaRecorder;
 
-      audioBlob = null;
-      audioChunks = [];
-
-      console.log(
-        "[Voice] Recording deleted"
-      );
-    }
-  );
-
-  // =========================================================
-  // Page Visibility
-  // =========================================================
-
-  document.addEventListener(
-    "visibilitychange",
-    () => {
-      if (
-        document.hidden &&
-        isRecording
-      ) {
-        console.log(
-          "[Voice] Page hidden - stopping"
-        );
-
-        forceStop();
+    try {
+      if (recorder.state !== "inactive") {
+        recorder.stop();
       }
+    } catch (_) {}
+
+    audioChunks = [];
+    isRecording = false;
+    isStopping = false;
+    resetButton();
+    cleanupRecorder();
+  }
+
+  // Pointer Events avoid the old mouse+touch double-trigger problem.
+  micBtn.addEventListener("pointerdown", event => {
+    if (event.button !== undefined && event.button !== 0) return;
+    if (isRecording || isStopping) return;
+
+    event.preventDefault();
+
+    activePointerId = event.pointerId;
+
+    try {
+      micBtn.setPointerCapture(event.pointerId);
+    } catch (_) {}
+
+    clearPressTimer();
+
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      startRecording(event.pointerId);
+    }, LONG_PRESS_MS);
+  });
+
+  micBtn.addEventListener("pointerup", event => {
+    event.preventDefault();
+
+    if (activePointerId !== null && event.pointerId !== activePointerId) return;
+
+    clearPressTimer();
+
+    if (isRecording) {
+      stopRecording();
+    } else {
+      activePointerId = null;
     }
-  );
 
-  // =========================================================
-  // Cleanup
-  // =========================================================
+    try {
+      micBtn.releasePointerCapture(event.pointerId);
+    } catch (_) {}
+  });
 
-  window.addEventListener(
-    "beforeunload",
-    () => {
-      if (isRecording) {
-        forceStop();
-      }
+  micBtn.addEventListener("pointercancel", event => {
+    event.preventDefault();
+    clearPressTimer();
+    cancelRecording();
+
+    try {
+      micBtn.releasePointerCapture(event.pointerId);
+    } catch (_) {}
+  });
+
+  micBtn.addEventListener("pointerleave", event => {
+    // On a captured pointer this event does not cancel the recording.
+    // This makes dragging slightly outside the button less likely to
+    // accidentally produce an unusable recording.
+    if (!micBtn.hasPointerCapture?.(event.pointerId)) {
+      clearPressTimer();
+      if (!isRecording) activePointerId = null;
     }
-  );
+  });
 
-  console.log(
-    "[Voice] Voice system initialized"
-  );
+  micBtn.addEventListener("contextmenu", event => {
+    event.preventDefault();
+  });
 
-  return {
-    isRecording: () => isRecording
-  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && isRecording) {
+      stopRecording();
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    clearPressTimer();
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try { mediaRecorder.stop(); } catch (_) {}
+    }
+
+    cleanupStream();
+  });
+
+  window.addEventListener("pagehide", () => {
+    clearPressTimer();
+    if (isRecording) cancelRecording();
+  });
+
+  resetButton();
 }
