@@ -3,54 +3,60 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ============================================================
-//  إزالة أي headers قد تمنع blob: URLs
-// ============================================================
-app.use((req, res, next) => {
-  // شيل أي قيود صارمة بتحطها Railway افتراضياً
-  res.removeHeader('Cross-Origin-Embedder-Policy');
-  res.removeHeader('Cross-Origin-Opener-Policy');
-  res.removeHeader('Cross-Origin-Resource-Policy');
-  res.removeHeader('Content-Security-Policy');
+// زيادة الحد عشان نستقبل الملفات الكبيرة (التسجيلات)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // حط CSP مرن بيدعم كل احتياجاتك (Firebase + blob + data + webrtc)
-  res.setHeader(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https: https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebase.com",
-      "style-src 'self' 'unsafe-inline' https:",
-      "img-src 'self' data: blob: https:",
-      "media-src 'self' blob: data: https:",
-      "connect-src 'self' blob: data: https: wss: https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://*.firebase.com",
-      "font-src 'self' data: https:",
-      "frame-src 'self' https:",
-      "worker-src 'self' blob:"
-    ].join('; ')
-  );
-
-  next();
-});
+// ... (كود الـ CSP زي ما هو) ...
 
 // ============================================================
-//  تقديم الملفات الثابتة (index.html, voice.js, call.js, ...)
+//  API جديد: تحويل الصوت إلى MP3
 // ============================================================
-app.use(express.static(__dirname, {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const { PassThrough } = require('stream');
+
+// ضبط مسار ffmpeg
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+app.post('/api/convert-audio', async (req, res) => {
+  try {
+    const { audioDataUrl } = req.body;
+    if (!audioDataUrl || !audioDataUrl.startsWith('data:')) {
+      return res.status(400).json({ error: 'Invalid audio data' });
     }
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    }
+
+    // فصل الـ base64 عن الـ header
+    const base64Data = audioDataUrl.split(',')[1];
+    const inputBuffer = Buffer.from(base64Data, 'base64');
+
+    const inputStream = new PassThrough();
+    inputStream.end(inputBuffer);
+
+    const outputStream = new PassThrough();
+    const chunks = [];
+    outputStream.on('data', (chunk) => chunks.push(chunk));
+
+    // تشغيل ffmpeg
+    await new Promise((resolve, reject) => {
+      ffmpeg(inputStream)
+        .inputFormat('webm') // أو 'mp4' حسب اللي الآيفون بيسجله
+        .audioCodec('libmp3lame')
+        .audioBitrate(128)
+        .format('mp3')
+        .on('error', reject)
+        .on('end', resolve)
+        .pipe(outputStream, { end: true });
+    });
+
+    const mp3Buffer = Buffer.concat(chunks);
+    const mp3DataUrl = `data:audio/mp3;base64,${mp3Buffer.toString('base64')}`;
+
+    res.json({ audioDataUrl: mp3DataUrl, mimeType: 'audio/mp3' });
+  } catch (error) {
+    console.error('Conversion error:', error);
+    res.status(500).json({ error: 'Conversion failed' });
   }
-}));
-
-// fallback: أي route غير معروف → index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Lime Devil server running on port ${PORT}`);
-});
+// ... (باقي كود static والـ fallback زي ما هو) ...
