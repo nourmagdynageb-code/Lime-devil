@@ -1,4 +1,4 @@
-// voice.js - Professional Hold-to-Record Voice Notes System
+// voice.js - Professional Hold-to-Record Voice Notes System (Full Updated)
 
 export function initVoiceSystem({
   db,
@@ -7,113 +7,214 @@ export function initVoiceSystem({
   myName,
   addDoc
 }) {
-  const micButton = document.getElementById("voiceMicBtn"); // زر المايك اللي على الشمال خالص
-  
+  const micButton = document.getElementById("voiceMicBtn");
+
+  if (!micButton) {
+    console.warn("[Voice] #voiceMicBtn not found in DOM");
+    return { isRecording: () => false };
+  }
+
   let mediaRecorder = null;
   let audioChunks = [];
   let isRecording = false;
   let audioBlob = null;
+  let currentStream = null;
 
-  // إنشاء واجهة مصغرة للتأكيد (إرسال / مسح) تظهر بجانب زر المايك بعد ترك الزر
+  // ===== Popup تأكيد الإرسال / الحذف =====
   const actionPopup = document.createElement("div");
   actionPopup.className = "voice-action-popup";
-  actionPopup.style.cssText = "display:none; position:absolute; background:#222; border:1px solid #444; padding:5px 10px; border-radius:8px; z-index:1000; gap:10px; align-items:center;";
-  actionPopup.innerHTML = `
-    <button id="sendVoiceConfirm" style="background:green; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">إرسال ✓</button>
-    <button id="cancelVoiceConfirm" style="background:red; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">حذف ✕</button>
+  actionPopup.style.cssText = `
+    display: none;
+    position: absolute;
+    background: #0c0f0c;
+    border: 1px solid #39FF14;
+    padding: 8px 12px;
+    border-radius: 10px;
+    z-index: 9999;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.25);
+    font-family: 'JetBrains Mono', monospace;
   `;
+
+  actionPopup.innerHTML = `
+    <button id="sendVoiceConfirm" style="
+      background: #1c8a0c;
+      color: #fff;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    ">إرسال ✓</button>
+
+    <button id="cancelVoiceConfirm" style="
+      background: #7a0a1d;
+      color: #fff;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    ">حذف ✕</button>
+  `;
+
   document.body.appendChild(actionPopup);
 
+  // ===== بدء التسجيل =====
   async function startRecording(e) {
     e.preventDefault();
+    e.stopPropagation();
+
     if (isRecording) return;
 
-    // إخفاء أي نافذة تأكيد قديمة لو ظهرت
+    // إخفاء أي نافذة تأكيد قديمة
     actionPopup.style.display = "none";
+    audioBlob = null;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+      currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      mediaRecorder = new MediaRecorder(currentStream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm"
+      });
+
       audioChunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           audioChunks.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        // إيقاف تراك المايك لتطفئ لمبة التسجيل في المتصفح
-        stream.getTracks().forEach(track => track.stop());
+        // إيقاف المايك نهائياً
+        if (currentStream) {
+          currentStream.getTracks().forEach(track => track.stop());
+          currentStream = null;
+        }
+
+        if (audioChunks.length === 0) {
+          console.warn("[Voice] No audio data recorded");
+          return;
+        }
+
+        audioBlob = new Blob(audioChunks, { type: "audio/webm" });
 
         // إظهار أزرار التأكيد بجانب زر المايك
         const rect = micButton.getBoundingClientRect();
-        actionPopup.style.top = `${rect.top - 40}px`;
-        actionPopup.style.left = `${rect.left - 100}px`;
+        actionPopup.style.top = `${window.scrollY + rect.top - 50}px`;
+        actionPopup.style.left = `${window.scrollX + rect.left - 30}px`;
         actionPopup.style.display = "flex";
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); // جمع البيانات كل 100ms
       isRecording = true;
-      if (micButton) micButton.classList.add("recording-active"); // تأثير بصري للتسجيل
+      micButton.classList.add("recording-active");
+
     } catch (err) {
-      console.error("Microphone access error:", err);
-      alert("تعذر الوصول إلى المايكروفون.");
+      console.error("[Voice] Microphone access error:", err);
+      alert("تعذر الوصول إلى الميكروفون. تأكد من إعطاء الصلاحية.");
+      isRecording = false;
+      micButton.classList.remove("recording-active");
     }
   }
 
-  function stopRecording() {
+  // ===== إيقاف التسجيل =====
+  function stopRecording(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (!isRecording) return;
+
     isRecording = false;
-    if (micButton) micButton.classList.remove("recording-active");
+    micButton.classList.remove("recording-active");
+
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
     }
   }
 
-  // أحداث الضغط المطول (للهواتف والأجهزة المكتبية)
-  if (micButton) {
-    // البدء بالضغط
-    micButton.addEventListener("mousedown", startRecording);
-    micButton.addEventListener("touchstart", startRecording);
+  // ===== أحداث الضغط المطول =====
+  // Desktop
+  micButton.addEventListener("mousedown", startRecording);
+  micButton.addEventListener("mouseup", stopRecording);
+  micButton.addEventListener("mouseleave", stopRecording); // لو سحب الماوس برا الزر
 
-    // الانتهاء عند رفع الإصبع
-    micButton.addEventListener("mouseup", stopRecording);
-    micButton.addEventListener("touchend", stopRecording);
-  }
+  // Mobile
+  micButton.addEventListener("touchstart", startRecording, { passive: false });
+  micButton.addEventListener("touchend", stopRecording);
+  micButton.addEventListener("touchcancel", stopRecording);
 
-  // تأكيد الإرسال
+  // ===== زر الإرسال =====
   document.getElementById("sendVoiceConfirm").addEventListener("click", async () => {
     actionPopup.style.display = "none";
+
     if (!audioBlob) return;
 
     try {
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
+
       reader.onloadend = async () => {
         const base64Audio = reader.result;
 
-        // إرسال الصوت لقاعدة بيانات الفايرستور
+        // حماية من الملفات الكبيرة جداً (Firestore limit ~1MB)
+        if (base64Audio.length > 900000) {
+          alert("التسجيل طويل جداً. حاول تسجيل أقصر.");
+          audioBlob = null;
+          return;
+        }
+
         await addDoc(messagesCol, {
           type: "voice",
           audioData: base64Audio,
           from: myId,
           fromName: myName,
+          userId: myId,        // للتوافق مع نظام الرسائل العادي
+          user: myName,
+          color: "#39FF14",
           ts: Date.now()
         });
+
         audioBlob = null;
+        console.log("[Voice] Voice note sent successfully");
       };
-    } catch (e) {
-      console.error("Error sending voice note:", e);
+
+      reader.onerror = () => {
+        console.error("[Voice] FileReader error");
+        alert("حدث خطأ أثناء قراءة التسجيل.");
+      };
+
+    } catch (err) {
+      console.error("[Voice] Error sending voice note:", err);
+      alert("فشل إرسال الرسالة الصوتية.");
     }
   });
 
-  // إلغاء / حذف التسجيل
+  // ===== زر الحذف =====
   document.getElementById("cancelVoiceConfirm").addEventListener("click", () => {
     actionPopup.style.display = "none";
     audioBlob = null;
-    console.log("Voice note cancelled.");
+    console.log("[Voice] Voice note cancelled");
+  });
+
+  // إخفاء الـ popup لو ضغط في أي مكان تاني
+  document.addEventListener("click", (e) => {
+    if (
+      actionPopup.style.display === "flex" &&
+      !actionPopup.contains(e.target) &&
+      e.target !== micButton
+    ) {
+      actionPopup.style.display = "none";
+      audioBlob = null;
+    }
   });
 
   return {
