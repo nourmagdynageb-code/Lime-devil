@@ -1,5 +1,5 @@
 // voice.js
-// Final bulletproof voice recorder & player renderer for desktop & mobile (Fixed duration 0 & empty blob issues).
+// Final bulletproof voice recorder & player renderer for desktop & mobile (Fixed duration 0 issue).
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -22,15 +22,14 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isRecording = false;
   let isStopping = false;
   let recordingStartedAt = 0;
-  const MIN_RECORDING_MS = 800; // زيادة الوقت قليلاً لضمان التقاط بيانات كافية
+  const MIN_RECORDING_MS = 800;
 
+  // تعديل الصيغ لإزالة المعوقات التي تسبب ظهور المدة 0:00
   function getSupportedMimeType() {
     const candidates = [
-      "audio/webm;codecs=opus",
       "audio/webm",
       "audio/mp4",
-      "audio/aac",
-      "audio/ogg;codecs=opus"
+      "audio/ogg"
     ];
 
     for (const type of candidates) {
@@ -38,7 +37,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         return type;
       }
     }
-    return ""; // تركها فارغة ليدع المتصفح يختار الصيغة الافتراضية المدعومة لديه
+    return ""; 
   }
 
   function cleanupStream() {
@@ -66,7 +65,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   function setRecordingButton() {
     micBtn.classList.add("recording-active");
     micBtn.textContent = "⏺️";
-    micBtn.title = "جارٍ التسجيل... ارفع إصبعك للإيقاف";
+    micBtn.title = "جارٍ التسجيل... اضغط للإيقاف";
     micBtn.setAttribute("aria-pressed", "true");
   }
 
@@ -115,24 +114,12 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
     const audio = document.createElement("audio");
     audio.controls = true;
-    audio.preload = "metadata";
+    audio.preload = "auto";
     audio.src = audioPreviewUrl;
     audio.style.width = "100%";
     if (blob.type) {
       audio.type = blob.type;
     }
-
-    // إصلاح مشكلة مدة الـ 0 أو Infinity للمعاينة
-    audio.addEventListener("loadedmetadata", () => {
-      if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
-        audio.currentTime = Number.MAX_SAFE_INTEGER;
-        audio.ontimeupdate = () => {
-          audio.ontimeupdate = null;
-          audio.currentTime = 0;
-          audio.pause();
-        };
-      }
-    });
 
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
@@ -259,7 +246,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         cleanupRecorder();
       });
 
-      // إزالة رقم الـ 250ms المسبب للمشاكل في بعض الهواتف وترك المتصفح يدير الـ chunks افتراضياً
       mediaRecorder.start();
       setRecordingButton();
     } catch (err) {
@@ -321,7 +307,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     cleanupRecorder();
   }
 
-  // استخدام نظام التبديل الآمن (اضغط للبدء، اضغط للإيقاف) لتجنب مشاكل الموبايل وفقدان اللمس
   micBtn.addEventListener("click", event => {
     event.preventDefault();
     if (!isRecording) {
@@ -341,28 +326,16 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 }
 
 /**
- * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة (محدثة لحل مشكلة وقت 0)
+ * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
   audio.controls = true;
-  audio.preload = "metadata";
+  audio.preload = "auto";
   audio.src = messageData.audioData;
   if (messageData.audioType) {
     audio.type = messageData.audioType;
   }
-  
-  // إصلاح مشكلة ظهور مدة الفويسات الواردة 0 أو غير محدودة
-  audio.addEventListener("loadedmetadata", () => {
-    if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
-      audio.currentTime = Number.MAX_SAFE_INTEGER;
-      audio.ontimeupdate = () => {
-        audio.ontimeupdate = null;
-        audio.currentTime = 0;
-        audio.pause();
-      };
-    }
-  });
 
   return audio;
 }
