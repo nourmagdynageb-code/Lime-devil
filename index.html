@@ -110,7 +110,7 @@ main::-webkit-scrollbar{width:6px;}main::-webkit-scrollbar-thumb{background:var(
 .msg-user{font-weight:700;}
 .msg-text{font-size:13px;word-break:break-word;color:#dfffe0;line-height:1.45;}
 #typingIndicator{flex:0 0 auto;width:100%;min-height:18px;padding:0 12px 4px;color:var(--lime-dim);font-size:10px;}
-form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;background:#080a08;border-top:1px solid var(--lime-dim);}
+form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;background:#080a08;border-top:1px solid var(--lime-dim);align-items:center;}
 #msgInput{flex:1 1 auto;min-width:0;width:100%;background:#0b0e0b;border:1px solid var(--lime-dim);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;}
 #msgInput::placeholder{color:#555;}
 #sendBtn{flex:0 0 auto;padding:0 20px;font-size:13px;}
@@ -122,8 +122,60 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
 .log-item{background:var(--panel-2);padding:7px 9px;border-radius:4px;border-left:3px solid var(--lime-dim);word-break:break-all;}
 .log-item.failed{border-left-color:var(--crimson);}
 .close-modal-btn{width:100%;background:var(--panel-2);border:1px solid var(--lime-dim);color:var(--text);padding:8px;border-radius:4px;cursor:pointer;font-weight:700;font-size:11px;}
-@media (max-width:600px){#app{width:100%;height:100dvh;min-height:100dvh;}header{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:7px;width:100%;padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left));min-height:auto;flex:0 0 auto;}.logo{width:100%;text-align:center;font-size:15px;line-height:1.2;letter-spacing:1px;}.header-stats{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-width:0;}.stat-chip{padding:5px 8px;font-size:10px;min-height:29px;}.dot{width:6px;height:6px;flex:0 0 6px;}.action-btn{padding:6px 8px;min-height:29px;font-size:9px;letter-spacing:0.3px;}main{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;padding:10px 8px 6px;gap:7px;}.sys-msg{max-width:95%;font-size:9px;line-height:1.4;padding:5px 9px;text-align:center;word-break:break-word;}.msg{max-width:90%;padding:7px 9px;}.msg-meta{font-size:9px;}.msg-text{font-size:12px;line-height:1.45;}#typingIndicator{flex:0 0 auto;min-height:17px;padding:2px 10px 3px;font-size:9px;}form#composer{flex:0 0 auto;display:flex;width:100%;gap:6px;padding:7px max(7px,env(safe-area-inset-right)) 7px max(7px,env(safe-area-inset-left));min-height:60px;}#msgInput{flex:1 1 auto;min-width:0;width:100%;height:46px;font-size:12px;padding:10px;}#msgInput::placeholder{font-size:11px;}#sendBtn{flex:0 0 92px;width:92px;min-width:92px;height:46px;padding:0 8px;font-size:11px;}.footnote{flex:0 0 auto;font-size:7px;padding:3px 5px max(5px,env(safe-area-inset-bottom));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.custom-modal{padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left));}.modal-box{width:94vw;max-height:82vh;max-height:82dvh;padding:13px;}.modal-title{font-size:11px;}#callOverlay{padding:max(8px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));}.call-header{margin-top:2px;margin-bottom:4px;}.call-header h2{font-size:13px;letter-spacing:1px;}.call-status{font-size:10px;}.call-video-container{flex-direction:column;flex-wrap:nowrap;gap:0;max-width:100%;height:100%;position:relative;}.call-video-container .video-box:nth-child(2){width:100%;min-width:100%;height:100%;max-height:none;flex:1 1 auto;border-radius:12px;}.call-video-container .video-box:nth-child(1){position:absolute;bottom:10px;right:10px;width:108px;min-width:108px;height:144px;z-index:15;border-radius:10px;border-width:2px;box-shadow:0 4px 16px rgba(0,0,0,0.6),0 0 10px rgba(57,255,20,0.3);}.call-video-container .video-box:nth-child(1) .video-label{font-size:9px;padding:2px 5px;bottom:4px;left:4px;}.call-controls{gap:6px;padding:8px 2px 2px;margin-bottom:0;max-width:100%;}.call-btn{padding:11px 6px;font-size:11px;min-width:0;min-height:46px;flex:1 1 30%;border-radius:40px;}.call-btn.end-call{flex:1 1 100%;min-height:50px;font-size:13px;margin-top:2px;}}
-@media (max-width:380px){.logo{font-size:14px;}.header-stats{gap:4px;}.stat-chip{padding:4px 6px;font-size:9px;}.action-btn{padding:5px 6px;font-size:8px;}#sendBtn{flex-basis:82px;width:82px;min-width:82px;font-size:10px;}#msgInput::placeholder{font-size:10px;}}
+
+/* ===== Voice Mic Button ===== */
+.voice-mic-btn {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  background: var(--panel-2);
+  border: 1px solid var(--lime-dim);
+  border-radius: 50%;
+  color: var(--lime-glow);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation;
+}
+.voice-mic-btn:hover {
+  background: var(--lime-dim);
+  color: #000;
+  box-shadow: 0 0 12px var(--lime);
+}
+.voice-mic-btn.recording-active {
+  background: var(--crimson) !important;
+  border-color: var(--crimson) !important;
+  color: #fff !important;
+  box-shadow: 0 0 18px var(--crimson);
+  animation: pulse-rec 1s infinite;
+}
+@keyframes pulse-rec {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* صوت الرسالة */
+.voice-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.voice-msg audio {
+  height: 36px;
+  max-width: 240px;
+  outline: none;
+  border-radius: 20px;
+}
+
+@media (max-width:600px){#app{width:100%;height:100dvh;min-height:100dvh;}header{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:7px;width:100%;padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left));min-height:auto;flex:0 0 auto;}.logo{width:100%;text-align:center;font-size:15px;line-height:1.2;letter-spacing:1px;}.header-stats{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-width:0;}.stat-chip{padding:5px 8px;font-size:10px;min-height:29px;}.dot{width:6px;height:6px;flex:0 0 6px;}.action-btn{padding:6px 8px;min-height:29px;font-size:9px;letter-spacing:0.3px;}main{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;padding:10px 8px 6px;gap:7px;}.sys-msg{max-width:95%;font-size:9px;line-height:1.4;padding:5px 9px;text-align:center;word-break:break-word;}.msg{max-width:90%;padding:7px 9px;}.msg-meta{font-size:9px;}.msg-text{font-size:12px;line-height:1.45;}#typingIndicator{flex:0 0 auto;min-height:17px;padding:2px 10px 3px;font-size:9px;}form#composer{flex:0 0 auto;display:flex;width:100%;gap:6px;padding:7px max(7px,env(safe-area-inset-right)) 7px max(7px,env(safe-area-inset-left));min-height:60px;align-items:center;}#msgInput{flex:1 1 auto;min-width:0;width:100%;height:46px;font-size:12px;padding:10px;}#msgInput::placeholder{font-size:11px;}#sendBtn{flex:0 0 80px;width:80px;min-width:80px;height:46px;padding:0 8px;font-size:11px;}.voice-mic-btn{flex:0 0 46px;width:46px;height:46px;font-size:18px;}.footnote{flex:0 0 auto;font-size:7px;padding:3px 5px max(5px,env(safe-area-inset-bottom));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.custom-modal{padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left));}.modal-box{width:94vw;max-height:82vh;max-height:82dvh;padding:13px;}.modal-title{font-size:11px;}#callOverlay{padding:max(8px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));}.call-header{margin-top:2px;margin-bottom:4px;}.call-header h2{font-size:13px;letter-spacing:1px;}.call-status{font-size:10px;}.call-video-container{flex-direction:column;flex-wrap:nowrap;gap:0;max-width:100%;height:100%;position:relative;}.call-video-container .video-box:nth-child(2){width:100%;min-width:100%;height:100%;max-height:none;flex:1 1 auto;border-radius:12px;}.call-video-container .video-box:nth-child(1){position:absolute;bottom:10px;right:10px;width:108px;min-width:108px;height:144px;z-index:15;border-radius:10px;border-width:2px;box-shadow:0 4px 16px rgba(0,0,0,0.6),0 0 10px rgba(57,255,20,0.3);}.call-video-container .video-box:nth-child(1) .video-label{font-size:9px;padding:2px 5px;bottom:4px;left:4px;}.call-controls{gap:6px;padding:8px 2px 2px;margin-bottom:0;max-width:100%;}.call-btn{padding:11px 6px;font-size:11px;min-width:0;min-height:46px;flex:1 1 30%;border-radius:40px;}.call-btn.end-call{flex:1 1 100%;min-height:50px;font-size:13px;margin-top:2px;}}
+@media (max-width:380px){.logo{font-size:14px;}.header-stats{gap:4px;}.stat-chip{padding:4px 6px;font-size:9px;}.action-btn{padding:5px 6px;font-size:8px;}#sendBtn{flex-basis:70px;width:70px;min-width:70px;font-size:10px;}#msgInput::placeholder{font-size:10px;}.voice-mic-btn{width:42px;height:42px;font-size:16px;}}
 @media (max-width:600px) and (orientation:landscape){header{flex-direction:row;align-items:center;padding-top:6px;padding-bottom:6px;}.logo{width:auto;text-align:left;font-size:14px;}.header-stats{width:auto;justify-content:flex-end;}.action-btn{padding:5px 7px;}.stat-chip{padding:4px 7px;}#callOverlay{padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));}.call-header{margin-top:0;margin-bottom:2px;}.call-header h2{font-size:12px;}.call-status{font-size:9px;}.call-video-container{flex-direction:row;gap:8px;}.call-video-container .video-box:nth-child(1),.call-video-container .video-box:nth-child(2){position:relative;width:48%;min-width:0;height:100%;bottom:auto;right:auto;flex:1 1 45%;border-radius:8px;}.call-controls{flex-wrap:nowrap;gap:5px;padding:2px 0;}.call-btn{min-height:40px;padding:7px 5px;font-size:10px;flex:1 1 auto;}.call-btn.end-call{flex:0 0 auto;min-width:100px;margin-top:0;}}
 #searchFacade{position:fixed;inset:0;z-index:40000;display:flex;flex-direction:column;justify-content:center;align-items:center;background:linear-gradient(135deg,#0f0f13 0%,#1a1a24 50%,#0f0f13 100%);background-size:200% 200%;animation:searchGradient 12s ease infinite;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#e8e8e8;overflow:hidden;transition:opacity 0.55s ease,transform 0.55s ease;}
 @keyframes searchGradient{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
@@ -156,7 +208,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<!-- المرحلة 1: واجهة البحث Searchly (تظهر دائماً أولاً) -->
+<!-- المرحلة 1: واجهة البحث Searchly -->
 <div id="searchFacade">
   <div class="search-particles" id="searchParticles"></div>
   <div class="search-container">
@@ -245,7 +297,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </div>
 </div>
 
-<!-- المرحلة 2: شاشة القفل (تظهر بعد Searchly فقط) -->
+<!-- المرحلة 2: شاشة القفل -->
 <div id="lockScreen" class="flicker">
   <div class="lock-box">
     <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
@@ -259,7 +311,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </div>
 </div>
 
-<!-- Call Overlay (يبقى كما هو لأن السكربت المنفصل يعتمد عليه) -->
+<!-- Call Overlay -->
 <div id="callOverlay">
   <div class="call-header">
     <h2>// ENCRYPTED VOICE / VIDEO CHANNEL</h2>
@@ -285,7 +337,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </div>
 </div>
 
-<!-- اللوحة الرئيسية (تظهر فقط بعد إدخال 181) -->
+<!-- اللوحة الرئيسية -->
 <div id="app">
   <header>
     <div class="logo glitch" data-text="LIME DEVIL">LIME DEVIL</div>
@@ -302,6 +354,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   <main id="feed"></main>
   <div id="typingIndicator"></div>
   <form id="composer" autocomplete="off">
+    <button type="button" id="voiceMicBtn" class="voice-mic-btn" title="اضغط مع الاستمرار للتسجيل">🎤</button>
     <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
     <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
@@ -312,6 +365,9 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, getDoc, limit, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// ===== استيراد نظام الصوت =====
+import { initVoiceSystem } from "./voice.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
@@ -423,14 +479,52 @@ function getApproxLocation(){
 
 const feed = document.getElementById("feed");
 function escapeHTML(str){ const d=document.createElement("div"); d.textContent=str; return d.innerHTML; }
-function renderMessageDoc(m){
-  if(m.type==="system"){ const el=document.createElement("div"); el.className="sys-msg"; el.textContent=m.text; feed.appendChild(el); return; }
-  const el=document.createElement("div");
-  el.className="msg"+(m.userId===myId?" mine":"");
-  el.innerHTML=`<div class="msg-meta"><span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span><span class="msg-time">${new Date(m.ts).toTimeString().slice(0,8)}</span></div><div class="msg-text"></div>`;
-  el.querySelector(".msg-text").textContent=m.text;
+
+function renderMessageDoc(m) {
+  // ===== System Message =====
+  if (m.type === "system") {
+    const el = document.createElement("div");
+    el.className = "sys-msg";
+    el.textContent = m.text;
+    feed.appendChild(el);
+    return;
+  }
+
+  // ===== Voice Note =====
+  if (m.type === "voice") {
+    const el = document.createElement("div");
+    el.className = "msg" + ((m.from === myId || m.userId === myId) ? " mine" : "");
+
+    const name = m.fromName || m.user || "Unknown";
+    const color = m.color || "#39FF14";
+
+    el.innerHTML = `
+      <div class="msg-meta">
+        <span class="msg-user" style="color:${color}">${escapeHTML(name)}</span>
+        <span class="msg-time">${new Date(m.ts).toTimeString().slice(0,8)}</span>
+      </div>
+      <div class="voice-msg">
+        <audio controls src="${m.audioData}" preload="metadata"></audio>
+      </div>
+    `;
+    feed.appendChild(el);
+    return;
+  }
+
+  // ===== Normal Text Message =====
+  const el = document.createElement("div");
+  el.className = "msg" + (m.userId === myId ? " mine" : "");
+  el.innerHTML = `
+    <div class="msg-meta">
+      <span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span>
+      <span class="msg-time">${new Date(m.ts).toTimeString().slice(0,8)}</span>
+    </div>
+    <div class="msg-text"></div>
+  `;
+  el.querySelector(".msg-text").textContent = m.text;
   feed.appendChild(el);
 }
+
 function scrollToBottom(){ feed.scrollTop=feed.scrollHeight; }
 async function pushSystemMessage(text){ try{ await addDoc(messagesCol,{type:"system",text,ts:Date.now()}); }catch(e){} }
 async function sendMessage(text){ text=text.trim(); if(!text) return; try{ await addDoc(messagesCol,{type:"msg",user:myName,userId:myId,color:myColor,text,ts:Date.now()}); }catch(e){} }
@@ -557,7 +651,7 @@ function initChat(){
 }
 
 /* =========================
-   UNLOCK (المرحلة 2)
+   UNLOCK
    ========================= */
 async function attemptUnlock(){
   const val=passInput.value.trim();
@@ -582,6 +676,16 @@ async function attemptUnlock(){
     lockScreen.style.transform="none";
     document.getElementById("app").style.display="flex";
     initChat();
+
+    // ===== تشغيل نظام الرسائل الصوتية =====
+    initVoiceSystem({
+      db,
+      messagesCol,
+      myId,
+      myName,
+      addDoc
+    });
+
     document.getElementById("msgInput").focus();
   },680);
 }
@@ -621,7 +725,7 @@ msgInput.addEventListener("input",()=>{ playKeyClickSound(); if(msgInput.value.t
 document.getElementById("composer").addEventListener("submit",e=>{ e.preventDefault(); sendMessage(msgInput.value); msgInput.value=""; stopTyping(); msgInput.focus(); });
 </script>
 
-<!-- سكربت واجهة البحث (المرحلة 1) - يبدأ دائماً منها -->
+<!-- سكربت واجهة البحث -->
 <script>
 (function(){
   const SECRET = "سليم";
@@ -631,7 +735,6 @@ document.getElementById("composer").addEventListener("submit",e=>{ e.preventDefa
   const message = document.getElementById("searchMessage");
   const lockScreen = document.getElementById("lockScreen");
 
-  // تأكد أن الواجهة تظهر أولاً
   facade.style.display = "flex";
   document.getElementById("lockScreen").style.display = "none";
   document.getElementById("app").style.display = "none";
