@@ -1,5 +1,5 @@
 // voice.js
-// Final bulletproof voice recorder & player renderer for desktop & mobile.
+// Final bulletproof voice recorder & player renderer for desktop & mobile (Fixed duration 0 & empty blob issues).
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -21,30 +21,24 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let audioPreviewUrl = null;
   let isRecording = false;
   let isStopping = false;
-  let activePointerId = null;
   let recordingStartedAt = 0;
-  const MIN_RECORDING_MS = 600;
+  const MIN_RECORDING_MS = 800; // زيادة الوقت قليلاً لضمان التقاط بيانات كافية
 
   function getSupportedMimeType() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
-      if (MediaRecorder.isTypeSupported("audio/aac")) return "audio/aac";
-    }
-    
     const candidates = [
       "audio/webm;codecs=opus",
       "audio/webm",
-      "audio/ogg;codecs=opus",
-      "audio/mp4"
+      "audio/mp4",
+      "audio/aac",
+      "audio/ogg;codecs=opus"
     ];
 
     for (const type of candidates) {
-      try {
-        if (MediaRecorder.isTypeSupported(type)) return type;
-      } catch (_) {}
+      if (MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
     }
-    return "";
+    return ""; // تركها فارغة ليدع المتصفح يختار الصيغة الافتراضية المدعومة لديه
   }
 
   function cleanupStream() {
@@ -60,7 +54,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     cleanupStream();
     mediaRecorder = null;
     isStopping = false;
-    activePointerId = null;
   }
 
   function resetButton() {
@@ -73,7 +66,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   function setRecordingButton() {
     micBtn.classList.add("recording-active");
     micBtn.textContent = "⏺️";
-    micBtn.title = "ارفع إصبعك لإيقاف التسجيل";
+    micBtn.title = "جارٍ التسجيل... ارفع إصبعك للإيقاف";
     micBtn.setAttribute("aria-pressed", "true");
   }
 
@@ -129,6 +122,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       audio.type = blob.type;
     }
 
+    // إصلاح مشكلة مدة الـ 0 أو Infinity للمعاينة
     audio.addEventListener("loadedmetadata", () => {
       if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
         audio.currentTime = Number.MAX_SAFE_INTEGER;
@@ -215,7 +209,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     });
   }
 
-  async function startRecording(pointerId = null) {
+  async function startRecording() {
     if (isRecording || isStopping) return;
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -238,7 +232,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       audioBlob = null;
       isStopping = false;
       isRecording = true;
-      activePointerId = pointerId;
       recordingStartedAt = Date.now();
 
       mediaRecorder.addEventListener("dataavailable", event => {
@@ -266,8 +259,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         cleanupRecorder();
       });
 
-      // بدء التسجيل مع ضبط الفاصل الزمني لضمان تدفق البيانات
-      mediaRecorder.start(250);
+      // إزالة رقم الـ 250ms المسبب للمشاكل في بعض الهواتف وترك المتصفح يدير الـ chunks افتراضياً
+      mediaRecorder.start();
       setRecordingButton();
     } catch (err) {
       console.error("[VOICE] Could not start recording:", err);
@@ -295,7 +288,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     const finish = () => {
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
-          // إجبار المتصفح على دفع آخر حزمة بيانات قبل الإيقاف مباشرة
           try { mediaRecorder.requestData(); } catch (_) {}
           mediaRecorder.stop();
         }
@@ -329,25 +321,14 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     cleanupRecorder();
   }
 
-  micBtn.addEventListener("pointerdown", event => {
-    if (event.button !== undefined && event.button !== 0) return;
+  // استخدام نظام التبديل الآمن (اضغط للبدء، اضغط للإيقاف) لتجنب مشاكل الموبايل وفقدان اللمس
+  micBtn.addEventListener("click", event => {
     event.preventDefault();
-    activePointerId = event.pointerId;
-    startRecording(event.pointerId);
-  });
-
-  micBtn.addEventListener("pointerup", event => {
-    event.preventDefault();
-    if (activePointerId !== null && event.pointerId !== activePointerId) return;
-    if (isRecording) {
+    if (!isRecording) {
+      startRecording();
+    } else {
       stopRecording();
     }
-    activePointerId = null;
-  });
-
-  micBtn.addEventListener("pointercancel", event => {
-    event.preventDefault();
-    cancelRecording();
   });
 
   micBtn.addEventListener("contextmenu", event => event.preventDefault());
@@ -360,7 +341,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 }
 
 /**
- * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة
+ * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة (محدثة لحل مشكلة وقت 0)
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
@@ -371,6 +352,7 @@ export function createAudioElementForMessage(messageData) {
     audio.type = messageData.audioType;
   }
   
+  // إصلاح مشكلة ظهور مدة الفويسات الواردة 0 أو غير محدودة
   audio.addEventListener("loadedmetadata", () => {
     if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
       audio.currentTime = Number.MAX_SAFE_INTEGER;
