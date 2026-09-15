@@ -1,5 +1,5 @@
-// call.js - Professional WebRTC Call System (Fixed for Cross-Device Calls)
-// Root cause fixed: Callee now listens from the very beginning.
+// call.js - Professional WebRTC Call System
+// Fixed: Ignore all old signaling documents before current session + strict callId isolation + better cleanup
 
 export function initCallSystem({
   db,
@@ -15,6 +15,12 @@ export function initCallSystem({
   writeBatch,
   onSnapshot
 }) {
+  // ─────────────────────────────────────────────
+  // SESSION START TIME – أهم إصلاح لمشكلة التوجيه التلقائي
+  // أي مستند تم إنشاؤه قبل هذا الوقت سيتم تجاهله تماماً
+  // ─────────────────────────────────────────────
+  const sessionStartTime = Date.now();
+
   // ─────────────────────────────────────────────
   // STATE
   // ─────────────────────────────────────────────
@@ -82,9 +88,11 @@ export function initCallSystem({
       const q = query(signalingCol, where("callId", "==", callId));
       const snap = await getDocs(q);
       if (snap.empty) return;
+
       const batch = writeBatch(db);
       snap.forEach(d => batch.delete(d.ref));
       await batch.commit();
+      console.log("[Call] Cleaned signaling docs for callId:", callId);
     } catch (e) {
       console.error("[Call] cleanupSignaling error:", e);
     }
@@ -168,26 +176,20 @@ export function initCallSystem({
   }
 
   // ─────────────────────────────────────────────
-  // SIGNALING LISTENER (Always Active)
+  // SIGNALING LISTENER (Always Active + Session Filter)
   // ─────────────────────────────────────────────
 
-  /**
-   * يبدأ الاستماع فور تهيئة النظام (هذا هو الإصلاح الجذري).
-   * الطرف الثاني (Callee) يستمع دائماً، لذلك يستطيع اكتشاف أي Offer جديد فوراً.
-   */
   function startSignalingListener() {
     if (signalingUnsub) {
       signalingUnsub();
       signalingUnsub = null;
     }
 
-    // نستمع لآخر 50 رسالة (كافٍ جداً)
-    const q = query(signalingCol, orderBy("ts", "desc"), limit(50));
+    // نستمع لآخر 60 رسالة
+    const q = query(signalingCol, orderBy("ts", "desc"), limit(60));
 
     signalingUnsub = onSnapshot(q, async (snapshot) => {
       const changes = snapshot.docChanges();
-
-      // نجمع الرسائل الجديدة فقط
       const newMessages = [];
 
       for (const change of changes) {
@@ -196,8 +198,19 @@ export function initCallSystem({
         const data = change.doc.data();
         const docId = change.doc.id;
 
-        // تجاهل رسائلنا نحن + الرسائل المعالجة مسبقاً
-        if (!data || data.from === myId || processedDocIds.has(docId)) continue;
+        // 1. تجاهل رسائلنا نحن
+        if (!data || data.from === myId) continue;
+
+        // 2. تجاهل الرسائل المعالجة مسبقاً
+        if (processedDocIds.has(docId)) continue;
+
+        // 3. ★★★ الإصلاح الجذري لمشكلة التوجيه التلقائي ★★★
+        // تجاهل أي مستند تم إنشاؤه قبل بدء الجلسة الحالية
+        if (!data.ts || data.ts < sessionStartTime) {
+          // نسجلها كمعالجة حتى لا نعود إليها مرة أخرى
+          processedDocIds.add(docId);
+          continue;
+        }
 
         processedDocIds.add(docId);
         newMessages.push({ id: docId, ...data });
@@ -205,7 +218,7 @@ export function initCallSystem({
 
       if (newMessages.length === 0) return;
 
-      // ترتيب زمني تصاعدي (مهم جداً)
+      // ترتيب زمني تصاعدي
       newMessages.sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
       for (const msg of newMessages) {
@@ -221,25 +234,31 @@ export function initCallSystem({
   }
 
   /**
-   * معالج مركزي لكل أنواع الرسائل
+   * معالج مركزي لكل أنواع الرسائل مع فلترة صارمة حسب callId
    */
   async function processSignalingMessage(data) {
     if (!data?.type) return;
 
     // ═══════════════════════════════════════
-    // 1. Incoming Offer (هذا أهم جزء للـ Callee)
+    // 1. Incoming Offer (فقط العروض الجديدة بعد sessionStartTime)
     // ═══════════════════════════════════════
     if (data.type === "offer" && data.callId) {
+      // حماية إضافية: لا نقبل عروض قديمة حتى لو تجاوزت الفلترة
+      if (data.ts < sessionStartTime) return;
+
       // نقبل الـ Offer فقط إذا لم نكن داخل مكالمة حالياً
       if (!peerConnection && !currentCallId) {
-        console.log("[Call] Incoming offer detected from:", data.fromName || data.from);
+        console.log("[Call] Incoming offer detected from:", data.fromName || data.from, "callId:", data.callId);
         await handleIncomingOffer(data);
       }
       return;
     }
 
-    // من هنا فصاعداً: الرسائل يجب أن تكون لنفس الـ callId النشط
-    if (!currentCallId || data.callId !== currentCallId) return;
+    // من هنا فصاعداً: الرسائل يجب أن تكون لنفس الـ callId النشط فقط
+    // هذا يمنع تماماً تداخل المكالمات القديمة أو المنتهية
+    if (!currentCallId || data.callId !== currentCallId) {
+      return;
+    }
 
     // ═══════════════════════════════════════
     // 2. Answer (للـ Caller)
@@ -345,12 +364,13 @@ export function initCallSystem({
       addLocalTracksToPC();
 
       isCaller = true;
+      // إنشاء callId فريد مرتبط بالجلسة الحالية
       currentCallId = "call_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
-      // إرسال الـ Offer
+      // إرسال الـ Offer مع timestamp حديث
       await addDoc(signalingCol, {
         callId: currentCallId,
         type: "offer",
@@ -361,7 +381,6 @@ export function initCallSystem({
       });
 
       callStatusText.textContent = "OFFER SENT — WAITING FOR ANSWER...";
-      // الـ listener يعمل بالفعل من البداية، لا حاجة لاستدعائه مرة أخرى
     } catch (err) {
       console.error("[Call] startCall media error:", err);
       callStatusText.textContent = "PERMISSION DENIED OR DEVICE ERROR";
@@ -374,9 +393,15 @@ export function initCallSystem({
     // منع الدخول مرتين
     if (peerConnection || currentCallId) return;
 
+    // حماية إضافية ضد العروض القديمة
+    if (!offerData.ts || offerData.ts < sessionStartTime) {
+      console.warn("[Call] Rejected old offer");
+      return;
+    }
+
     callOverlay.style.display = "flex";
     callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
-    currentCallId = offerData.callId;
+    currentCallId = offerData.callId;          // ربط دقيق بالـ callId
     isCaller = false;
     pendingIceCandidates = [];
 
@@ -410,7 +435,7 @@ export function initCallSystem({
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
-      // إرسال الـ Answer
+      // إرسال الـ Answer مرتبط بنفس الـ callId
       await addDoc(signalingCol, {
         callId: currentCallId,
         type: "answer",
@@ -454,7 +479,7 @@ export function initCallSystem({
   }
 
   // ─────────────────────────────────────────────
-  // STOP / CLEANUP
+  // STOP / CLEANUP (تنظيف أدق)
   // ─────────────────────────────────────────────
 
   async function stopCall() {
@@ -499,12 +524,13 @@ export function initCallSystem({
     callStatusText.textContent = "CALL ENDED";
     updateCallUI();
 
-    // Clean signaling documents of this call
+    // ★★★ تنظيف دقيق لكل مستندات الإشارة الخاصة بهذه المكالمة ★★★
     if (callIdToClean) {
       await cleanupSignaling(callIdToClean);
     }
 
-    // ملاحظة: لا نوقف الـ listener هنا حتى يستطيع الجهاز استقبال مكالمات جديدة
+    // ملاحظة مهمة: لا نوقف الـ listener هنا
+    // حتى يستطيع الجهاز استقبال مكالمات جديدة في نفس الجلسة
   }
 
   // ─────────────────────────────────────────────
@@ -634,8 +660,7 @@ export function initCallSystem({
   // INIT
   // ─────────────────────────────────────────────
 
-  // ★★★ الإصلاح الأهم ★★★
-  // نبدأ الاستماع فوراً عند تهيئة النظام
+  // نبدأ الاستماع فوراً مع فلترة sessionStartTime
   startSignalingListener();
   attachEventListeners();
 
