@@ -1,6 +1,8 @@
 // voice.js
 // Final bulletproof voice recorder & player renderer for desktop & mobile.
-// Fixed duration 0 issue + codec negotiation + stop-event watchdog.
+// Fixes: duration 0:00 in webm via ts-ebml metadata patching + codec negotiation + watchdog.
+
+import { Decoder, tools, Reader } from "ts-ebml";
 
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
@@ -25,8 +27,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isStopping = false;
   let recordingStartedAt = 0;
   let stopWatchdog = null;
-  const MIN_RECORDING_MS = 1200; // رفعناها لضمان إنتاج chunk صالح على كل المتصفحات
-  const STOP_WATCHDOG_MS = 4000; // لو stop event ما وصلش، ننضّف الواجهة
+  const MIN_RECORDING_MS = 1200;
+  const STOP_WATCHDOG_MS = 4000;
 
   /**
    * اختيار صيغة مدعومة مع codec صريح.
@@ -49,6 +51,51 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       } catch (_) {}
     }
     return "";
+  }
+
+  /**
+   * إصلاح ملفات webm بإضافة metadata المدة الصحيحة.
+   * الحل ده ضروري لأن Chrome ما بيكتبش حقل Duration في تسجيلات MediaRecorder.
+   * لو فشل لأي سبب، نرجع الـ blob الأصلي (fallback آمن).
+   */
+  async function fixWebmDuration(blob) {
+    if (!blob || !blob.type || !blob.type.includes("webm")) {
+      return blob;
+    }
+
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const decoder = new Decoder();
+      const reader = new Reader();
+      reader.logging = false;
+
+      const elms = decoder.decode(arrayBuffer);
+      elms.forEach((elm) => reader.read(elm));
+      reader.stop();
+
+      const refinedMetadataBuf = tools.makeMetadataSeekable(
+        reader.metadatas,
+        reader.duration,
+        reader.cues
+      );
+
+      const body = arrayBuffer.slice(reader.metadataSize);
+      const fixedBlob = new Blob([refinedMetadataBuf, body], {
+        type: blob.type
+      });
+
+      console.log(
+        "[VOICE] Duration fixed. New size:",
+        fixedBlob.size,
+        "Duration(ms):",
+        reader.duration
+      );
+
+      return fixedBlob;
+    } catch (err) {
+      console.warn("[VOICE] fixWebmDuration failed, using original blob:", err);
+      return blob;
+    }
   }
 
   function cleanupStream() {
@@ -133,10 +180,9 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
     const audio = document.createElement("audio");
     audio.controls = true;
-    audio.preload = "auto";
+    audio.preload = "metadata";
     audio.src = audioPreviewUrl;
     audio.style.width = "100%";
-    // ملاحظة: لا نضبط audio.type — المتصفح يكتشف النوع من الـ Blob.
 
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
@@ -248,7 +294,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         console.error("[VOICE] MediaRecorder error:", event?.error || event);
       });
 
-      mediaRecorder.addEventListener("stop", () => {
+      mediaRecorder.addEventListener("stop", async () => {
         clearWatchdog();
         const finalType =
           (mediaRecorder && mediaRecorder.mimeType) ||
@@ -256,8 +302,11 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
           "audio/webm";
 
         if (audioChunks.length > 0) {
-          audioBlob = new Blob(audioChunks, { type: finalType });
-          if (audioBlob.size > 0) {
+          const rawBlob = new Blob(audioChunks, { type: finalType });
+
+          if (rawBlob.size > 0) {
+            // ✅ إصلاح مدة الـ webm قبل العرض
+            audioBlob = await fixWebmDuration(rawBlob);
             createPreviewPopup(audioBlob);
           } else {
             alert("التسجيل قصير جداً أو فارغ.");
@@ -301,7 +350,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     const finish = () => {
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
-          // ✅ بدون requestData() — stop() لوحده يطلق آخر dataavailable
           mediaRecorder.stop();
         }
       } catch (err) {
@@ -319,7 +367,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       finish();
     }
 
-    // watchdog: لو stop event ما وصلش خلال مدة معقولة، ننضّف الواجهة
     clearWatchdog();
     stopWatchdog = setTimeout(() => {
       if (isRecording || isStopping) {
@@ -368,22 +415,11 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
 /**
  * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة.
- * ملاحظة: نستخدم <source> لتحديد النوع بشكل صحيح، مع fallback تلقائي.
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
   audio.controls = true;
-  audio.preload = "auto";
+  audio.preload = "metadata";
   audio.src = messageData.audioData;
-
-  // لا نضبط audio.type — المتصفح يكتشف النوع تلقائياً من الـ data URL.
-  // لو أردت تحديد النوع بشكل صريح:
-  // if (messageData.audioType) {
-  //   const source = document.createElement("source");
-  //   source.src = messageData.audioData;
-  //   source.type = messageData.audioType;
-  //   audio.appendChild(source);
-  // }
-
   return audio;
 }
