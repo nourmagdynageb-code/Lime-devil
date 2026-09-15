@@ -1,6 +1,6 @@
 // voice.js
-// Final bulletproof voice recorder & player renderer.
-// Fixes 0:00 duration using the "currentTime = 1e101" trick — no external libraries needed.
+// Final bulletproof voice recorder & player.
+// Custom audio player that doesn't rely on browser metadata (fixes 0:00 forever).
 
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
@@ -24,51 +24,135 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isRecording = false;
   let isStopping = false;
   let recordingStartedAt = 0;
-  let lastRecordingMs = 0; // مدة آخر تسجيل (احتياطي)
+  let lastRecordingMs = 0;
   let stopWatchdog = null;
   const MIN_RECORDING_MS = 1200;
   const STOP_WATCHDOG_MS = 4000;
 
-  /**
-   * حيلة إصلاح المدة: نقل currentTime لرقم ضخم يجبر المتصفح
-   * على فك ترميز الملف بالكامل وحساب المدة الحقيقية.
-   * تعمل على Chrome / Edge / Firefox مع webm و mp3.
-   */
-  function patchAudioDuration(audioEl) {
-    const applyFix = () => {
-      if (isFinite(audioEl.duration) && audioEl.duration > 0) return;
-
-      const onDurationChange = () => {
-        if (isFinite(audioEl.duration) && audioEl.duration > 0) {
-          audioEl.removeEventListener("durationchange", onDurationChange);
-          try { audioEl.currentTime = 0; } catch (_) {}
-          console.log("[VOICE] Duration patched:", audioEl.duration);
-        }
-      };
-
-      audioEl.addEventListener("durationchange", onDurationChange);
-
-      try {
-        // القفزة السحرية
-        audioEl.currentTime = 1e101;
-      } catch (_) {}
-
-      // احتياطي: نرجع الوقت لـ 0 بعد ثانيتين لو المتصفح ما استجابش
-      setTimeout(() => {
-        audioEl.removeEventListener("durationchange", onDurationChange);
-        if (isFinite(audioEl.duration) && audioEl.duration > 0) {
-          try { audioEl.currentTime = 0; } catch (_) {}
-        }
-      }, 2000);
-    };
-
-    if (audioEl.readyState >= 1) {
-      applyFix();
-    } else {
-      audioEl.addEventListener("loadedmetadata", applyFix, { once: true });
-    }
+  // ============================================================
+  //  CUSTOM AUDIO PLAYER (no native controls, no metadata needed)
+  // ============================================================
+  function formatTime(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
+  function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
+    const wrap = document.createElement("div");
+    wrap.className = "custom-audio-player";
+    wrap.style.cssText = `
+      display: flex; align-items: center; gap: 10px;
+      background: #0a0d0a; border: 1px solid #1c8a0c;
+      border-radius: 22px; padding: 6px 12px;
+      width: 100%; max-width: 340px;
+      font: 12px monospace; color: ${accent};
+      box-sizing: border-box;
+    `;
+
+    const playBtn = document.createElement("button");
+    playBtn.type = "button";
+    playBtn.textContent = "▶";
+    playBtn.setAttribute("aria-label", "play");
+    playBtn.style.cssText = `
+      background: transparent; border: none; color: ${accent};
+      font-size: 18px; cursor: pointer; padding: 0;
+      width: 32px; height: 32px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    `;
+
+    const progressWrap = document.createElement("div");
+    progressWrap.style.cssText = `
+      flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px;
+      cursor: pointer; position: relative; overflow: hidden;
+      min-width: 60px;
+    `;
+
+    const progressBar = document.createElement("div");
+    progressBar.style.cssText = `
+      height: 100%; background: ${accent}; border-radius: 3px;
+      width: 0%; transition: width 0.08s linear;
+    `;
+    progressWrap.appendChild(progressBar);
+
+    const timeLabel = document.createElement("span");
+    timeLabel.style.cssText = `
+      font: 11px monospace; color: ${accent}; min-width: 66px;
+      text-align: right; flex-shrink: 0; opacity: .85;
+    `;
+
+    const audio = new Audio();
+    audio.src = src;
+    audio.preload = "metadata";
+
+    // المدة الابتدائية من الوقت المسجّل فعلياً
+    let totalDuration = (durationMs && durationMs > 0) ? durationMs / 1000 : 0;
+
+    function updateLabel() {
+      timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(totalDuration)}`;
+    }
+
+    // لو مفيش durationMs (رسالة قديمة)، جرّب تقرأها من الملف بالحيلة
+    audio.addEventListener("loadedmetadata", () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        totalDuration = audio.duration;
+      } else if (totalDuration === 0) {
+        const onDur = () => {
+          if (isFinite(audio.duration) && audio.duration > 0) {
+            totalDuration = audio.duration;
+            audio.removeEventListener("durationchange", onDur);
+            try { audio.currentTime = 0; } catch (_) {}
+            updateLabel();
+          }
+        };
+        audio.addEventListener("durationchange", onDur);
+        try { audio.currentTime = 1e101; } catch (_) {}
+      }
+      updateLabel();
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if (totalDuration > 0) {
+        const pct = Math.min(100, (audio.currentTime / totalDuration) * 100);
+        progressBar.style.width = pct + "%";
+      }
+      updateLabel();
+    });
+
+    audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
+    audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
+    audio.addEventListener("ended", () => {
+      playBtn.textContent = "▶";
+      progressBar.style.width = "0%";
+      try { audio.currentTime = 0; } catch (_) {}
+      updateLabel();
+    });
+
+    playBtn.addEventListener("click", () => {
+      if (audio.paused) {
+        audio.play().catch(err => console.warn("[VOICE] play failed:", err));
+      } else {
+        audio.pause();
+      }
+    });
+
+    progressWrap.addEventListener("click", (e) => {
+      if (!totalDuration || totalDuration <= 0) return;
+      const rect = progressWrap.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      try { audio.currentTime = ratio * totalDuration; } catch (_) {}
+    });
+
+    updateLabel();
+    wrap.append(playBtn, progressWrap, timeLabel);
+    return { element: wrap, audio };
+  }
+
+  // ============================================================
+  //  MIME TYPE
+  // ============================================================
   function getSupportedMimeType() {
     const candidates = [
       "audio/webm;codecs=opus",
@@ -89,18 +173,13 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
   function cleanupStream() {
     if (mediaStream) {
-      mediaStream.getTracks().forEach(track => {
-        try { track.stop(); } catch (_) {}
-      });
+      mediaStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
     }
     mediaStream = null;
   }
 
   function clearWatchdog() {
-    if (stopWatchdog) {
-      clearTimeout(stopWatchdog);
-      stopWatchdog = null;
-    }
+    if (stopWatchdog) { clearTimeout(stopWatchdog); stopWatchdog = null; }
   }
 
   function cleanupRecorder() {
@@ -135,7 +214,10 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     document.querySelectorAll(".voice-preview-popup").forEach(el => el.remove());
   }
 
-  function createPreviewPopup(blob) {
+  // ============================================================
+  //  PREVIEW POPUP
+  // ============================================================
+  function createPreviewPopup(blob, durationMs) {
     removeExistingPopup();
     revokePreviewUrl();
     audioPreviewUrl = URL.createObjectURL(blob);
@@ -167,14 +249,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       letter-spacing: .6px;
     `;
 
-    const audio = document.createElement("audio");
-    audio.controls = true;
-    audio.preload = "metadata";
-    audio.src = audioPreviewUrl;
-    audio.style.width = "100%";
-
-    // ✅ إصلاح المدة
-    patchAudioDuration(audio);
+    // ✅ مشغل مخصص بدل controls الافتراضي
+    const player = createCustomAudioPlayer(audioPreviewUrl, durationMs);
 
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
@@ -198,7 +274,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     `;
 
     deleteBtn.addEventListener("click", () => {
-      audio.pause();
+      try { player.audio.pause(); } catch (_) {}
       popup.remove();
       revokePreviewUrl();
       audioBlob = null;
@@ -218,14 +294,14 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
           type: "voice",
           audioData: dataUrl,
           audioType: audioBlob.type || "audio/webm",
-          durationMs: lastRecordingMs, // ✅ تخزين المدة الحقيقية
+          durationMs: durationMs || 0,   // ✅ المدة الحقيقية محفوظة
           from: myId,
           fromName: myName,
           userId: myId,
           user: myName,
           ts: Date.now()
         });
-        audio.pause();
+        try { player.audio.pause(); } catch (_) {}
         popup.remove();
         revokePreviewUrl();
         audioBlob = null;
@@ -239,7 +315,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     });
 
     actions.append(deleteBtn, sendBtn);
-    popup.append(title, audio, actions);
+    popup.append(title, player.element, actions);
     document.body.appendChild(popup);
   }
 
@@ -252,15 +328,14 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     });
   }
 
+  // ============================================================
+  //  RECORDING
+  // ============================================================
   async function startRecording() {
     if (isRecording || isStopping) return;
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
 
       if (!mediaStream || !mediaStream.getAudioTracks().length) {
@@ -278,9 +353,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       recordingStartedAt = Date.now();
 
       mediaRecorder.addEventListener("dataavailable", event => {
-        if (event.data && event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
+        if (event.data && event.data.size > 0) audioChunks.push(event.data);
       });
 
       mediaRecorder.addEventListener("error", event => {
@@ -289,17 +362,16 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
       mediaRecorder.addEventListener("stop", () => {
         clearWatchdog();
-        lastRecordingMs = Date.now() - recordingStartedAt;
+        // ✅ نحسب المدة الحقيقية من وقت التسجيل
+        const measuredMs = Date.now() - recordingStartedAt;
+        lastRecordingMs = Math.max(measuredMs, MIN_RECORDING_MS);
 
-        const finalType =
-          (mediaRecorder && mediaRecorder.mimeType) ||
-          mimeType ||
-          "audio/webm";
+        const finalType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || "audio/webm";
 
         if (audioChunks.length > 0) {
           audioBlob = new Blob(audioChunks, { type: finalType });
           if (audioBlob.size > 0) {
-            createPreviewPopup(audioBlob);
+            createPreviewPopup(audioBlob, lastRecordingMs);
           } else {
             alert("التسجيل قصير جداً أو فارغ.");
           }
@@ -376,9 +448,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     if (!isRecording || !mediaRecorder) return;
     clearWatchdog();
     try {
-      if (mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-      }
+      if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
     } catch (_) {}
     audioChunks = [];
     isRecording = false;
@@ -389,11 +459,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
   micBtn.addEventListener("click", event => {
     event.preventDefault();
-    if (!isRecording) {
-      startRecording();
-    } else {
-      stopRecording();
-    }
+    if (!isRecording) startRecording();
+    else stopRecording();
   });
 
   micBtn.addEventListener("contextmenu", event => event.preventDefault());
@@ -405,46 +472,121 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   resetButton();
 }
 
-/**
- * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة.
- * تستخدم نفس حيلة إصلاح المدة عشان الرسائل القديمة والجديدة تظهر صح.
- */
+// ============================================================
+//  PUBLIC: create audio element for a chat message
+// ============================================================
 export function createAudioElementForMessage(messageData) {
-  const audio = document.createElement("audio");
-  audio.controls = true;
-  audio.preload = "metadata";
+  // نستخدم نفس المشغل المخصص — يدعم durationMs المخزنة أو يقرأ من الملف
+  const wrap = document.createElement("div");
+  wrap.className = "custom-audio-player";
+  wrap.style.cssText = `
+    display: flex; align-items: center; gap: 10px;
+    background: #0a0d0a; border: 1px solid #1c8a0c;
+    border-radius: 22px; padding: 6px 12px;
+    width: 100%; max-width: 340px;
+    font: 12px monospace; color: #39FF14;
+    box-sizing: border-box;
+  `;
+
+  const playBtn = document.createElement("button");
+  playBtn.type = "button";
+  playBtn.textContent = "▶";
+  playBtn.style.cssText = `
+    background: transparent; border: none; color: #39FF14;
+    font-size: 18px; cursor: pointer; padding: 0;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  `;
+
+  const progressWrap = document.createElement("div");
+  progressWrap.style.cssText = `
+    flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px;
+    cursor: pointer; overflow: hidden; min-width: 60px;
+  `;
+
+  const progressBar = document.createElement("div");
+  progressBar.style.cssText = `
+    height: 100%; background: #39FF14; border-radius: 3px;
+    width: 0%; transition: width 0.08s linear;
+  `;
+  progressWrap.appendChild(progressBar);
+
+  const timeLabel = document.createElement("span");
+  timeLabel.style.cssText = `
+    font: 11px monospace; color: #39FF14; min-width: 66px;
+    text-align: right; flex-shrink: 0; opacity: .85;
+  `;
+
+  const audio = new Audio();
   audio.src = messageData.audioData;
+  audio.preload = "metadata";
 
-  // نفس الحيلة لإصلاح المدة
-  const applyFix = () => {
-    if (isFinite(audio.duration) && audio.duration > 0) return;
+  let totalDuration = (messageData.durationMs && messageData.durationMs > 0)
+    ? messageData.durationMs / 1000
+    : 0;
 
-    const onDurationChange = () => {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        audio.removeEventListener("durationchange", onDurationChange);
-        try { audio.currentTime = 0; } catch (_) {}
-      }
-    };
-
-    audio.addEventListener("durationchange", onDurationChange);
-
-    try {
-      audio.currentTime = 1e101;
-    } catch (_) {}
-
-    setTimeout(() => {
-      audio.removeEventListener("durationchange", onDurationChange);
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        try { audio.currentTime = 0; } catch (_) {}
-      }
-    }, 2000);
-  };
-
-  if (audio.readyState >= 1) {
-    applyFix();
-  } else {
-    audio.addEventListener("loadedmetadata", applyFix, { once: true });
+  function fmt(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const ss = Math.floor(s % 60);
+    return `${m}:${ss.toString().padStart(2, "0")}`;
   }
 
-  return audio;
+  function updateLabel() {
+    timeLabel.textContent = `${fmt(audio.currentTime)} / ${fmt(totalDuration)}`;
+  }
+
+  audio.addEventListener("loadedmetadata", () => {
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      totalDuration = audio.duration;
+    } else if (totalDuration === 0) {
+      const onDur = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          totalDuration = audio.duration;
+          audio.removeEventListener("durationchange", onDur);
+          try { audio.currentTime = 0; } catch (_) {}
+          updateLabel();
+        }
+      };
+      audio.addEventListener("durationchange", onDur);
+      try { audio.currentTime = 1e101; } catch (_) {}
+    }
+    updateLabel();
+  });
+
+  audio.addEventListener("timeupdate", () => {
+    if (totalDuration > 0) {
+      progressBar.style.width = Math.min(100, (audio.currentTime / totalDuration) * 100) + "%";
+    }
+    updateLabel();
+  });
+
+  audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
+  audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
+  audio.addEventListener("ended", () => {
+    playBtn.textContent = "▶";
+    progressBar.style.width = "0%";
+    try { audio.currentTime = 0; } catch (_) {}
+    updateLabel();
+  });
+
+  playBtn.addEventListener("click", () => {
+    if (audio.paused) audio.play().catch(() => {});
+    else audio.pause();
+  });
+
+  progressWrap.addEventListener("click", (e) => {
+    if (!totalDuration) return;
+    const rect = progressWrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    try { audio.currentTime = ratio * totalDuration; } catch (_) {}
+  });
+
+  updateLabel();
+  wrap.append(playBtn, progressWrap, timeLabel);
+
+  // نرجّع wrapper اللي فيه audio — مع خاصية audio للوصول له لو محتاج
+  wrap.audioElement = audio;
+  return wrap;
 }
