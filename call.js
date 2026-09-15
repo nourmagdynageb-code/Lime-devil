@@ -1,6 +1,5 @@
-// call.js - Professional WebRTC Call System (Fully Rewritten)
-// Fixed: Signaling races, ICE candidate ordering, renegotiation for camera,
-//        proper cleanup of listeners & resources. No more signalingReady hacks.
+// call.js - Professional WebRTC Call System (Fixed for Cross-Device Calls)
+// Root cause fixed: Callee now listens from the very beginning.
 
 export function initCallSystem({
   db,
@@ -31,12 +30,11 @@ export function initCallSystem({
   // Queue for ICE candidates that arrive before remote description is set
   let pendingIceCandidates = [];
 
-  // Track the last processed signaling document timestamp to avoid re-processing
-  // and to guarantee chronological order without skipping the first snapshot.
-  let lastProcessedTs = 0;
+  // Prevent processing the same document twice
+  const processedDocIds = new Set();
 
-  // Bound handlers so we can remove them cleanly later (prevents memory leaks)
-  let boundHandlers = {
+  // Bound handlers (for clean removal later)
+  const boundHandlers = {
     startCall: null,
     toggleMic: null,
     toggleCam: null,
@@ -45,7 +43,7 @@ export function initCallSystem({
   };
 
   // ─────────────────────────────────────────────
-  // DOM REFERENCES
+  // DOM
   // ─────────────────────────────────────────────
   const callOverlay = document.getElementById("callOverlay");
   const localVideo = document.getElementById("localVideo");
@@ -78,10 +76,6 @@ export function initCallSystem({
   // HELPERS
   // ─────────────────────────────────────────────
 
-  /**
-   * Clean all signaling documents belonging to a specific callId.
-   * Uses a batch write for efficiency and atomicity.
-   */
   async function cleanupSignaling(callId) {
     if (!callId) return;
     try {
@@ -92,14 +86,10 @@ export function initCallSystem({
       snap.forEach(d => batch.delete(d.ref));
       await batch.commit();
     } catch (e) {
-      console.error("[Call] Signaling cleanup error:", e);
+      console.error("[Call] cleanupSignaling error:", e);
     }
   }
 
-  /**
-   * Flush any ICE candidates that arrived before the remote description was set.
-   * This is the correct place to add them (after setRemoteDescription).
-   */
   async function flushPendingCandidates() {
     if (!peerConnection || pendingIceCandidates.length === 0) return;
 
@@ -110,16 +100,11 @@ export function initCallSystem({
       try {
         await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
       } catch (e) {
-        // Ignore errors for already-added or outdated candidates
-        console.warn("[Call] Failed to add pending ICE candidate:", e.message);
+        // Ignore outdated / already added candidates
       }
     }
   }
 
-  /**
-   * Safely add an ICE candidate. If remote description is not yet set,
-   * queue it. Otherwise add immediately.
-   */
   async function addIceCandidateSafe(candidate) {
     if (!peerConnection || !candidate) return;
 
@@ -130,20 +115,15 @@ export function initCallSystem({
         pendingIceCandidates.push(candidate);
       }
     } catch (e) {
-      console.warn("[Call] ICE candidate error:", e.message);
+      console.warn("[Call] addIceCandidateSafe:", e.message);
     }
   }
 
-  /**
-   * Create a fresh RTCPeerConnection with all necessary event handlers.
-   * Centralized so both caller and callee use identical setup.
-   */
   function createPeerConnection() {
     const pc = new RTCPeerConnection(iceServers);
 
-    // Remote track arrived → show remote video
     pc.ontrack = (event) => {
-      if (event.streams && event.streams[0]) {
+      if (event.streams?.[0]) {
         remoteVideo.srcObject = event.streams[0];
         remotePlaceholder.style.display = "none";
         callStatusText.textContent = "CONNECTED TO PEER";
@@ -151,7 +131,6 @@ export function initCallSystem({
       }
     };
 
-    // Local ICE candidate → send to signaling
     pc.onicecandidate = async (event) => {
       if (event.candidate && currentCallId) {
         try {
@@ -163,14 +142,13 @@ export function initCallSystem({
             ts: Date.now()
           });
         } catch (e) {
-          console.warn("[Call] Failed to send ICE candidate:", e.message);
+          console.warn("[Call] send candidate failed:", e.message);
         }
       }
     };
 
-    // Optional: useful for debugging connection state
     pc.onconnectionstatechange = () => {
-      console.log("[Call] Connection state:", pc.connectionState);
+      console.log("[Call] connectionState →", pc.connectionState);
       if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
         callStatusText.textContent = "CONNECTION LOST";
       }
@@ -179,14 +157,9 @@ export function initCallSystem({
     return pc;
   }
 
-  /**
-   * Add all tracks from localStream to the peer connection.
-   * Safe to call multiple times (tracks are only added once by the browser).
-   */
   function addLocalTracksToPC() {
     if (!peerConnection || !localStream) return;
     localStream.getTracks().forEach(track => {
-      // Avoid adding the same track twice
       const alreadyAdded = peerConnection.getSenders().some(s => s.track === track);
       if (!alreadyAdded) {
         peerConnection.addTrack(track, localStream);
@@ -195,61 +168,51 @@ export function initCallSystem({
   }
 
   // ─────────────────────────────────────────────
-  // SIGNALING LISTENER (Race-condition free)
+  // SIGNALING LISTENER (Always Active)
   // ─────────────────────────────────────────────
 
   /**
-   * Start listening to signaling messages.
-   * Key design decisions that eliminate races:
-   * 1. We never skip the first snapshot with a boolean flag.
-   * 2. We track lastProcessedTs and only process documents newer than it.
-   * 3. Messages are processed in chronological order (orderBy ts desc + limit,
-   *    then we reverse the changes so older ones are handled first).
-   * 4. Offers, answers and candidates are handled based on current state,
-   *    not on arrival order alone.
+   * يبدأ الاستماع فور تهيئة النظام (هذا هو الإصلاح الجذري).
+   * الطرف الثاني (Callee) يستمع دائماً، لذلك يستطيع اكتشاف أي Offer جديد فوراً.
    */
-  function listenForSignaling() {
+  function startSignalingListener() {
     if (signalingUnsub) {
       signalingUnsub();
       signalingUnsub = null;
     }
 
-    // Reset processed timestamp when starting a new listening session
-    // (but keep it if we are already in a call so late candidates are still processed)
-    if (!currentCallId) {
-      lastProcessedTs = 0;
-    }
-
-    const q = query(signalingCol, orderBy("ts", "desc"), limit(40));
+    // نستمع لآخر 50 رسالة (كافٍ جداً)
+    const q = query(signalingCol, orderBy("ts", "desc"), limit(50));
 
     signalingUnsub = onSnapshot(q, async (snapshot) => {
-      // Collect only newly added documents that are newer than lastProcessedTs
-      // and that do not come from ourselves.
-      const newDocs = [];
+      const changes = snapshot.docChanges();
 
-      snapshot.docChanges().forEach(change => {
-        if (change.type !== "added") return;
+      // نجمع الرسائل الجديدة فقط
+      const newMessages = [];
+
+      for (const change of changes) {
+        if (change.type !== "added") continue;
+
         const data = change.doc.data();
-        if (!data || data.from === myId) return;
-        if (data.ts && data.ts <= lastProcessedTs) return;
+        const docId = change.doc.id;
 
-        newDocs.push({ id: change.doc.id, ...data });
-      });
+        // تجاهل رسائلنا نحن + الرسائل المعالجة مسبقاً
+        if (!data || data.from === myId || processedDocIds.has(docId)) continue;
 
-      if (newDocs.length === 0) return;
+        processedDocIds.add(docId);
+        newMessages.push({ id: docId, ...data });
+      }
 
-      // Sort ascending by timestamp so we process in correct temporal order
-      newDocs.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+      if (newMessages.length === 0) return;
 
-      // Update the watermark
-      lastProcessedTs = Math.max(lastProcessedTs, ...newDocs.map(d => d.ts || 0));
+      // ترتيب زمني تصاعدي (مهم جداً)
+      newMessages.sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
-      // Process in order
-      for (const data of newDocs) {
+      for (const msg of newMessages) {
         try {
-          await processSignalingMessage(data);
-        } catch (e) {
-          console.error("[Call] Error processing signaling message:", e);
+          await processSignalingMessage(msg);
+        } catch (err) {
+          console.error("[Call] processSignalingMessage error:", err);
         }
       }
     }, (error) => {
@@ -258,25 +221,31 @@ export function initCallSystem({
   }
 
   /**
-   * Single entry point for every signaling message.
-   * Makes the state machine explicit and race-free.
+   * معالج مركزي لكل أنواع الرسائل
    */
   async function processSignalingMessage(data) {
-    if (!data || !data.type) return;
+    if (!data?.type) return;
 
-    // ── Incoming Offer (Callee side) ──
+    // ═══════════════════════════════════════
+    // 1. Incoming Offer (هذا أهم جزء للـ Callee)
+    // ═══════════════════════════════════════
     if (data.type === "offer" && data.callId) {
-      // Only accept if we are not already in a call
-      if (!peerConnection && !isCaller) {
+      // نقبل الـ Offer فقط إذا لم نكن داخل مكالمة حالياً
+      if (!peerConnection && !currentCallId) {
+        console.log("[Call] Incoming offer detected from:", data.fromName || data.from);
         await handleIncomingOffer(data);
       }
       return;
     }
 
-    // ── Answer (Caller side) ──
-    if (data.type === "answer" && data.callId === currentCallId && isCaller && peerConnection) {
+    // من هنا فصاعداً: الرسائل يجب أن تكون لنفس الـ callId النشط
+    if (!currentCallId || data.callId !== currentCallId) return;
+
+    // ═══════════════════════════════════════
+    // 2. Answer (للـ Caller)
+    // ═══════════════════════════════════════
+    if (data.type === "answer" && isCaller && peerConnection) {
       try {
-        // Only set remote description once
         if (!peerConnection.currentRemoteDescription) {
           await peerConnection.setRemoteDescription({
             type: "answer",
@@ -286,19 +255,23 @@ export function initCallSystem({
           await flushPendingCandidates();
         }
       } catch (e) {
-        console.error("[Call] setRemoteDescription (answer) failed:", e);
+        console.error("[Call] setRemoteDescription(answer) failed:", e);
       }
       return;
     }
 
-    // ── ICE Candidate ──
-    if (data.type === "candidate" && data.callId === currentCallId && peerConnection) {
+    // ═══════════════════════════════════════
+    // 3. ICE Candidate
+    // ═══════════════════════════════════════
+    if (data.type === "candidate" && peerConnection) {
       await addIceCandidateSafe(data.candidate);
       return;
     }
 
-    // ── Renegotiation Offer (when the other side turns camera on) ──
-    if (data.type === "renegotiate-offer" && data.callId === currentCallId && peerConnection) {
+    // ═══════════════════════════════════════
+    // 4. Renegotiation (للكاميرا)
+    // ═══════════════════════════════════════
+    if (data.type === "renegotiate-offer" && peerConnection) {
       try {
         await peerConnection.setRemoteDescription({
           type: "offer",
@@ -317,13 +290,12 @@ export function initCallSystem({
           ts: Date.now()
         });
       } catch (e) {
-        console.error("[Call] Renegotiation answer failed:", e);
+        console.error("[Call] renegotiate-offer failed:", e);
       }
       return;
     }
 
-    // ── Renegotiation Answer ──
-    if (data.type === "renegotiate-answer" && data.callId === currentCallId && peerConnection) {
+    if (data.type === "renegotiate-answer" && peerConnection) {
       try {
         if (peerConnection.signalingState === "have-local-offer") {
           await peerConnection.setRemoteDescription({
@@ -333,7 +305,7 @@ export function initCallSystem({
           await flushPendingCandidates();
         }
       } catch (e) {
-        console.error("[Call] Renegotiation setRemoteDescription failed:", e);
+        console.error("[Call] renegotiate-answer failed:", e);
       }
       return;
     }
@@ -344,10 +316,9 @@ export function initCallSystem({
   // ─────────────────────────────────────────────
 
   async function startCall() {
-    // Guard against double-start
     if (peerConnection || currentCallId) return;
 
-    // Reset UI
+    // UI reset
     callOverlay.style.display = "flex";
     callStatusText.textContent = "REQUESTING MIC...";
     remotePlaceholder.style.display = "flex";
@@ -358,10 +329,8 @@ export function initCallSystem({
     videoPlaceholder.style.display = "flex";
     videoPlaceholder.textContent = "CAMERA IS OFF";
     pendingIceCandidates = [];
-    lastProcessedTs = 0;
 
     try {
-      // Get microphone only (camera is optional and added later via renegotiation)
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false
@@ -372,17 +341,16 @@ export function initCallSystem({
       updateCallUI();
       callStatusText.textContent = "MIC READY — CREATING OFFER...";
 
-      // Create peer connection + add tracks
       peerConnection = createPeerConnection();
       addLocalTracksToPC();
 
       isCaller = true;
       currentCallId = "call_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
-      // Create and send offer
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
+      // إرسال الـ Offer
       await addDoc(signalingCol, {
         callId: currentCallId,
         type: "offer",
@@ -393,9 +361,9 @@ export function initCallSystem({
       });
 
       callStatusText.textContent = "OFFER SENT — WAITING FOR ANSWER...";
-      listenForSignaling();
+      // الـ listener يعمل بالفعل من البداية، لا حاجة لاستدعائه مرة أخرى
     } catch (err) {
-      console.error("[Call] Media error:", err);
+      console.error("[Call] startCall media error:", err);
       callStatusText.textContent = "PERMISSION DENIED OR DEVICE ERROR";
       alert("تعذر الوصول إلى المايك. تأكد من إعطاء صلاحية الميكروفون.");
       await stopCall();
@@ -403,12 +371,14 @@ export function initCallSystem({
   }
 
   async function handleIncomingOffer(offerData) {
+    // منع الدخول مرتين
+    if (peerConnection || currentCallId) return;
+
     callOverlay.style.display = "flex";
     callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
     currentCallId = offerData.callId;
     isCaller = false;
     pendingIceCandidates = [];
-    lastProcessedTs = offerData.ts || 0; // Start from this offer's timestamp
 
     localVideo.srcObject = null;
     localVideo.style.display = "none";
@@ -430,7 +400,7 @@ export function initCallSystem({
       peerConnection = createPeerConnection();
       addLocalTracksToPC();
 
-      // Set remote offer first, then flush any candidates that may have arrived early
+      // تعيين الـ Remote Description أولاً
       await peerConnection.setRemoteDescription({
         type: "offer",
         sdp: offerData.sdp
@@ -440,6 +410,7 @@ export function initCallSystem({
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
+      // إرسال الـ Answer
       await addDoc(signalingCol, {
         callId: currentCallId,
         type: "answer",
@@ -449,26 +420,21 @@ export function initCallSystem({
       });
 
       callStatusText.textContent = "ANSWER SENT — CONNECTING...";
-      listenForSignaling();
     } catch (err) {
-      console.error("[Call] Incoming call error:", err);
+      console.error("[Call] handleIncomingOffer error:", err);
       callStatusText.textContent = "FAILED TO JOIN CALL";
       await stopCall();
     }
   }
 
   /**
-   * Proper renegotiation when camera is turned on mid-call.
-   * Simply calling addTrack is not enough for many browsers / network conditions.
-   * We create a new offer and exchange it via signaling.
+   * إعادة التفاوض عند تشغيل الكاميرا أثناء المكالمة
    */
   async function renegotiateForCamera() {
     if (!peerConnection || !currentCallId) return;
 
     try {
       callStatusText.textContent = "RENEGOTIATING FOR CAMERA...";
-
-      // Make sure the new video track is already added
       addLocalTracksToPC();
 
       const offer = await peerConnection.createOffer();
@@ -482,27 +448,27 @@ export function initCallSystem({
         ts: Date.now()
       });
     } catch (e) {
-      console.error("[Call] Renegotiation failed:", e);
+      console.error("[Call] renegotiateForCamera failed:", e);
       callStatusText.textContent = "CAMERA RENEGOTIATION FAILED";
     }
   }
 
   // ─────────────────────────────────────────────
-  // STOP / CLEANUP (Memory-leak free)
+  // STOP / CLEANUP
   // ─────────────────────────────────────────────
 
   async function stopCall() {
     const callIdToClean = currentCallId;
 
-    // 1. Stop all media tracks
+    // Stop media
     if (localStream) {
-      localStream.getTracks().forEach(track => {
-        try { track.stop(); } catch (_) {}
+      localStream.getTracks().forEach(t => {
+        try { t.stop(); } catch (_) {}
       });
       localStream = null;
     }
 
-    // 2. Close peer connection and remove handlers
+    // Close peer connection
     if (peerConnection) {
       try {
         peerConnection.ontrack = null;
@@ -513,22 +479,15 @@ export function initCallSystem({
       peerConnection = null;
     }
 
-    // 3. Unsubscribe from signaling
-    if (signalingUnsub) {
-      signalingUnsub();
-      signalingUnsub = null;
-    }
-
-    // 4. Reset state
+    // Reset state
     pendingIceCandidates = [];
-    lastProcessedTs = 0;
     currentCallId = null;
     isCaller = false;
     isMicActive = true;
     isCamActive = false;
     isSpeakerActive = true;
 
-    // 5. Reset UI
+    // UI reset
     localVideo.srcObject = null;
     remoteVideo.srcObject = null;
     localVideo.style.display = "none";
@@ -540,14 +499,16 @@ export function initCallSystem({
     callStatusText.textContent = "CALL ENDED";
     updateCallUI();
 
-    // 6. Clean signaling documents
+    // Clean signaling documents of this call
     if (callIdToClean) {
       await cleanupSignaling(callIdToClean);
     }
+
+    // ملاحظة: لا نوقف الـ listener هنا حتى يستطيع الجهاز استقبال مكالمات جديدة
   }
 
   // ─────────────────────────────────────────────
-  // UI UPDATES
+  // UI
   // ─────────────────────────────────────────────
 
   function updateCallUI() {
@@ -566,7 +527,7 @@ export function initCallSystem({
   }
 
   // ─────────────────────────────────────────────
-  // EVENT HANDLERS (bound once, removable)
+  // EVENT HANDLERS
   // ─────────────────────────────────────────────
 
   boundHandlers.startCall = () => startCall();
@@ -586,7 +547,7 @@ export function initCallSystem({
 
     let videoTrack = localStream.getVideoTracks()[0];
 
-    // First time turning camera on → acquire video track + renegotiate
+    // تشغيل الكاميرا لأول مرة
     if (!videoTrack && !isCamActive) {
       try {
         callStatusText.textContent = "REQUESTING CAMERA...";
@@ -602,7 +563,6 @@ export function initCallSystem({
         videoTrack = camStream.getVideoTracks()[0];
         localStream.addTrack(videoTrack);
 
-        // Add to peer connection
         if (peerConnection) {
           peerConnection.addTrack(videoTrack, localStream);
         }
@@ -613,18 +573,18 @@ export function initCallSystem({
         videoPlaceholder.style.display = "none";
         updateCallUI();
 
-        // Critical: perform proper renegotiation so the remote side receives the new track
+        // إعادة التفاوض حتى يستقبل الطرف الآخر مسار الفيديو
         await renegotiateForCamera();
         callStatusText.textContent = "CAMERA ON";
       } catch (err) {
-        console.error("[Call] Camera error:", err);
+        console.error("[Call] camera error:", err);
         callStatusText.textContent = "CAMERA PERMISSION DENIED";
         alert("تعذر فتح الكاميرا.");
       }
       return;
     }
 
-    // Subsequent toggles → just enable/disable the existing track
+    // تبديل الكاميرا
     if (videoTrack) {
       isCamActive = !isCamActive;
       videoTrack.enabled = isCamActive;
@@ -632,9 +592,6 @@ export function initCallSystem({
       videoPlaceholder.style.display = isCamActive ? "none" : "flex";
       videoPlaceholder.textContent = "CAMERA IS OFF";
       updateCallUI();
-
-      // Optional: you can also renegotiate on disable if you want the remote
-      // side to stop receiving the track, but usually enabling/disabling is enough.
     }
   };
 
@@ -647,7 +604,7 @@ export function initCallSystem({
   boundHandlers.hangup = () => stopCall();
 
   // ─────────────────────────────────────────────
-  // ATTACH / DETACH LISTENERS
+  // ATTACH LISTENERS
   // ─────────────────────────────────────────────
 
   function attachEventListeners() {
@@ -673,27 +630,20 @@ export function initCallSystem({
     }
   }
 
-  function detachEventListeners() {
-    if (callBtnDesktop) callBtnDesktop.removeEventListener("click", boundHandlers.startCall);
-    if (toggleMicBtn) toggleMicBtn.removeEventListener("click", boundHandlers.toggleMic);
-    if (toggleCamBtn) toggleCamBtn.removeEventListener("click", boundHandlers.toggleCam);
-    if (toggleSpeakerBtn) toggleSpeakerBtn.removeEventListener("click", boundHandlers.toggleSpeaker);
-    if (hangupBtn) hangupBtn.removeEventListener("click", boundHandlers.hangup);
-  }
+  // ─────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────
 
-  // Attach listeners on init
+  // ★★★ الإصلاح الأهم ★★★
+  // نبدأ الاستماع فوراً عند تهيئة النظام
+  startSignalingListener();
   attachEventListeners();
 
   // ─────────────────────────────────────────────
   // PUBLIC API
   // ─────────────────────────────────────────────
   return {
-    stopCall: async () => {
-      await stopCall();
-      // Optionally detach listeners if the whole system is being destroyed
-      // detachEventListeners();
-    },
-    // Expose for advanced use / debugging
+    stopCall,
     getPeerConnection: () => peerConnection,
     getCurrentCallId: () => currentCallId
   };
