@@ -1,5 +1,4 @@
-// call.js - Professional WebRTC Call System
-// Fixed: Ignore all old signaling documents before current session + strict callId isolation + better cleanup
+// call.js - Professional WebRTC Call System (Fixed & Target-Locked)
 
 export function initCallSystem({
   db,
@@ -15,15 +14,9 @@ export function initCallSystem({
   writeBatch,
   onSnapshot
 }) {
-  // ─────────────────────────────────────────────
-  // SESSION START TIME – أهم إصلاح لمشكلة التوجيه التلقائي
-  // أي مستند تم إنشاؤه قبل هذا الوقت سيتم تجاهله تماماً
-  // ─────────────────────────────────────────────
+  // وقت بدء الجلسة لفلترة أي رسائل قديمة في قاعدة البيانات (يمنع الدخول التلقائي للمكالمات القديمة)
   const sessionStartTime = Date.now();
 
-  // ─────────────────────────────────────────────
-  // STATE
-  // ─────────────────────────────────────────────
   let localStream = null;
   let peerConnection = null;
   let isMicActive = true;
@@ -33,24 +26,9 @@ export function initCallSystem({
   let isCaller = false;
   let signalingUnsub = null;
 
-  // Queue for ICE candidates that arrive before remote description is set
   let pendingIceCandidates = [];
-
-  // Prevent processing the same document twice
   const processedDocIds = new Set();
 
-  // Bound handlers (for clean removal later)
-  const boundHandlers = {
-    startCall: null,
-    toggleMic: null,
-    toggleCam: null,
-    toggleSpeaker: null,
-    hangup: null
-  };
-
-  // ─────────────────────────────────────────────
-  // DOM
-  // ─────────────────────────────────────────────
   const callOverlay = document.getElementById("callOverlay");
   const localVideo = document.getElementById("localVideo");
   const remoteVideo = document.getElementById("remoteVideo");
@@ -63,9 +41,6 @@ export function initCallSystem({
   const hangupBtn = document.getElementById("hangupBtn");
   const callBtnDesktop = document.getElementById("callBtnDesktop");
 
-  // ─────────────────────────────────────────────
-  // ICE SERVERS
-  // ─────────────────────────────────────────────
   const iceServers = {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
@@ -73,14 +48,10 @@ export function initCallSystem({
       { urls: "stun:stun2.l.google.com:19302" },
       { urls: "stun:stun3.l.google.com:19302" },
       { urls: "stun:stun4.l.google.com:19302" },
-      { urls: "stun:stun.stunprotocol.org:3478" },
+      { urls: "stun:stunprot.org:3478" },
       { urls: "stun:openrelay.metered.ca:80" }
     ]
   };
-
-  // ─────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────
 
   async function cleanupSignaling(callId) {
     if (!callId) return;
@@ -88,11 +59,9 @@ export function initCallSystem({
       const q = query(signalingCol, where("callId", "==", callId));
       const snap = await getDocs(q);
       if (snap.empty) return;
-
       const batch = writeBatch(db);
       snap.forEach(d => batch.delete(d.ref));
       await batch.commit();
-      console.log("[Call] Cleaned signaling docs for callId:", callId);
     } catch (e) {
       console.error("[Call] cleanupSignaling error:", e);
     }
@@ -100,31 +69,24 @@ export function initCallSystem({
 
   async function flushPendingCandidates() {
     if (!peerConnection || pendingIceCandidates.length === 0) return;
-
     const candidates = [...pendingIceCandidates];
     pendingIceCandidates = [];
-
     for (const cand of candidates) {
       try {
         await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
-      } catch (e) {
-        // Ignore outdated / already added candidates
-      }
+      } catch (e) {}
     }
   }
 
   async function addIceCandidateSafe(candidate) {
     if (!peerConnection || !candidate) return;
-
     try {
       if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
       } else {
         pendingIceCandidates.push(candidate);
       }
-    } catch (e) {
-      console.warn("[Call] addIceCandidateSafe:", e.message);
-    }
+    } catch (e) {}
   }
 
   function createPeerConnection() {
@@ -149,14 +111,11 @@ export function initCallSystem({
             from: myId,
             ts: Date.now()
           });
-        } catch (e) {
-          console.warn("[Call] send candidate failed:", e.message);
-        }
+        } catch (e) {}
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log("[Call] connectionState →", pc.connectionState);
       if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
         callStatusText.textContent = "CONNECTION LOST";
       }
@@ -175,18 +134,13 @@ export function initCallSystem({
     });
   }
 
-  // ─────────────────────────────────────────────
-  // SIGNALING LISTENER (Always Active + Session Filter)
-  // ─────────────────────────────────────────────
-
   function startSignalingListener() {
     if (signalingUnsub) {
       signalingUnsub();
       signalingUnsub = null;
     }
 
-    // نستمع لآخر 60 رسالة
-    const q = query(signalingCol, orderBy("ts", "desc"), limit(60));
+    const q = query(signalingCol, orderBy("ts", "desc"), limit(50));
 
     signalingUnsub = onSnapshot(q, async (snapshot) => {
       const changes = snapshot.docChanges();
@@ -198,19 +152,12 @@ export function initCallSystem({
         const data = change.doc.data();
         const docId = change.doc.id;
 
-        // 1. تجاهل رسائلنا نحن
-        if (!data || data.from === myId) continue;
-
-        // 2. تجاهل الرسائل المعالجة مسبقاً
-        if (processedDocIds.has(docId)) continue;
-
-        // 3. ★★★ الإصلاح الجذري لمشكلة التوجيه التلقائي ★★★
-        // تجاهل أي مستند تم إنشاؤه قبل بدء الجلسة الحالية
-        if (!data.ts || data.ts < sessionStartTime) {
-          // نسجلها كمعالجة حتى لا نعود إليها مرة أخرى
-          processedDocIds.add(docId);
-          continue;
-        }
+        // الفلترة الأساسية:
+        // 1. تجاهل رسائلنا
+        // 2. تجاهل المستندات المعالجة
+        // 3. (الإصلاح الجذري): تجاهل أي رسالة قديمة تم إنشاؤها قبل فتح الصفحة الحالية (يمنع الدخول التلقائي عند كتابة الباسورد)
+        if (!data || data.from === myId || processedDocIds.has(docId)) continue;
+        if ((data.ts || 0) < sessionStartTime) continue;
 
         processedDocIds.add(docId);
         newMessages.push({ id: docId, ...data });
@@ -218,7 +165,6 @@ export function initCallSystem({
 
       if (newMessages.length === 0) return;
 
-      // ترتيب زمني تصاعدي
       newMessages.sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
       for (const msg of newMessages) {
@@ -233,36 +179,20 @@ export function initCallSystem({
     });
   }
 
-  /**
-   * معالج مركزي لكل أنواع الرسائل مع فلترة صارمة حسب callId
-   */
   async function processSignalingMessage(data) {
     if (!data?.type) return;
 
-    // ═══════════════════════════════════════
-    // 1. Incoming Offer (فقط العروض الجديدة بعد sessionStartTime)
-    // ═══════════════════════════════════════
     if (data.type === "offer" && data.callId) {
-      // حماية إضافية: لا نقبل عروض قديمة حتى لو تجاوزت الفلترة
-      if (data.ts < sessionStartTime) return;
-
-      // نقبل الـ Offer فقط إذا لم نكن داخل مكالمة حالياً
+      // قبول الاتصال فقط إذا لم نكن داخل مكالمة ولدينا معرفات صحيحة
       if (!peerConnection && !currentCallId) {
-        console.log("[Call] Incoming offer detected from:", data.fromName || data.from, "callId:", data.callId);
+        console.log("[Call] Incoming offer detected from:", data.fromName || data.from);
         await handleIncomingOffer(data);
       }
       return;
     }
 
-    // من هنا فصاعداً: الرسائل يجب أن تكون لنفس الـ callId النشط فقط
-    // هذا يمنع تماماً تداخل المكالمات القديمة أو المنتهية
-    if (!currentCallId || data.callId !== currentCallId) {
-      return;
-    }
+    if (!currentCallId || data.callId !== currentCallId) return;
 
-    // ═══════════════════════════════════════
-    // 2. Answer (للـ Caller)
-    // ═══════════════════════════════════════
     if (data.type === "answer" && isCaller && peerConnection) {
       try {
         if (!peerConnection.currentRemoteDescription) {
@@ -273,23 +203,15 @@ export function initCallSystem({
           callStatusText.textContent = "ANSWER RECEIVED — CONNECTING...";
           await flushPendingCandidates();
         }
-      } catch (e) {
-        console.error("[Call] setRemoteDescription(answer) failed:", e);
-      }
+      } catch (e) {}
       return;
     }
 
-    // ═══════════════════════════════════════
-    // 3. ICE Candidate
-    // ═══════════════════════════════════════
     if (data.type === "candidate" && peerConnection) {
       await addIceCandidateSafe(data.candidate);
       return;
     }
 
-    // ═══════════════════════════════════════
-    // 4. Renegotiation (للكاميرا)
-    // ═══════════════════════════════════════
     if (data.type === "renegotiate-offer" && peerConnection) {
       try {
         await peerConnection.setRemoteDescription({
@@ -308,9 +230,7 @@ export function initCallSystem({
           from: myId,
           ts: Date.now()
         });
-      } catch (e) {
-        console.error("[Call] renegotiate-offer failed:", e);
-      }
+      } catch (e) {}
       return;
     }
 
@@ -323,21 +243,14 @@ export function initCallSystem({
           });
           await flushPendingCandidates();
         }
-      } catch (e) {
-        console.error("[Call] renegotiate-answer failed:", e);
-      }
+      } catch (e) {}
       return;
     }
   }
 
-  // ─────────────────────────────────────────────
-  // CALL FLOW
-  // ─────────────────────────────────────────────
-
   async function startCall() {
     if (peerConnection || currentCallId) return;
 
-    // UI reset
     callOverlay.style.display = "flex";
     callStatusText.textContent = "REQUESTING MIC...";
     remotePlaceholder.style.display = "flex";
@@ -364,13 +277,11 @@ export function initCallSystem({
       addLocalTracksToPC();
 
       isCaller = true;
-      // إنشاء callId فريد مرتبط بالجلسة الحالية
       currentCallId = "call_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
-      // إرسال الـ Offer مع timestamp حديث
       await addDoc(signalingCol, {
         callId: currentCallId,
         type: "offer",
@@ -382,7 +293,6 @@ export function initCallSystem({
 
       callStatusText.textContent = "OFFER SENT — WAITING FOR ANSWER...";
     } catch (err) {
-      console.error("[Call] startCall media error:", err);
       callStatusText.textContent = "PERMISSION DENIED OR DEVICE ERROR";
       alert("تعذر الوصول إلى المايك. تأكد من إعطاء صلاحية الميكروفون.");
       await stopCall();
@@ -390,18 +300,11 @@ export function initCallSystem({
   }
 
   async function handleIncomingOffer(offerData) {
-    // منع الدخول مرتين
     if (peerConnection || currentCallId) return;
-
-    // حماية إضافية ضد العروض القديمة
-    if (!offerData.ts || offerData.ts < sessionStartTime) {
-      console.warn("[Call] Rejected old offer");
-      return;
-    }
 
     callOverlay.style.display = "flex";
     callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
-    currentCallId = offerData.callId;          // ربط دقيق بالـ callId
+    currentCallId = offerData.callId;
     isCaller = false;
     pendingIceCandidates = [];
 
@@ -425,7 +328,6 @@ export function initCallSystem({
       peerConnection = createPeerConnection();
       addLocalTracksToPC();
 
-      // تعيين الـ Remote Description أولاً
       await peerConnection.setRemoteDescription({
         type: "offer",
         sdp: offerData.sdp
@@ -435,7 +337,6 @@ export function initCallSystem({
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
-      // إرسال الـ Answer مرتبط بنفس الـ callId
       await addDoc(signalingCol, {
         callId: currentCallId,
         type: "answer",
@@ -446,18 +347,13 @@ export function initCallSystem({
 
       callStatusText.textContent = "ANSWER SENT — CONNECTING...";
     } catch (err) {
-      console.error("[Call] handleIncomingOffer error:", err);
       callStatusText.textContent = "FAILED TO JOIN CALL";
       await stopCall();
     }
   }
 
-  /**
-   * إعادة التفاوض عند تشغيل الكاميرا أثناء المكالمة
-   */
   async function renegotiateForCamera() {
     if (!peerConnection || !currentCallId) return;
-
     try {
       callStatusText.textContent = "RENEGOTIATING FOR CAMERA...";
       addLocalTracksToPC();
@@ -472,20 +368,12 @@ export function initCallSystem({
         from: myId,
         ts: Date.now()
       });
-    } catch (e) {
-      console.error("[Call] renegotiateForCamera failed:", e);
-      callStatusText.textContent = "CAMERA RENEGOTIATION FAILED";
-    }
+    } catch (e) {}
   }
-
-  // ─────────────────────────────────────────────
-  // STOP / CLEANUP (تنظيف أدق)
-  // ─────────────────────────────────────────────
 
   async function stopCall() {
     const callIdToClean = currentCallId;
 
-    // Stop media
     if (localStream) {
       localStream.getTracks().forEach(t => {
         try { t.stop(); } catch (_) {}
@@ -493,7 +381,6 @@ export function initCallSystem({
       localStream = null;
     }
 
-    // Close peer connection
     if (peerConnection) {
       try {
         peerConnection.ontrack = null;
@@ -504,7 +391,6 @@ export function initCallSystem({
       peerConnection = null;
     }
 
-    // Reset state
     pendingIceCandidates = [];
     currentCallId = null;
     isCaller = false;
@@ -512,7 +398,6 @@ export function initCallSystem({
     isCamActive = false;
     isSpeakerActive = true;
 
-    // UI reset
     localVideo.srcObject = null;
     remoteVideo.srcObject = null;
     localVideo.style.display = "none";
@@ -524,18 +409,10 @@ export function initCallSystem({
     callStatusText.textContent = "CALL ENDED";
     updateCallUI();
 
-    // ★★★ تنظيف دقيق لكل مستندات الإشارة الخاصة بهذه المكالمة ★★★
     if (callIdToClean) {
       await cleanupSignaling(callIdToClean);
     }
-
-    // ملاحظة مهمة: لا نوقف الـ listener هنا
-    // حتى يستطيع الجهاز استقبال مكالمات جديدة في نفس الجلسة
   }
-
-  // ─────────────────────────────────────────────
-  // UI
-  // ─────────────────────────────────────────────
 
   function updateCallUI() {
     if (toggleMicBtn) {
@@ -552,86 +429,53 @@ export function initCallSystem({
     }
   }
 
-  // ─────────────────────────────────────────────
-  // EVENT HANDLERS
-  // ─────────────────────────────────────────────
-
-  boundHandlers.startCall = () => startCall();
-
-  boundHandlers.toggleMic = () => {
-    if (!localStream) return;
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      isMicActive = !isMicActive;
-      audioTrack.enabled = isMicActive;
-      updateCallUI();
-    }
-  };
-
-  boundHandlers.toggleCam = async () => {
-    if (!localStream) return;
-
-    let videoTrack = localStream.getVideoTracks()[0];
-
-    // تشغيل الكاميرا لأول مرة
-    if (!videoTrack && !isCamActive) {
-      try {
-        callStatusText.textContent = "REQUESTING CAMERA...";
-        const camStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 }
-          },
-          audio: false
-        });
-
-        videoTrack = camStream.getVideoTracks()[0];
-        localStream.addTrack(videoTrack);
-
-        if (peerConnection) {
-          peerConnection.addTrack(videoTrack, localStream);
-        }
-
-        localVideo.srcObject = localStream;
-        isCamActive = true;
-        localVideo.style.display = "block";
-        videoPlaceholder.style.display = "none";
+  const boundHandlers = {
+    startCall: () => startCall(),
+    toggleMic: () => {
+      if (!localStream) return;
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        isMicActive = !isMicActive;
+        audioTrack.enabled = isMicActive;
         updateCallUI();
-
-        // إعادة التفاوض حتى يستقبل الطرف الآخر مسار الفيديو
-        await renegotiateForCamera();
-        callStatusText.textContent = "CAMERA ON";
-      } catch (err) {
-        console.error("[Call] camera error:", err);
-        callStatusText.textContent = "CAMERA PERMISSION DENIED";
-        alert("تعذر فتح الكاميرا.");
       }
-      return;
-    }
-
-    // تبديل الكاميرا
-    if (videoTrack) {
-      isCamActive = !isCamActive;
-      videoTrack.enabled = isCamActive;
-      localVideo.style.display = isCamActive ? "block" : "none";
-      videoPlaceholder.style.display = isCamActive ? "none" : "flex";
-      videoPlaceholder.textContent = "CAMERA IS OFF";
+    },
+    toggleCam: async () => {
+      if (!localStream) return;
+      let videoTrack = localStream.getVideoTracks()[0];
+      if (!videoTrack && !isCamActive) {
+        try {
+          const camStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 } },
+            audio: false
+          });
+          videoTrack = camStream.getVideoTracks()[0];
+          localStream.addTrack(videoTrack);
+          if (peerConnection) peerConnection.addTrack(videoTrack, localStream);
+          localVideo.srcObject = localStream;
+          isCamActive = true;
+          localVideo.style.display = "block";
+          videoPlaceholder.style.display = "none";
+          updateCallUI();
+          await renegotiateForCamera();
+        } catch (err) {}
+        return;
+      }
+      if (videoTrack) {
+        isCamActive = !isCamActive;
+        videoTrack.enabled = isCamActive;
+        localVideo.style.display = isCamActive ? "block" : "none";
+        videoPlaceholder.style.display = isCamActive ? "none" : "flex";
+        updateCallUI();
+      }
+    },
+    toggleSpeaker: () => {
+      isSpeakerActive = !isSpeakerActive;
+      if (remoteVideo) remoteVideo.muted = !isSpeakerActive;
       updateCallUI();
-    }
+    },
+    hangup: () => stopCall()
   };
-
-  boundHandlers.toggleSpeaker = () => {
-    isSpeakerActive = !isSpeakerActive;
-    if (remoteVideo) remoteVideo.muted = !isSpeakerActive;
-    updateCallUI();
-  };
-
-  boundHandlers.hangup = () => stopCall();
-
-  // ─────────────────────────────────────────────
-  // ATTACH LISTENERS
-  // ─────────────────────────────────────────────
 
   function attachEventListeners() {
     if (callBtnDesktop) {
@@ -656,17 +500,9 @@ export function initCallSystem({
     }
   }
 
-  // ─────────────────────────────────────────────
-  // INIT
-  // ─────────────────────────────────────────────
-
-  // نبدأ الاستماع فوراً مع فلترة sessionStartTime
   startSignalingListener();
   attachEventListeners();
 
-  // ─────────────────────────────────────────────
-  // PUBLIC API
-  // ─────────────────────────────────────────────
   return {
     stopCall,
     getPeerConnection: () => peerConnection,
