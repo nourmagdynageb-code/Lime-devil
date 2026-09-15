@@ -2283,7 +2283,8 @@ import {
   writeBatch,
   runTransaction,
   getDoc,
-  limit
+  limit,
+  where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import {
@@ -2333,6 +2334,7 @@ let isSpeakerActive = true;
 let currentCallId = null;
 let isCaller = false;
 let signalingUnsub = null;
+let signalingReady = false;
 
 const callOverlay = document.getElementById("callOverlay");
 const localVideo = document.getElementById("localVideo");
@@ -2349,9 +2351,23 @@ const iceServers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:openrelay.metered.ca:80" } // سيرفر إضافي لتعزيز الاتصال وتجاوز قيود الـ NAT
+    { urls: "stun:openrelay.metered.ca:80" }
   ]
 };
+
+async function cleanupSignaling(callId) {
+  if (!callId) return;
+  try {
+    const q = query(signalingCol, where("callId", "==", callId));
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  } catch (e) {
+    console.error("Signaling cleanup error:", e);
+  }
+}
 
 async function startCall() {
   callOverlay.style.display = "flex";
@@ -2365,7 +2381,6 @@ async function startCall() {
   videoPlaceholder.textContent = "CAMERA IS OFF";
 
   try {
-    // Start with AUDIO ONLY — camera stays off until user turns it on
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false
@@ -2438,9 +2453,17 @@ function listenForSignaling() {
     signalingUnsub();
   }
 
+  signalingReady = false;
+
   signalingUnsub = onSnapshot(
     query(signalingCol, orderBy("ts", "desc"), limit(30)),
     async (snapshot) => {
+      // Skip the initial snapshot batch to avoid treating historical documents as new "added" events
+      if (!signalingReady) {
+        signalingReady = true;
+        return;
+      }
+
       for (const change of snapshot.docChanges()) {
         if (change.type !== "added") continue;
 
@@ -2467,7 +2490,7 @@ function listenForSignaling() {
           }
         }
 
-        // ICE Candidate (تمت إضافة الحماية للتحقق من وجود الـ Remote Description لمنع الأخطاء)
+        // ICE Candidate
         if (data.type === "candidate" && data.callId === currentCallId && peerConnection) {
           try {
             if (data.candidate && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
@@ -2495,7 +2518,6 @@ async function handleIncomingOffer(offerData) {
 
   try {
     if (!localStream) {
-      // Audio only — camera stays off
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false
@@ -2554,86 +2576,13 @@ async function handleIncomingOffer(offerData) {
 
   } catch (err) {
     console.error("Incoming call error:", err);
-  }
-}
-
-async function handleIncomingOffer(offerData) {
-  callOverlay.style.display = "flex";
-  callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
-  currentCallId = offerData.callId;
-  isCaller = false;
-
-  localVideo.srcObject = null;
-  localVideo.style.display = "none";
-  videoPlaceholder.style.display = "flex";
-  videoPlaceholder.textContent = "CAMERA IS OFF";
-
-  try {
-    if (!localStream) {
-      // Audio only — camera stays off
-      localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false
-      });
-      localVideo.srcObject = localStream;
-    }
-
-    isMicActive = true;
-    isCamActive = false;
-    updateCallUI();
-
-    peerConnection = new RTCPeerConnection(iceServers);
-
-    localStream.getTracks().forEach(track => {
-      peerConnection.addTrack(track, localStream);
-    });
-
-    peerConnection.ontrack = (event) => {
-      remoteVideo.srcObject = event.streams[0];
-      remotePlaceholder.style.display = "none";
-      callStatusText.textContent = "CONNECTED TO PEER";
-    };
-
-    peerConnection.onicecandidate = async (event) => {
-      if (event.candidate) {
-        try {
-          await addDoc(signalingCol, {
-            callId: currentCallId,
-            type: "candidate",
-            candidate: event.candidate.toJSON(),
-            from: myId,
-            ts: Date.now()
-          });
-        } catch (e) {}
-      }
-    };
-
-    await peerConnection.setRemoteDescription({
-      type: "offer",
-      sdp: offerData.sdp
-    });
-
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-
-    await addDoc(signalingCol, {
-      callId: currentCallId,
-      type: "answer",
-      sdp: answer.sdp,
-      from: myId,
-      ts: Date.now()
-    });
-
-    callStatusText.textContent = "ANSWER SENT — CONNECTING...";
-    listenForSignaling();
-
-  } catch (err) {
-    console.error("Incoming call error:", err);
     callStatusText.textContent = "FAILED TO JOIN CALL";
   }
 }
 
-function stopCall() {
+async function stopCall() {
+  const callIdToClean = currentCallId;
+
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
@@ -2648,6 +2597,8 @@ function stopCall() {
     signalingUnsub();
     signalingUnsub = null;
   }
+
+  signalingReady = false;
 
   localVideo.srcObject = null;
   remoteVideo.srcObject = null;
@@ -2665,6 +2616,11 @@ function stopCall() {
   currentCallId = null;
   isCaller = false;
   callStatusText.textContent = "CALL ENDED";
+
+  // Automatic cleanup of all signaling documents for this callId
+  if (callIdToClean) {
+    await cleanupSignaling(callIdToClean);
+  }
 }
 
 function updateCallUI() {
@@ -2698,7 +2654,6 @@ toggleMicBtn.addEventListener("click", () => {
 toggleCamBtn.addEventListener("click", async () => {
   if (!localStream) return;
 
-  // If camera was never requested, request it now
   let videoTrack = localStream.getVideoTracks()[0];
 
   if (!videoTrack && !isCamActive) {
@@ -2711,7 +2666,6 @@ toggleCamBtn.addEventListener("click", async () => {
       videoTrack = camStream.getVideoTracks()[0];
       localStream.addTrack(videoTrack);
 
-      // Add the new track to the peer connection if it exists
       if (peerConnection) {
         peerConnection.addTrack(videoTrack, localStream);
       }
@@ -2730,7 +2684,6 @@ toggleCamBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Toggle existing video track
   if (videoTrack) {
     isCamActive = !isCamActive;
     videoTrack.enabled = isCamActive;
@@ -3461,6 +3414,8 @@ function returnToFacade(){
   document.getElementById("app").style.display = "none";
   document.getElementById("lockScreen").style.display = "none";
 
+  localStorage.removeItem("lime_unlocked");
+
   const facade = document.getElementById("searchFacade");
   if (facade) {
     facade.style.display = "flex";
@@ -4123,7 +4078,8 @@ async function attemptUnlock(){
   const val =
     passInput.value.trim();
 
-  if(val !== PASSWORD){
+  // Robust check: accept both string "181" and numeric 181
+  if (val !== PASSWORD && Number(val) !== 181) {
 
     await logAccessAttempt(
       "FAILED_MAIN",
@@ -4154,6 +4110,9 @@ async function attemptUnlock(){
     "SUCCESS_MAIN",
     "****"
   );
+
+  // Persist successful unlock state
+  localStorage.setItem("lime_unlocked", "true");
 
   try{
 
@@ -4425,6 +4384,17 @@ document
       msgInput.focus();
     }
   );
+
+/* =========================
+   RESTORE UNLOCK STATE (if previously unlocked)
+   ========================= */
+if (localStorage.getItem("lime_unlocked") === "true") {
+  document.getElementById("searchFacade").style.display = "none";
+  document.getElementById("lockScreen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  signInAnonymously(auth).catch(() => {});
+  initChat();
+}
 
 </script>
 
