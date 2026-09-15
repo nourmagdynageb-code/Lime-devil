@@ -1,5 +1,5 @@
 // voice.js
-// Final bulletproof voice recorder for desktop & mobile.
+// Final bulletproof voice recorder with helper for UI rendering.
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -42,7 +42,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         if (MediaRecorder.isTypeSupported(type)) return type;
       } catch (_) {}
     }
-    return ""; // السماح للمتصفح باختيار الافتراضي الآمن إذا لزم الأمر
+    return "";
   }
 
   function cleanupStream() {
@@ -127,7 +127,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       audio.type = blob.type;
     }
 
-    // خدعة برمجية لإجبار المتصفح على قراءة مدة الصوت فوراً وحل مشكلة 0:00
+    // إصلاح مشكلة 0:00 للمتصفحات
     audio.addEventListener("loadedmetadata", () => {
       if (audio.duration === Infinity || isNaN(audio.duration)) {
         audio.currentTime = 1e101;
@@ -264,7 +264,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         cleanupRecorder();
       });
 
-      // تشغيل الركوردر بدون تمرير فاصل زمني (بدون 250 أو 100) لكي يترك المتصفح يجمع الـ Chunks بسلام وتجنب تلف ترويسة الملف (Header)
       mediaRecorder.start();
       setRecordingButton();
     } catch (err) {
@@ -298,7 +297,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       } catch (err) {
         console.error("[VOICE] Failed to stop recorder:", err);
         isRecording = false;
-        isStopping = false;
+        isStopping, isStopping = false;
         resetButton();
         cleanupRecorder();
       }
@@ -353,4 +352,31 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   });
 
   resetButton();
+}
+
+/**
+ * دالة مساعدة لتوليد عنصر الـ Audio الخاص بالرسائل الواردة (Chat Message Renderer)
+ * يجب استخدام هذه الدالة في الكود المسؤول عن عرض الرسائل في الشاشة لتجنب مشكلة 0:00 على الأجهزة الأخرى.
+ */
+export function createAudioElementForMessage(messageData) {
+  const audio = document.createElement("audio");
+  audio.controls = true;
+  audio.preload = "metadata";
+  audio.src = messageData.audioData;
+  if (messageData.audioType) {
+    audio.type = messageData.audioType;
+  }
+  
+  // حل مشكلة 0:00 نهائياً عند استقبال الفويس في الأجهزة الأخرى
+  audio.addEventListener("loadedmetadata", () => {
+    if (audio.duration === Infinity || isNaN(audio.duration)) {
+      audio.currentTime = 1e101;
+      audio.ontimeupdate = () => {
+        audio.ontimeupdate = null;
+        audio.currentTime = 0;
+      };
+    }
+  });
+
+  return audio;
 }
