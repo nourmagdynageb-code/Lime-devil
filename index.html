@@ -2323,7 +2323,7 @@ const globalLockRef = doc(db,"meta","globalLock");
 const globalStealthRef = doc(db,"meta","globalStealth");
 
 /* =========================
-   AUDIO & CALL LOGIC (FIXED - WebRTC + Signaling)
+   AUDIO & CALL LOGIC (IMPROVED WebRTC + Signaling)
    ========================= */
 
 let localStream = null;
@@ -2335,6 +2335,7 @@ let currentCallId = null;
 let isCaller = false;
 let signalingUnsub = null;
 let signalingReady = false;
+let pendingIceCandidates = [];
 
 const callOverlay = document.getElementById("callOverlay");
 const localVideo = document.getElementById("localVideo");
@@ -2347,10 +2348,15 @@ const toggleCamBtn = document.getElementById("toggleCamBtn");
 const toggleSpeakerBtn = document.getElementById("toggleSpeakerBtn");
 const hangupBtn = document.getElementById("hangupBtn");
 
+// Reliable public STUN servers for better NAT traversal
 const iceServers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.stunprotocol.org:3478" },
     { urls: "stun:openrelay.metered.ca:80" }
   ]
 };
@@ -2369,7 +2375,24 @@ async function cleanupSignaling(callId) {
   }
 }
 
+async function flushPendingCandidates() {
+  if (!peerConnection || pendingIceCandidates.length === 0) return;
+  for (const cand of pendingIceCandidates) {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+    } catch (e) {
+      console.error("Flush ICE error:", e);
+    }
+  }
+  pendingIceCandidates = [];
+}
+
 async function startCall() {
+  if (peerConnection || currentCallId) {
+    callStatusText.textContent = "ALREADY IN A CALL";
+    return;
+  }
+
   callOverlay.style.display = "flex";
   callStatusText.textContent = "REQUESTING MIC...";
   remotePlaceholder.style.display = "flex";
@@ -2379,8 +2402,10 @@ async function startCall() {
   localVideo.style.display = "none";
   videoPlaceholder.style.display = "flex";
   videoPlaceholder.textContent = "CAMERA IS OFF";
+  pendingIceCandidates = [];
 
   try {
+    // Request microphone only (camera stays off until toggled)
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false
@@ -2400,10 +2425,11 @@ async function startCall() {
     });
 
     peerConnection.ontrack = (event) => {
-      if (remoteVideo.srcObject !== event.streams[0]) {
+      if (event.streams && event.streams[0]) {
         remoteVideo.srcObject = event.streams[0];
         remotePlaceholder.style.display = "none";
         callStatusText.textContent = "CONNECTED TO PEER";
+        remoteVideo.play().catch(() => {});
       }
     };
 
@@ -2445,6 +2471,7 @@ async function startCall() {
     console.error("Media error:", err);
     callStatusText.textContent = "PERMISSION DENIED OR DEVICE ERROR";
     alert("تعذر الوصول إلى المايك. تأكد من إعطاء صلاحية الميكروفون.");
+    stopCall();
   }
 }
 
@@ -2458,7 +2485,7 @@ function listenForSignaling() {
   signalingUnsub = onSnapshot(
     query(signalingCol, orderBy("ts", "desc"), limit(30)),
     async (snapshot) => {
-      // Skip the initial snapshot batch to avoid treating historical documents as new "added" events
+      // Skip initial snapshot to avoid treating historical documents as new events
       if (!signalingReady) {
         signalingReady = true;
         return;
@@ -2484,17 +2511,22 @@ function listenForSignaling() {
                 sdp: data.sdp
               });
               callStatusText.textContent = "ANSWER RECEIVED — CONNECTING...";
+              await flushPendingCandidates();
             }
           } catch (e) {
             console.error("Answer error:", e);
           }
         }
 
-        // ICE Candidate
+        // ICE Candidate (queue if remote description not ready yet)
         if (data.type === "candidate" && data.callId === currentCallId && peerConnection) {
           try {
-            if (data.candidate && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
-              await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            if (data.candidate) {
+              if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+              } else {
+                pendingIceCandidates.push(data.candidate);
+              }
             }
           } catch (e) {
             console.error("ICE error:", e);
@@ -2510,6 +2542,7 @@ async function handleIncomingOffer(offerData) {
   callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
   currentCallId = offerData.callId;
   isCaller = false;
+  pendingIceCandidates = [];
 
   localVideo.srcObject = null;
   localVideo.style.display = "none";
@@ -2536,9 +2569,12 @@ async function handleIncomingOffer(offerData) {
     });
 
     peerConnection.ontrack = (event) => {
-      remoteVideo.srcObject = event.streams[0];
-      remotePlaceholder.style.display = "none";
-      callStatusText.textContent = "CONNECTED TO PEER";
+      if (event.streams && event.streams[0]) {
+        remoteVideo.srcObject = event.streams[0];
+        remotePlaceholder.style.display = "none";
+        callStatusText.textContent = "CONNECTED TO PEER";
+        remoteVideo.play().catch(() => {});
+      }
     };
 
     peerConnection.onicecandidate = async (event) => {
@@ -2560,6 +2596,8 @@ async function handleIncomingOffer(offerData) {
       sdp: offerData.sdp
     });
 
+    await flushPendingCandidates();
+
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
@@ -2577,6 +2615,7 @@ async function handleIncomingOffer(offerData) {
   } catch (err) {
     console.error("Incoming call error:", err);
     callStatusText.textContent = "FAILED TO JOIN CALL";
+    stopCall();
   }
 }
 
@@ -2584,12 +2623,18 @@ async function stopCall() {
   const callIdToClean = currentCallId;
 
   if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
+    localStream.getTracks().forEach(track => {
+      try { track.stop(); } catch (e) {}
+    });
     localStream = null;
   }
 
   if (peerConnection) {
-    peerConnection.close();
+    try {
+      peerConnection.ontrack = null;
+      peerConnection.onicecandidate = null;
+      peerConnection.close();
+    } catch (e) {}
     peerConnection = null;
   }
 
@@ -2599,6 +2644,7 @@ async function stopCall() {
   }
 
   signalingReady = false;
+  pendingIceCandidates = [];
 
   localVideo.srcObject = null;
   remoteVideo.srcObject = null;
