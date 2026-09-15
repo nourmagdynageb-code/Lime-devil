@@ -2283,8 +2283,7 @@ import {
   writeBatch,
   runTransaction,
   getDoc,
-  limit,
-  where
+  limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import {
@@ -2334,7 +2333,6 @@ let isSpeakerActive = true;
 let currentCallId = null;
 let isCaller = false;
 let signalingUnsub = null;
-let signalingReady = false;
 
 const callOverlay = document.getElementById("callOverlay");
 const localVideo = document.getElementById("localVideo");
@@ -2350,24 +2348,9 @@ const hangupBtn = document.getElementById("hangupBtn");
 const iceServers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:openrelay.metered.ca:80" }
+    { urls: "stun:stun1.l.google.com:19302" }
   ]
 };
-
-async function cleanupSignaling(callId) {
-  if (!callId) return;
-  try {
-    const q = query(signalingCol, where("callId", "==", callId));
-    const snap = await getDocs(q);
-    if (snap.empty) return;
-    const batch = writeBatch(db);
-    snap.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-  } catch (e) {
-    console.error("Signaling cleanup error:", e);
-  }
-}
 
 async function startCall() {
   callOverlay.style.display = "flex";
@@ -2381,6 +2364,7 @@ async function startCall() {
   videoPlaceholder.textContent = "CAMERA IS OFF";
 
   try {
+    // Start with AUDIO ONLY — camera stays off until user turns it on
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false
@@ -2453,17 +2437,9 @@ function listenForSignaling() {
     signalingUnsub();
   }
 
-  signalingReady = false;
-
   signalingUnsub = onSnapshot(
     query(signalingCol, orderBy("ts", "desc"), limit(30)),
     async (snapshot) => {
-      // Skip the initial snapshot batch to avoid treating historical documents as new "added" events
-      if (!signalingReady) {
-        signalingReady = true;
-        return;
-      }
-
       for (const change of snapshot.docChanges()) {
         if (change.type !== "added") continue;
 
@@ -2471,7 +2447,7 @@ function listenForSignaling() {
         if (!data || data.from === myId) continue;
 
         // Incoming Offer
-        if (data.type === "offer" && !isCaller && !peerConnection && data.callId) {
+        if (data.type === "offer" && !isCaller && !peerConnection) {
           await handleIncomingOffer(data);
         }
 
@@ -2493,7 +2469,7 @@ function listenForSignaling() {
         // ICE Candidate
         if (data.type === "candidate" && data.callId === currentCallId && peerConnection) {
           try {
-            if (data.candidate && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+            if (data.candidate) {
               await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
             }
           } catch (e) {
@@ -2518,6 +2494,7 @@ async function handleIncomingOffer(offerData) {
 
   try {
     if (!localStream) {
+      // Audio only — camera stays off
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false
@@ -2542,7 +2519,7 @@ async function handleIncomingOffer(offerData) {
     };
 
     peerConnection.onicecandidate = async (event) => {
-      if (event.candidate && currentCallId) {
+      if (event.candidate) {
         try {
           await addDoc(signalingCol, {
             callId: currentCallId,
@@ -2580,9 +2557,7 @@ async function handleIncomingOffer(offerData) {
   }
 }
 
-async function stopCall() {
-  const callIdToClean = currentCallId;
-
+function stopCall() {
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
@@ -2597,8 +2572,6 @@ async function stopCall() {
     signalingUnsub();
     signalingUnsub = null;
   }
-
-  signalingReady = false;
 
   localVideo.srcObject = null;
   remoteVideo.srcObject = null;
@@ -2616,11 +2589,6 @@ async function stopCall() {
   currentCallId = null;
   isCaller = false;
   callStatusText.textContent = "CALL ENDED";
-
-  // Automatic cleanup of all signaling documents for this callId
-  if (callIdToClean) {
-    await cleanupSignaling(callIdToClean);
-  }
 }
 
 function updateCallUI() {
@@ -2654,6 +2622,7 @@ toggleMicBtn.addEventListener("click", () => {
 toggleCamBtn.addEventListener("click", async () => {
   if (!localStream) return;
 
+  // If camera was never requested, request it now
   let videoTrack = localStream.getVideoTracks()[0];
 
   if (!videoTrack && !isCamActive) {
@@ -2666,6 +2635,7 @@ toggleCamBtn.addEventListener("click", async () => {
       videoTrack = camStream.getVideoTracks()[0];
       localStream.addTrack(videoTrack);
 
+      // Add the new track to the peer connection if it exists
       if (peerConnection) {
         peerConnection.addTrack(videoTrack, localStream);
       }
@@ -2684,6 +2654,7 @@ toggleCamBtn.addEventListener("click", async () => {
     return;
   }
 
+  // Toggle existing video track
   if (videoTrack) {
     isCamActive = !isCamActive;
     videoTrack.enabled = isCamActive;
@@ -3414,8 +3385,6 @@ function returnToFacade(){
   document.getElementById("app").style.display = "none";
   document.getElementById("lockScreen").style.display = "none";
 
-  localStorage.removeItem("lime_unlocked");
-
   const facade = document.getElementById("searchFacade");
   if (facade) {
     facade.style.display = "flex";
@@ -4078,8 +4047,7 @@ async function attemptUnlock(){
   const val =
     passInput.value.trim();
 
-  // Robust check: accept both string "181" and numeric 181
-  if (val !== PASSWORD && Number(val) !== 181) {
+  if(val !== PASSWORD){
 
     await logAccessAttempt(
       "FAILED_MAIN",
@@ -4110,9 +4078,6 @@ async function attemptUnlock(){
     "SUCCESS_MAIN",
     "****"
   );
-
-  // Persist successful unlock state
-  localStorage.setItem("lime_unlocked", "true");
 
   try{
 
@@ -4384,17 +4349,6 @@ document
       msgInput.focus();
     }
   );
-
-/* =========================
-   RESTORE UNLOCK STATE (if previously unlocked)
-   ========================= */
-if (localStorage.getItem("lime_unlocked") === "true") {
-  document.getElementById("searchFacade").style.display = "none";
-  document.getElementById("lockScreen").style.display = "none";
-  document.getElementById("app").style.display = "flex";
-  signInAnonymously(auth).catch(() => {});
-  initChat();
-}
 
 </script>
 
