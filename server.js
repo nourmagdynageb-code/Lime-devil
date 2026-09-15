@@ -9,20 +9,11 @@ const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ============================================================
-//  ffmpeg setup
-// ============================================================
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-// ============================================================
-//  Body parser
-// ============================================================
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ============================================================
-//  Headers
-// ============================================================
 app.use((req, res, next) => {
   res.removeHeader('Cross-Origin-Embedder-Policy');
   res.removeHeader('Cross-Origin-Opener-Policy');
@@ -31,12 +22,60 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
+//  إصلاح WebM duration باستخدام ts-ebml
+//  المشكلة: MediaRecorder بيكتب WebM بدون Duration element
+//  الحل: نستخدم ts-ebml نضيف Duration للـ header
+// ============================================================
+async function fixWebmDuration(inputBuffer) {
+  try {
+    const tsEbml = require('ts-ebml');
+    const { Decoder, tools, Reader } = tsEbml;
+
+    const decoder = new Decoder();
+    const reader = new Reader();
+    reader.logging = false;
+
+    // حوّل Buffer لـ ArrayBuffer
+    const arrayBuffer = inputBuffer.buffer.slice(
+      inputBuffer.byteOffset,
+      inputBuffer.byteOffset + inputBuffer.byteLength
+    );
+
+    const elms = decoder.decode(arrayBuffer);
+    elms.forEach((elm) => reader.read(elm));
+    reader.stop();
+
+    if (!reader.duration || reader.duration <= 0) {
+      console.log('[fix-webm] no duration detected, skipping');
+      return inputBuffer;
+    }
+
+    const refinedMetadataBuf = tools.makeMetadataSeekable(
+      reader.metadatas,
+      reader.duration,
+      reader.cues
+    );
+
+    const body = arrayBuffer.slice(reader.metadataSize);
+    const fixedBuffer = Buffer.concat([
+      Buffer.from(refinedMetadataBuf),
+      Buffer.from(body)
+    ]);
+
+    console.log(`[fix-webm] ✅ duration=${reader.duration}ms newSize=${fixedBuffer.length}`);
+    return fixedBuffer;
+  } catch (err) {
+    console.warn('[fix-webm] failed:', err.message);
+    return inputBuffer;
+  }
+}
+
+// ============================================================
 //  API: تحويل الصوت إلى MP3
-//  ✅ الإصلاح: نستخدم ملفات مؤقتة بدل streams
-//     عشان ffmpeg يقدر يعمل seek ويحسب المدة الصح
 // ============================================================
 app.post('/api/convert-audio', async (req, res) => {
   let inputPath = null;
+  let fixedPath = null;
   let outputPath = null;
 
   try {
@@ -45,11 +84,8 @@ app.post('/api/convert-audio', async (req, res) => {
       return res.status(400).json({ error: 'Invalid audio data' });
     }
 
-    // افصل الـ data URL
     const commaIdx = audioDataUrl.indexOf(',');
-    if (commaIdx === -1) {
-      return res.status(400).json({ error: 'No comma in data URL' });
-    }
+    if (commaIdx === -1) return res.status(400).json({ error: 'No comma' });
 
     const header = audioDataUrl.slice(0, commaIdx);
     const base64Data = audioDataUrl.slice(commaIdx + 1);
@@ -61,45 +97,52 @@ app.post('/api/convert-audio', async (req, res) => {
     try {
       inputBuffer = Buffer.from(base64Data, 'base64');
     } catch (e) {
-      return res.status(400).json({ error: 'Invalid base64 data' });
+      return res.status(400).json({ error: 'Invalid base64' });
     }
 
     if (!inputBuffer || inputBuffer.length === 0) {
-      return res.status(400).json({ error: 'Empty audio data' });
+      return res.status(400).json({ error: 'Empty audio' });
     }
 
-    // حدد الامتداد
     let inputExt = 'webm';
     if (inputMime.includes('mp4') || inputMime.includes('m4a')) inputExt = 'mp4';
     else if (inputMime.includes('ogg')) inputExt = 'ogg';
     else if (inputMime.includes('webm')) inputExt = 'webm';
     else if (inputMime.includes('mpeg') || inputMime.includes('mp3')) inputExt = 'mp3';
     else if (inputMime.includes('wav')) inputExt = 'wav';
-    else if (inputMime.includes('aac')) inputExt = 'aac';
 
-    // ✅ اكتب على ملف مؤقت — الحل الجذري
+    console.log(`[convert] mime=${inputMime} ext=${inputExt} size=${inputBuffer.length}`);
+
+    // ✅ لو WebM، نصلّح الـ duration الأول
+    let workingBuffer = inputBuffer;
+    if (inputExt === 'webm') {
+      workingBuffer = await fixWebmDuration(inputBuffer);
+    }
+
     const id = crypto.randomBytes(8).toString('hex');
     inputPath = path.join(os.tmpdir(), `voice-in-${id}.${inputExt}`);
     outputPath = path.join(os.tmpdir(), `voice-out-${id}.mp3`);
 
-    fs.writeFileSync(inputPath, inputBuffer);
-    console.log(`[convert] mime=${inputMime} ext=${inputExt} size=${inputBuffer.length} bytes`);
+    fs.writeFileSync(inputPath, workingBuffer);
 
-    // ✅ شغّل ffmpeg على الملفات (يدعم seek → مدة صح)
+    // ✅ ffmpeg مع flags لتحسين الدقة
     await new Promise((resolve, reject) => {
       ffmpeg(inputPath)
+        .inputOptions([
+          '-analyzeduration', '100M',
+          '-probesize', '100M'
+        ])
         .audioCodec('libmp3lame')
         .audioBitrate(128)
         .audioChannels(1)
         .audioFrequency(44100)
         .format('mp3')
-        // ✅ مهم جداً: خلي ffmpeg يكتب header الـ Xing/LAME
         .outputOptions([
           '-write_xing', '1',
           '-id3v2_version', '3',
           '-write_id3v1', '1'
         ])
-        .on('start', (cmd) => console.log('[convert] ffmpeg started'))
+        .on('start', () => console.log('[convert] ffmpeg started'))
         .on('error', (err) => {
           console.error('[convert] ffmpeg error:', err.message);
           reject(err);
@@ -112,18 +155,20 @@ app.post('/api/convert-audio', async (req, res) => {
     });
 
     if (!fs.existsSync(outputPath)) {
-      return res.status(500).json({ error: 'Output file missing' });
+      return res.status(500).json({ error: 'Output missing' });
     }
 
     const mp3Buffer = fs.readFileSync(outputPath);
     if (!mp3Buffer || mp3Buffer.length === 0) {
-      return res.status(500).json({ error: 'Empty MP3 output' });
+      return res.status(500).json({ error: 'Empty output' });
     }
 
-    console.log(`[convert] ✅ Output size: ${mp3Buffer.length} bytes`);
+    // ✅ اطبع المدة الحقيقية للـ MP3 الناتج
+    const duration = await getMp3Duration(outputPath);
+    console.log(`[convert] ✅ size=${mp3Buffer.length} duration=${duration}s`);
 
     const mp3DataUrl = `data:audio/mpeg;base64,${mp3Buffer.toString('base64')}`;
-    res.json({ audioDataUrl: mp3DataUrl, mimeType: 'audio/mpeg' });
+    res.json({ audioDataUrl: mp3DataUrl, mimeType: 'audio/mpeg', duration });
 
   } catch (error) {
     console.error('Conversion error:', error);
@@ -131,43 +176,34 @@ app.post('/api/convert-audio', async (req, res) => {
       res.status(500).json({ error: 'Conversion failed', details: String(error) });
     }
   } finally {
-    // نظّف الملفات المؤقتة
-    if (inputPath) {
-      try { fs.unlinkSync(inputPath); } catch (_) {}
-    }
-    if (outputPath) {
-      try { fs.unlinkSync(outputPath); } catch (_) {}
-    }
+    [inputPath, outputPath].forEach((p) => {
+      if (p) { try { fs.unlinkSync(p); } catch (_) {} }
+    });
   }
 });
 
 // ============================================================
-//  Static files
+//  helper: استخرج مدة MP3
 // ============================================================
-app.use(express.static(__dirname, {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    }
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    }
-  }
-}));
+function getMp3Duration(filePath) {
+  return new Promise((resolve) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) return resolve(0);
+      resolve(metadata.format.duration || 0);
+    });
+  });
+}
 
 // ============================================================
-//  Fallback
+//  Static
 // ============================================================
+app.use(express.static(__dirname));
+
 app.get('*', (req, res) => {
-  if (/\.\w+$/.test(req.path)) {
-    return res.status(404).send('Not found');
-  }
+  if (/\.\w+$/.test(req.path)) return res.status(404).send('Not found');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ============================================================
-//  Start
-// ============================================================
 app.listen(PORT, () => {
   console.log(`✅ Lime Devil server running on port ${PORT}`);
   console.log(`✅ ffmpeg path: ${ffmpegPath}`);
