@@ -1,12 +1,7 @@
 // voice.js
 // Final bulletproof voice recorder & player.
-// Bootstrap installs hooks at MODULE LOAD TIME (not inside initVoiceSystem).
-// Uses 5 parallel strategies to catch ANY native <audio> element:
-//   1. Hook document.createElement
-//   2. Hook window.Audio constructor (Proxy)
-//   3. Hook Node.prototype.appendChild
-//   4. MutationObserver
-//   5. Interval scanner every 300ms
+// WRAPS native <audio> instead of replacing it — preserves playback.
+// Uses 5 parallel hook strategies + audio element reuse for reliability.
 
 // ============================================================
 //  REGISTRY
@@ -43,8 +38,27 @@ function getAudioSrc(audioEl) {
 
 // ============================================================
 //  CUSTOM AUDIO PLAYER
+//  Accepts either: a URL string OR an existing HTMLAudioElement
+//  If element is passed → uses it directly (WRAP, don't replace)
 // ============================================================
-function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
+function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
+  let audio;
+  let ownsAudio = false;
+
+  if (typeof audioOrSrc === "string") {
+    audio = new Audio();
+    audio.src = audioOrSrc;
+    audio.preload = "metadata";
+    ownsAudio = true;
+  } else if (audioOrSrc instanceof HTMLAudioElement) {
+    audio = audioOrSrc;
+    if (!audio.preload || audio.preload === "none") audio.preload = "metadata";
+  } else {
+    console.error("[VOICE] Invalid audio argument");
+    const stub = document.createElement("div");
+    return { element: stub, audio: null };
+  }
+
   const wrap = document.createElement("div");
   wrap.className = "custom-audio-player";
   wrap.setAttribute("data-voice-player", "1");
@@ -89,41 +103,60 @@ function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
     text-align: right; flex-shrink: 0; opacity: .85;
   `;
 
-  const audio = new Audio();
-  audio.src = src;
-  audio.preload = "metadata";
-
   let totalDuration = (durationMs && durationMs > 0) ? durationMs / 1000 : 0;
 
   function updateLabel() {
     timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(totalDuration)}`;
   }
 
-  audio.addEventListener("loadedmetadata", () => {
+  // حاول تحسب المدة من الـ element
+  function refreshDurationFromElement() {
     if (isFinite(audio.duration) && audio.duration > 0) {
       totalDuration = audio.duration;
-    } else if (totalDuration === 0) {
-      const onDur = () => {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          totalDuration = audio.duration;
-          audio.removeEventListener("durationchange", onDur);
-          try { audio.currentTime = 0; } catch (_) {}
-          updateLabel();
-        }
-      };
-      audio.addEventListener("durationchange", onDur);
-      try { audio.currentTime = 1e101; } catch (_) {}
+      updateLabel();
+      return true;
+    }
+    return false;
+  }
+
+  // لو العنصر محمّل بالفعل
+  if (audio.readyState >= 1 && !refreshDurationFromElement()) {
+    // فشل → استخدم الحيلة
+    tryCurrentTimeTrick();
+  }
+
+  audio.addEventListener("loadedmetadata", () => {
+    if (!refreshDurationFromElement() && totalDuration === 0) {
+      tryCurrentTimeTrick();
     }
     updateLabel();
   });
 
+  // لما الصوت يبدأ يشتغل، أحسب المدة من currentTime + progress
   audio.addEventListener("timeupdate", () => {
     if (totalDuration > 0) {
       progressBar.style.width =
         Math.min(100, (audio.currentTime / totalDuration) * 100) + "%";
+    } else if (audio.currentTime > 0) {
+      // fallback: لو مفيش duration، نخمّن من الوقت الحالي
+      totalDuration = Math.max(totalDuration, audio.currentTime);
     }
     updateLabel();
   });
+
+  function tryCurrentTimeTrick() {
+    const onDur = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        totalDuration = audio.duration;
+        audio.removeEventListener("durationchange", onDur);
+        try { audio.currentTime = 0; } catch (_) {}
+        updateLabel();
+      }
+    };
+    audio.addEventListener("durationchange", onDur);
+    try { audio.currentTime = 1e101; } catch (_) {}
+    setTimeout(() => audio.removeEventListener("durationchange", onDur), 2500);
+  }
 
   audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
   audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
@@ -133,12 +166,22 @@ function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
     try { audio.currentTime = 0; } catch (_) {}
     updateLabel();
   });
+  audio.addEventListener("error", (e) => {
+    console.error("[VOICE] Audio error:", e, audio.error);
+  });
 
   playBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (audio.paused) audio.play().catch(err => console.warn("[VOICE] play failed:", err));
-    else audio.pause();
+    if (audio.paused) {
+      audio.play().then(() => {
+        console.log("[VOICE] ▶ Playing audio. duration =", audio.duration);
+      }).catch(err => {
+        console.error("[VOICE] play failed:", err, "src =", String(audio.src).slice(0, 80));
+      });
+    } else {
+      audio.pause();
+    }
   });
 
   progressWrap.addEventListener("click", (e) => {
@@ -150,51 +193,68 @@ function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
 
   updateLabel();
   wrap.append(playBtn, progressWrap, timeLabel);
-  return { element: wrap, audio };
+  return { element: wrap, audio, ownsAudio };
 }
 
 // ============================================================
-//  REPLACER — one element
+//  WRAP (not replace) a native <audio>
 // ============================================================
-function tryReplaceAudio(audioEl) {
+function tryWrapAudio(audioEl) {
   if (!audioEl || audioEl.tagName !== "AUDIO") return;
-  if (audioEl.dataset && audioEl.dataset.voiceNativeHandled === "1") return;
+  if (audioEl.dataset && audioEl.dataset.voiceWrapped === "1") return;
   if (audioEl.closest && audioEl.closest(".voice-preview-popup")) return;
   if (audioEl.closest && audioEl.closest("[data-voice-player='1']")) return;
-  if (!audioEl.parentNode) return; // not in DOM yet
+  if (!audioEl.parentNode) return;
 
   const src = getAudioSrc(audioEl);
-  if (!src) return;
-
-  if (audioEl.dataset) audioEl.dataset.voiceNativeHandled = "1";
-  if (audioEl.dataset) audioEl.dataset.voiceNative = "1";
-
-  const durationMs = voiceDurationRegistry.get(src) || 0;
-  const player = createCustomAudioPlayer(src, durationMs);
-
-  try {
-    audioEl.replaceWith(player.element);
-    console.log(
-      "[VOICE] ✅ Replaced audio | durationMs =", durationMs,
-      "| src =", String(src).slice(0, 60)
-    );
-  } catch (e) {
-    console.warn("[VOICE] replace failed:", e);
-    try {
-      audioEl.parentNode.insertBefore(player.element, audioEl.nextSibling);
-    } catch (_) {}
+  if (!src) {
+    // لا يوجد src — لسه ما اتحمّلش. نعيد المحاولة لاحقاً.
+    return;
   }
+
+  if (audioEl.dataset) audioEl.dataset.voiceWrapped = "1";
+
+  const durationMs =
+    voiceDurationRegistry.get(src) ||
+    parseInt(audioEl.dataset.durationMs || "0", 10) ||
+    0;
+
+  // استخدم العنصر الأصلي نفسه! (WRAP مش REPLACE)
+  const player = createCustomAudioPlayer(audioEl, durationMs);
+
+  // حط المشغل بتاعنا قبل العنصر الأصلي
+  try {
+    audioEl.parentNode.insertBefore(player.element, audioEl);
+  } catch (e) {
+    console.warn("[VOICE] insertBefore failed:", e);
+    return;
+  }
+
+  // اخفي الـ audio الأصلي بس سيبيه في الـ DOM
+  audioEl.removeAttribute("controls");
+  audioEl.controls = false;
+  audioEl.style.cssText += `
+    display: none !important;
+    position: absolute !important;
+    width: 0 !important; height: 0 !important;
+    opacity: 0 !important; pointer-events: none !important;
+  `;
+
+  console.log(
+    "[VOICE] ✅ Wrapped audio | durationMs =", durationMs,
+    "| src =", String(src).slice(0, 60)
+  );
 }
 
-function scanAndReplaceAll() {
+function scanAndWrapAll() {
   try {
     const list = document.querySelectorAll("audio");
-    for (let i = 0; i < list.length; i++) tryReplaceAudio(list[i]);
+    for (let i = 0; i < list.length; i++) tryWrapAudio(list[i]);
   } catch (_) {}
 }
 
 // ============================================================
-//  BOOTSTRAP — runs at module load time
+//  BOOTSTRAP
 // ============================================================
 (function installVoiceHooks() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -203,110 +263,94 @@ function scanAndReplaceAll() {
     return;
   }
   window.__voiceHooksInstalled = true;
+  console.log("[VOICE] 🚀 Installing voice hooks…");
 
-  console.log("[VOICE] 🚀 Installing voice hooks (module-level)…");
-
-  // ---- CSS to hide any leftover native audio ----
-  const injectStyle = () => {
-    if (!document.head) return;
-    const style = document.createElement("style");
-    style.textContent = `audio[controls][data-voice-native="1"]{display:none!important}`;
-    document.head.appendChild(style);
-  };
-  if (document.head) injectStyle();
-  else document.addEventListener("DOMContentLoaded", injectStyle, { once: true });
-
-  // ---- Hook 1: document.createElement ----
+  // Hook 1: createElement
   try {
     const origCreate = document.createElement.bind(document);
     document.createElement = function (tag, ...rest) {
       const el = origCreate(tag, ...rest);
       if (typeof tag === "string" && tag.toLowerCase() === "audio") {
-        scheduleCheck(el);
+        setTimeout(() => tryWrapAudio(el), 0);
+        setTimeout(() => tryWrapAudio(el), 300);
+        setTimeout(() => tryWrapAudio(el), 1200);
       }
       return el;
     };
-    console.log("[VOICE] Hook 1 installed: document.createElement");
-  } catch (e) { console.warn("[VOICE] Hook 1 failed:", e); }
+  } catch (e) { console.warn("[VOICE] Hook1:", e); }
 
-  // ---- Hook 2: window.Audio constructor (Proxy) ----
+  // Hook 2: Audio constructor
   try {
-    const OriginalAudio = window.Audio;
-    window.Audio = new Proxy(OriginalAudio, {
+    const OrigAudio = window.Audio;
+    window.Audio = new Proxy(OrigAudio, {
       construct(target, args) {
         const el = Reflect.construct(target, args);
-        scheduleCheck(el);
+        setTimeout(() => tryWrapAudio(el), 0);
+        setTimeout(() => tryWrapAudio(el), 300);
         return el;
       }
     });
-    console.log("[VOICE] Hook 2 installed: window.Audio");
-  } catch (e) { console.warn("[VOICE] Hook 2 failed:", e); }
+  } catch (e) { console.warn("[VOICE] Hook2:", e); }
 
-  // ---- Hook 3: Node.prototype.appendChild & insertBefore ----
+  // Hook 3: appendChild / insertBefore
   try {
     const origAppend = Node.prototype.appendChild;
     const origInsert = Node.prototype.insertBefore;
     Node.prototype.appendChild = function (node) {
       const res = origAppend.call(this, node);
-      if (node && node.tagName === "AUDIO") scheduleCheck(node);
+      if (node && node.tagName === "AUDIO") {
+        setTimeout(() => tryWrapAudio(node), 0);
+        setTimeout(() => tryWrapAudio(node), 300);
+      }
       return res;
     };
     Node.prototype.insertBefore = function (node, ref) {
       const res = origInsert.call(this, node, ref);
-      if (node && node.tagName === "AUDIO") scheduleCheck(node);
+      if (node && node.tagName === "AUDIO") {
+        setTimeout(() => tryWrapAudio(node), 0);
+        setTimeout(() => tryWrapAudio(node), 300);
+      }
       return res;
     };
-    console.log("[VOICE] Hook 3 installed: appendChild/insertBefore");
-  } catch (e) { console.warn("[VOICE] Hook 3 failed:", e); }
+  } catch (e) { console.warn("[VOICE] Hook3:", e); }
 
-  // ---- Hook 4: MutationObserver ----
+  // Hook 4: MutationObserver
   try {
     const observer = new MutationObserver((muts) => {
       for (const m of muts) {
         for (const n of m.addedNodes) {
           if (n.nodeType !== 1) continue;
-          if (n.tagName === "AUDIO") tryReplaceAudio(n);
-          else if (n.querySelectorAll) n.querySelectorAll("audio").forEach(tryReplaceAudio);
+          if (n.tagName === "AUDIO") tryWrapAudio(n);
+          else if (n.querySelectorAll) n.querySelectorAll("audio").forEach(tryWrapAudio);
         }
       }
     });
     const startObs = () => {
-      try {
-        observer.observe(document.body, { childList: true, subtree: true });
-        console.log("[VOICE] Hook 4 installed: MutationObserver");
-      } catch (e) { console.warn("[VOICE] observer failed:", e); }
+      try { observer.observe(document.body, { childList: true, subtree: true }); }
+      catch (e) { console.warn("[VOICE] observer:", e); }
     };
     if (document.body) startObs();
     else document.addEventListener("DOMContentLoaded", startObs, { once: true });
-  } catch (e) { console.warn("[VOICE] Hook 4 failed:", e); }
+  } catch (e) { console.warn("[VOICE] Hook4:", e); }
 
-  // ---- Hook 5: Interval scanner ----
-  setInterval(scanAndReplaceAll, 300);
-  console.log("[VOICE] Hook 5 installed: interval scanner (300ms)");
+  // Hook 5: interval scanner
+  setInterval(scanAndWrapAll, 400);
+  console.log("[VOICE] All 5 hooks installed.");
 
-  // ---- Initial scan ----
+  // initial scan
   const initialScan = () => {
-    scanAndReplaceAll();
-    console.log("[VOICE] Initial scan complete. Audio elements found:", document.querySelectorAll("audio").length);
+    scanAndWrapAll();
+    console.log("[VOICE] Initial scan. audio count:", document.querySelectorAll("audio").length);
   };
   if (document.body) initialScan();
   else document.addEventListener("DOMContentLoaded", initialScan, { once: true });
 
-  // ---- scheduleCheck helper ----
-  function scheduleCheck(el) {
-    if (!el || el.tagName !== "AUDIO") return;
-    setTimeout(() => tryReplaceAudio(el), 0);
-    setTimeout(() => tryReplaceAudio(el), 150);
-    setTimeout(() => tryReplaceAudio(el), 600);
-    setTimeout(() => tryReplaceAudio(el), 1500);
-  }
-
-  // ---- Expose debug helpers ----
+  // debug helper
   window.__voiceDebug = {
-    scan: scanAndReplaceAll,
+    scan: scanAndWrapAll,
     list: () => Array.from(document.querySelectorAll("audio")),
     registry: voiceDurationRegistry,
-    version: "final-v5"
+    version: "wrap-v6"
   };
 })();
 
@@ -321,11 +365,10 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     console.error("[VOICE] #voiceMicBtn not found.");
     return;
   }
-
   if (!navigator.mediaDevices || !("MediaRecorder" in window)) {
-    console.error("[VOICE] MediaRecorder or getUserMedia is not supported.");
+    console.error("[VOICE] MediaRecorder not supported.");
     micBtn.disabled = true;
-    micBtn.title = "التسجيل الصوتي غير مدعوم في هذا المتصفح";
+    micBtn.title = "التسجيل الصوتي غير مدعوم";
     return;
   }
 
@@ -344,59 +387,41 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
   function getSupportedMimeType() {
     const candidates = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-      "audio/ogg",
-      "audio/mp4;codecs=mp4a.40.2",
-      "audio/mp4",
-      "audio/mpeg"
+      "audio/webm;codecs=opus", "audio/webm",
+      "audio/ogg;codecs=opus", "audio/ogg",
+      "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/mpeg"
     ];
-    for (const type of candidates) {
-      try { if (MediaRecorder.isTypeSupported(type)) return type; } catch (_) {}
+    for (const t of candidates) {
+      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (_) {}
     }
     return "";
   }
 
   function cleanupStream() {
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
-    }
+    if (mediaStream) mediaStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
     mediaStream = null;
   }
-
   function clearWatchdog() {
     if (stopWatchdog) { clearTimeout(stopWatchdog); stopWatchdog = null; }
   }
-
   function cleanupRecorder() {
-    clearWatchdog();
-    cleanupStream();
-    mediaRecorder = null;
-    isStopping = false;
+    clearWatchdog(); cleanupStream(); mediaRecorder = null; isStopping = false;
   }
-
   function resetButton() {
     micBtn.classList.remove("recording-active");
     micBtn.textContent = "🎤";
     micBtn.title = "اضغط للتسجيل";
     micBtn.setAttribute("aria-pressed", "false");
   }
-
   function setRecordingButton() {
     micBtn.classList.add("recording-active");
     micBtn.textContent = "⏺️";
     micBtn.title = "جارٍ التسجيل... اضغط للإيقاف";
     micBtn.setAttribute("aria-pressed", "true");
   }
-
   function revokePreviewUrl() {
-    if (audioPreviewUrl) {
-      URL.revokeObjectURL(audioPreviewUrl);
-      audioPreviewUrl = null;
-    }
+    if (audioPreviewUrl) { URL.revokeObjectURL(audioPreviewUrl); audioPreviewUrl = null; }
   }
-
   function removeExistingPopup() {
     document.querySelectorAll(".voice-preview-popup").forEach(el => el.remove());
   }
@@ -409,96 +434,59 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     const popup = document.createElement("div");
     popup.className = "voice-preview-popup";
     popup.style.cssText = `
-      position: fixed;
-      left: 50%;
+      position: fixed; left: 50%;
       bottom: max(78px, calc(env(safe-area-inset-bottom) + 70px));
-      transform: translateX(-50%);
-      z-index: 60000;
+      transform: translateX(-50%); z-index: 60000;
       width: min(92vw, 420px);
-      background: #0c0f0c;
-      border: 1px solid #1c8a0c;
-      border-radius: 10px;
-      padding: 12px;
+      background: #0c0f0c; border: 1px solid #1c8a0c;
+      border-radius: 10px; padding: 12px;
       box-shadow: 0 0 25px rgba(57,255,20,.16);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: flex; flex-direction: column; gap: 10px;
     `;
-
     const title = document.createElement("div");
     title.textContent = "// VOICE TRANSMISSION READY";
-    title.style.cssText = `
-      color: #39FF14; font: 700 11px monospace; letter-spacing: .6px;
-    `;
+    title.style.cssText = `color:#39FF14;font:700 11px monospace;letter-spacing:.6px;`;
 
     const player = createCustomAudioPlayer(audioPreviewUrl, durationMs);
 
     const actions = document.createElement("div");
-    actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
-
+    actions.style.cssText = `display:flex;gap:8px;width:100%;`;
     const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.textContent = "DELETE";
-    deleteBtn.style.cssText = `
-      flex: 1; min-height: 42px; border: 1px solid #7a0a1d;
-      background: #16070a; color: #ff1744; border-radius: 6px;
-      font: 700 11px monospace; cursor: pointer; touch-action: manipulation;
-    `;
-
+    deleteBtn.type = "button"; deleteBtn.textContent = "DELETE";
+    deleteBtn.style.cssText = `flex:1;min-height:42px;border:1px solid #7a0a1d;background:#16070a;color:#ff1744;border-radius:6px;font:700 11px monospace;cursor:pointer;touch-action:manipulation;`;
     const sendBtn = document.createElement("button");
-    sendBtn.type = "button";
-    sendBtn.textContent = "SEND ▶";
-    sendBtn.style.cssText = `
-      flex: 1; min-height: 42px; border: 1px solid #1c8a0c;
-      background: #0d1a0d; color: #39FF14; border-radius: 6px;
-      font: 700 11px monospace; cursor: pointer; touch-action: manipulation;
-    `;
+    sendBtn.type = "button"; sendBtn.textContent = "SEND ▶";
+    sendBtn.style.cssText = `flex:1;min-height:42px;border:1px solid #1c8a0c;background:#0d1a0d;color:#39FF14;border-radius:6px;font:700 11px monospace;cursor:pointer;touch-action:manipulation;`;
 
     deleteBtn.addEventListener("click", () => {
       try { player.audio.pause(); } catch (_) {}
-      popup.remove();
-      revokePreviewUrl();
-      audioBlob = null;
+      popup.remove(); revokePreviewUrl(); audioBlob = null;
     });
 
     sendBtn.addEventListener("click", async () => {
       if (!audioBlob || audioBlob.size === 0) {
-        alert("التسجيل فارغ، يرجى إعادة المحاولة.");
-        return;
+        alert("التسجيل فارغ، يرجى إعادة المحاولة."); return;
       }
-      sendBtn.disabled = true;
-      deleteBtn.disabled = true;
+      sendBtn.disabled = true; deleteBtn.disabled = true;
       sendBtn.textContent = "SENDING...";
       try {
         const dataUrl = await blobToDataURL(audioBlob);
-
         registerVoiceDuration(dataUrl, durationMs || 0);
-
         await addDoc(messagesCol, {
-          type: "voice",
-          audioData: dataUrl,
+          type: "voice", audioData: dataUrl,
           audioType: audioBlob.type || "audio/webm",
           durationMs: durationMs || 0,
-          from: myId,
-          fromName: myName,
-          userId: myId,
-          user: myName,
-          ts: Date.now()
+          from: myId, fromName: myName,
+          userId: myId, user: myName, ts: Date.now()
         });
-
-        // بعد الإرسال، افحص الـ DOM فوراً
-        setTimeout(scanAndReplaceAll, 100);
-        setTimeout(scanAndReplaceAll, 500);
-        setTimeout(scanAndReplaceAll, 1500);
-
+        setTimeout(scanAndWrapAll, 100);
+        setTimeout(scanAndWrapAll, 500);
+        setTimeout(scanAndWrapAll, 1500);
         try { player.audio.pause(); } catch (_) {}
-        popup.remove();
-        revokePreviewUrl();
-        audioBlob = null;
+        popup.remove(); revokePreviewUrl(); audioBlob = null;
       } catch (err) {
-        console.error("[VOICE] Failed to send voice note:", err);
-        sendBtn.disabled = false;
-        deleteBtn.disabled = false;
+        console.error("[VOICE] send failed:", err);
+        sendBtn.disabled = false; deleteBtn.disabled = false;
         sendBtn.textContent = "SEND ▶";
         alert("فشل إرسال التسجيل الصوتي");
       }
@@ -511,10 +499,10 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
   function blobToDataURL(blob) {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
-      reader.readAsDataURL(blob);
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(r.error || new Error("FileReader failed"));
+      r.readAsDataURL(blob);
     });
   }
 
@@ -524,71 +512,46 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
-
       if (!mediaStream || !mediaStream.getAudioTracks().length) {
-        throw new Error("لم يتم العثور على مسار صوتي من الميكروفون.");
+        throw new Error("لا يوجد مسار صوتي.");
       }
-
       const mimeType = getSupportedMimeType();
       const options = mimeType ? { mimeType } : {};
-
       mediaRecorder = new MediaRecorder(mediaStream, options);
-      audioChunks = [];
-      audioBlob = null;
-      isStopping = false;
-      isRecording = true;
+      audioChunks = []; audioBlob = null;
+      isStopping = false; isRecording = true;
       recordingStartedAt = Date.now();
 
-      mediaRecorder.addEventListener("dataavailable", event => {
-        if (event.data && event.data.size > 0) audioChunks.push(event.data);
+      mediaRecorder.addEventListener("dataavailable", ev => {
+        if (ev.data && ev.data.size > 0) audioChunks.push(ev.data);
       });
-
-      mediaRecorder.addEventListener("error", event => {
-        console.error("[VOICE] MediaRecorder error:", event?.error || event);
+      mediaRecorder.addEventListener("error", ev => {
+        console.error("[VOICE] recorder error:", ev?.error || ev);
       });
-
       mediaRecorder.addEventListener("stop", () => {
         clearWatchdog();
         const measuredMs = Date.now() - recordingStartedAt;
         lastRecordingMs = Math.max(measuredMs, MIN_RECORDING_MS);
-
         const finalType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || "audio/webm";
-
         if (audioChunks.length > 0) {
           audioBlob = new Blob(audioChunks, { type: finalType });
-          if (audioBlob.size > 0) {
-            createPreviewPopup(audioBlob, lastRecordingMs);
-          } else {
-            alert("التسجيل قصير جداً أو فارغ.");
-          }
-        } else {
-          alert("لم يتم تسجيل أي بيانات صوتية.");
-        }
-
-        audioChunks = [];
-        isRecording = false;
-        isStopping = false;
-        resetButton();
-        cleanupRecorder();
+          if (audioBlob.size > 0) createPreviewPopup(audioBlob, lastRecordingMs);
+          else alert("التسجيل قصير جداً أو فارغ.");
+        } else alert("لم يتم تسجيل أي بيانات صوتية.");
+        audioChunks = []; isRecording = false; isStopping = false;
+        resetButton(); cleanupRecorder();
       });
-
       mediaRecorder.start();
       setRecordingButton();
     } catch (err) {
-      console.error("[VOICE] Could not start recording:", err);
-      isRecording = false;
-      isStopping = false;
-      audioChunks = [];
-      resetButton();
-      cleanupRecorder();
-
+      console.error("[VOICE] start failed:", err);
+      isRecording = false; isStopping = false; audioChunks = [];
+      resetButton(); cleanupRecorder();
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        alert("تم رفض إذن الميكروفون. يرجى السماح به من إعدادات المتصفح.");
+        alert("تم رفض إذن الميكروفون.");
       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        alert("لم يتم اكتشاف أي ميكروفون متصل بجهازك.");
-      } else {
-        alert("تعذر بدء التسجيل الصوتي، تأكد من صلاحيات الميكروفون.");
-      }
+        alert("لا يوجد ميكروفون متصل.");
+      } else alert("تعذر بدء التسجيل، تأكد من صلاحيات الميكروفون.");
     }
   }
 
@@ -596,36 +559,23 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     if (!isRecording || !mediaRecorder || isStopping) return;
     isStopping = true;
     const elapsed = Date.now() - recordingStartedAt;
-
     const finish = () => {
       try {
-        if (mediaRecorder && mediaRecorder.state !== "inactive") {
-          mediaRecorder.stop();
-        }
+        if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
       } catch (err) {
-        console.error("[VOICE] Failed to stop recorder:", err);
-        isRecording = false;
-        isStopping = false;
-        resetButton();
-        cleanupRecorder();
+        console.error("[VOICE] stop failed:", err);
+        isRecording = false; isStopping = false;
+        resetButton(); cleanupRecorder();
       }
     };
-
-    if (elapsed < MIN_RECORDING_MS) {
-      setTimeout(finish, MIN_RECORDING_MS - elapsed);
-    } else {
-      finish();
-    }
-
+    if (elapsed < MIN_RECORDING_MS) setTimeout(finish, MIN_RECORDING_MS - elapsed);
+    else finish();
     clearWatchdog();
     stopWatchdog = setTimeout(() => {
       if (isRecording || isStopping) {
-        console.warn("[VOICE] Stop watchdog fired — cleaning up.");
-        isRecording = false;
-        isStopping = false;
-        audioChunks = [];
-        resetButton();
-        cleanupRecorder();
+        console.warn("[VOICE] watchdog fired");
+        isRecording = false; isStopping = false; audioChunks = [];
+        resetButton(); cleanupRecorder();
       }
     }, STOP_WATCHDOG_MS);
   }
@@ -633,28 +583,17 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   function cancelRecording() {
     if (!isRecording || !mediaRecorder) return;
     clearWatchdog();
-    try {
-      if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
-    } catch (_) {}
-    audioChunks = [];
-    isRecording = false;
-    isStopping = false;
-    resetButton();
-    cleanupRecorder();
+    try { if (mediaRecorder.state !== "inactive") mediaRecorder.stop(); } catch (_) {}
+    audioChunks = []; isRecording = false; isStopping = false;
+    resetButton(); cleanupRecorder();
   }
 
-  micBtn.addEventListener("click", event => {
-    event.preventDefault();
-    if (!isRecording) startRecording();
-    else stopRecording();
+  micBtn.addEventListener("click", e => {
+    e.preventDefault();
+    if (!isRecording) startRecording(); else stopRecording();
   });
-
-  micBtn.addEventListener("contextmenu", event => event.preventDefault());
-
-  window.addEventListener("pagehide", () => {
-    if (isRecording) cancelRecording();
-  });
-
+  micBtn.addEventListener("contextmenu", e => e.preventDefault());
+  window.addEventListener("pagehide", () => { if (isRecording) cancelRecording(); });
   resetButton();
 }
 
