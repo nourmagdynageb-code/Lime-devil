@@ -370,6 +370,5 @@ export function initCallSystem({
     hangupBtn.addEventListener("click", stopCall);
   }
 
-  // إرجاع دالة لإيقاف المكالمة من الخارج إن لزم
   return { stopCall };
 }
