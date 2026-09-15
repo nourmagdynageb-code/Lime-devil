@@ -1,7 +1,6 @@
 // voice.js
 // Final bulletproof voice recorder & player.
-// WRAPS native <audio> instead of replacing it — preserves playback.
-// Uses 5 parallel hook strategies + audio element reuse for reliability.
+// Converts data: URLs to blob: URLs before playback (Chrome WebM/Opus fix).
 
 // ============================================================
 //  REGISTRY
@@ -11,6 +10,46 @@ const voiceDurationRegistry = new Map();
 export function registerVoiceDuration(src, durationMs) {
   if (!src || !durationMs) return;
   voiceDurationRegistry.set(src, durationMs);
+}
+
+// ============================================================
+//  DATA URL → BLOB URL  (الحل الجذري لمشكلة Chrome)
+// ============================================================
+const blobUrlCache = new Map(); // data URL → blob URL
+
+function dataUrlToObjectUrl(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== "string") return dataUrl;
+  if (!dataUrl.startsWith("data:")) return dataUrl;
+
+  if (blobUrlCache.has(dataUrl)) return blobUrlCache.get(dataUrl);
+
+  try {
+    const commaIdx = dataUrl.indexOf(",");
+    if (commaIdx === -1) throw new Error("No comma in data URL");
+
+    const header = dataUrl.slice(0, commaIdx);
+    const base64 = dataUrl.slice(commaIdx + 1);
+
+    // استخرج mime وأزل ;codecs=... (Chrome مش بيحبها في data URLs)
+    const mimeMatch = header.match(/^data:([^;,]+)/i);
+    let mime = mimeMatch ? mimeMatch[1].toLowerCase() : "audio/webm";
+    if (!mime || mime === "application/octet-stream") mime = "audio/webm";
+
+    // فك الـ base64
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+
+    // أنشئ blob و URL
+    const blob = new Blob([bytes], { type: mime });
+    const url = URL.createObjectURL(blob);
+    blobUrlCache.set(dataUrl, url);
+    return url;
+  } catch (e) {
+    console.error("[VOICE] dataUrl→objectUrl failed:", e);
+    return dataUrl; // fallback: نرجع الأصلي
+  }
 }
 
 // ============================================================
@@ -38,25 +77,31 @@ function getAudioSrc(audioEl) {
 
 // ============================================================
 //  CUSTOM AUDIO PLAYER
-//  Accepts either: a URL string OR an existing HTMLAudioElement
-//  If element is passed → uses it directly (WRAP, don't replace)
 // ============================================================
 function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
   let audio;
   let ownsAudio = false;
+  let finalSrc;
 
   if (typeof audioOrSrc === "string") {
+    // ✅ الحل: حوّل data: → blob: قبل التشغيل
+    finalSrc = dataUrlToObjectUrl(audioOrSrc);
     audio = new Audio();
-    audio.src = audioOrSrc;
+    audio.src = finalSrc;
     audio.preload = "metadata";
     ownsAudio = true;
   } else if (audioOrSrc instanceof HTMLAudioElement) {
     audio = audioOrSrc;
+    const raw = getAudioSrc(audio);
+    finalSrc = dataUrlToObjectUrl(raw);
+    // لو كان data URL، بدّله بـ blob URL
+    if (finalSrc && finalSrc !== raw) {
+      try { audio.src = finalSrc; audio.load(); } catch (_) {}
+    }
     if (!audio.preload || audio.preload === "none") audio.preload = "metadata";
   } else {
     console.error("[VOICE] Invalid audio argument");
-    const stub = document.createElement("div");
-    return { element: stub, audio: null };
+    return { element: document.createElement("div"), audio: null };
   }
 
   const wrap = document.createElement("div");
@@ -86,8 +131,7 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
   const progressWrap = document.createElement("div");
   progressWrap.style.cssText = `
     flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px;
-    cursor: pointer; position: relative; overflow: hidden;
-    min-width: 60px;
+    cursor: pointer; position: relative; overflow: hidden; min-width: 60px;
   `;
 
   const progressBar = document.createElement("div");
@@ -109,7 +153,6 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
     timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(totalDuration)}`;
   }
 
-  // حاول تحسب المدة من الـ element
   function refreshDurationFromElement() {
     if (isFinite(audio.duration) && audio.duration > 0) {
       totalDuration = audio.duration;
@@ -119,44 +162,33 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
     return false;
   }
 
-  // لو العنصر محمّل بالفعل
-  if (audio.readyState >= 1 && !refreshDurationFromElement()) {
-    // فشل → استخدم الحيلة
-    tryCurrentTimeTrick();
-  }
+  if (audio.readyState >= 1) refreshDurationFromElement();
 
   audio.addEventListener("loadedmetadata", () => {
     if (!refreshDurationFromElement() && totalDuration === 0) {
-      tryCurrentTimeTrick();
+      const onDur = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          totalDuration = audio.duration;
+          audio.removeEventListener("durationchange", onDur);
+          try { audio.currentTime = 0; } catch (_) {}
+          updateLabel();
+        }
+      };
+      audio.addEventListener("durationchange", onDur);
+      try { audio.currentTime = 1e101; } catch (_) {}
     }
     updateLabel();
   });
 
-  // لما الصوت يبدأ يشتغل، أحسب المدة من currentTime + progress
   audio.addEventListener("timeupdate", () => {
     if (totalDuration > 0) {
       progressBar.style.width =
         Math.min(100, (audio.currentTime / totalDuration) * 100) + "%";
     } else if (audio.currentTime > 0) {
-      // fallback: لو مفيش duration، نخمّن من الوقت الحالي
       totalDuration = Math.max(totalDuration, audio.currentTime);
     }
     updateLabel();
   });
-
-  function tryCurrentTimeTrick() {
-    const onDur = () => {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        totalDuration = audio.duration;
-        audio.removeEventListener("durationchange", onDur);
-        try { audio.currentTime = 0; } catch (_) {}
-        updateLabel();
-      }
-    };
-    audio.addEventListener("durationchange", onDur);
-    try { audio.currentTime = 1e101; } catch (_) {}
-    setTimeout(() => audio.removeEventListener("durationchange", onDur), 2500);
-  }
 
   audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
   audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
@@ -167,7 +199,7 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
     updateLabel();
   });
   audio.addEventListener("error", (e) => {
-    console.error("[VOICE] Audio error:", e, audio.error);
+    console.error("[VOICE] Audio error:", e, audio.error, "src =", String(audio.src).slice(0, 80));
   });
 
   playBtn.addEventListener("click", (e) => {
@@ -175,9 +207,9 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
     e.stopPropagation();
     if (audio.paused) {
       audio.play().then(() => {
-        console.log("[VOICE] ▶ Playing audio. duration =", audio.duration);
+        console.log("[VOICE] ▶ Playing. duration =", audio.duration);
       }).catch(err => {
-        console.error("[VOICE] play failed:", err, "src =", String(audio.src).slice(0, 80));
+        console.error("[VOICE] play failed:", err, "src =", String(audio.src).slice(0, 100));
       });
     } else {
       audio.pause();
@@ -197,7 +229,7 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
 }
 
 // ============================================================
-//  WRAP (not replace) a native <audio>
+//  WRAP native <audio>
 // ============================================================
 function tryWrapAudio(audioEl) {
   if (!audioEl || audioEl.tagName !== "AUDIO") return;
@@ -207,10 +239,7 @@ function tryWrapAudio(audioEl) {
   if (!audioEl.parentNode) return;
 
   const src = getAudioSrc(audioEl);
-  if (!src) {
-    // لا يوجد src — لسه ما اتحمّلش. نعيد المحاولة لاحقاً.
-    return;
-  }
+  if (!src) return;
 
   if (audioEl.dataset) audioEl.dataset.voiceWrapped = "1";
 
@@ -219,10 +248,8 @@ function tryWrapAudio(audioEl) {
     parseInt(audioEl.dataset.durationMs || "0", 10) ||
     0;
 
-  // استخدم العنصر الأصلي نفسه! (WRAP مش REPLACE)
   const player = createCustomAudioPlayer(audioEl, durationMs);
 
-  // حط المشغل بتاعنا قبل العنصر الأصلي
   try {
     audioEl.parentNode.insertBefore(player.element, audioEl);
   } catch (e) {
@@ -230,7 +257,6 @@ function tryWrapAudio(audioEl) {
     return;
   }
 
-  // اخفي الـ audio الأصلي بس سيبيه في الـ DOM
   audioEl.removeAttribute("controls");
   audioEl.controls = false;
   audioEl.style.cssText += `
@@ -240,16 +266,13 @@ function tryWrapAudio(audioEl) {
     opacity: 0 !important; pointer-events: none !important;
   `;
 
-  console.log(
-    "[VOICE] ✅ Wrapped audio | durationMs =", durationMs,
-    "| src =", String(src).slice(0, 60)
-  );
+  console.log("[VOICE] ✅ Wrapped audio | durationMs =", durationMs,
+              "| src =", String(src).slice(0, 60));
 }
 
 function scanAndWrapAll() {
   try {
-    const list = document.querySelectorAll("audio");
-    for (let i = 0; i < list.length; i++) tryWrapAudio(list[i]);
+    document.querySelectorAll("audio").forEach(tryWrapAudio);
   } catch (_) {}
 }
 
@@ -258,14 +281,10 @@ function scanAndWrapAll() {
 // ============================================================
 (function installVoiceHooks() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  if (window.__voiceHooksInstalled) {
-    console.log("[VOICE] Hooks already installed.");
-    return;
-  }
+  if (window.__voiceHooksInstalled) return;
   window.__voiceHooksInstalled = true;
   console.log("[VOICE] 🚀 Installing voice hooks…");
 
-  // Hook 1: createElement
   try {
     const origCreate = document.createElement.bind(document);
     document.createElement = function (tag, ...rest) {
@@ -279,7 +298,6 @@ function scanAndWrapAll() {
     };
   } catch (e) { console.warn("[VOICE] Hook1:", e); }
 
-  // Hook 2: Audio constructor
   try {
     const OrigAudio = window.Audio;
     window.Audio = new Proxy(OrigAudio, {
@@ -292,7 +310,6 @@ function scanAndWrapAll() {
     });
   } catch (e) { console.warn("[VOICE] Hook2:", e); }
 
-  // Hook 3: appendChild / insertBefore
   try {
     const origAppend = Node.prototype.appendChild;
     const origInsert = Node.prototype.insertBefore;
@@ -314,7 +331,6 @@ function scanAndWrapAll() {
     };
   } catch (e) { console.warn("[VOICE] Hook3:", e); }
 
-  // Hook 4: MutationObserver
   try {
     const observer = new MutationObserver((muts) => {
       for (const m of muts) {
@@ -333,11 +349,9 @@ function scanAndWrapAll() {
     else document.addEventListener("DOMContentLoaded", startObs, { once: true });
   } catch (e) { console.warn("[VOICE] Hook4:", e); }
 
-  // Hook 5: interval scanner
   setInterval(scanAndWrapAll, 400);
   console.log("[VOICE] All 5 hooks installed.");
 
-  // initial scan
   const initialScan = () => {
     scanAndWrapAll();
     console.log("[VOICE] Initial scan. audio count:", document.querySelectorAll("audio").length);
@@ -345,12 +359,12 @@ function scanAndWrapAll() {
   if (document.body) initialScan();
   else document.addEventListener("DOMContentLoaded", initialScan, { once: true });
 
-  // debug helper
   window.__voiceDebug = {
     scan: scanAndWrapAll,
     list: () => Array.from(document.querySelectorAll("audio")),
     registry: voiceDurationRegistry,
-    version: "wrap-v6"
+    convert: dataUrlToObjectUrl,
+    version: "blob-v7"
   };
 })();
 
@@ -361,14 +375,10 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   console.log("[VOICE] initVoiceSystem called");
 
   const micBtn = document.getElementById("voiceMicBtn");
-  if (!micBtn) {
-    console.error("[VOICE] #voiceMicBtn not found.");
-    return;
-  }
+  if (!micBtn) { console.error("[VOICE] #voiceMicBtn not found."); return; }
   if (!navigator.mediaDevices || !("MediaRecorder" in window)) {
     console.error("[VOICE] MediaRecorder not supported.");
-    micBtn.disabled = true;
-    micBtn.title = "التسجيل الصوتي غير مدعوم";
+    micBtn.disabled = true; micBtn.title = "التسجيل الصوتي غير مدعوم";
     return;
   }
 
@@ -401,22 +411,16 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     if (mediaStream) mediaStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
     mediaStream = null;
   }
-  function clearWatchdog() {
-    if (stopWatchdog) { clearTimeout(stopWatchdog); stopWatchdog = null; }
-  }
-  function cleanupRecorder() {
-    clearWatchdog(); cleanupStream(); mediaRecorder = null; isStopping = false;
-  }
+  function clearWatchdog() { if (stopWatchdog) { clearTimeout(stopWatchdog); stopWatchdog = null; } }
+  function cleanupRecorder() { clearWatchdog(); cleanupStream(); mediaRecorder = null; isStopping = false; }
   function resetButton() {
     micBtn.classList.remove("recording-active");
-    micBtn.textContent = "🎤";
-    micBtn.title = "اضغط للتسجيل";
+    micBtn.textContent = "🎤"; micBtn.title = "اضغط للتسجيل";
     micBtn.setAttribute("aria-pressed", "false");
   }
   function setRecordingButton() {
     micBtn.classList.add("recording-active");
-    micBtn.textContent = "⏺️";
-    micBtn.title = "جارٍ التسجيل... اضغط للإيقاف";
+    micBtn.textContent = "⏺️"; micBtn.title = "جارٍ التسجيل... اضغط للإيقاف";
     micBtn.setAttribute("aria-pressed", "true");
   }
   function revokePreviewUrl() {
@@ -512,9 +516,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
-      if (!mediaStream || !mediaStream.getAudioTracks().length) {
-        throw new Error("لا يوجد مسار صوتي.");
-      }
+      if (!mediaStream || !mediaStream.getAudioTracks().length) throw new Error("لا يوجد مسار صوتي.");
       const mimeType = getSupportedMimeType();
       const options = mimeType ? { mimeType } : {};
       mediaRecorder = new MediaRecorder(mediaStream, options);
@@ -547,11 +549,9 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       console.error("[VOICE] start failed:", err);
       isRecording = false; isStopping = false; audioChunks = [];
       resetButton(); cleanupRecorder();
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        alert("تم رفض إذن الميكروفون.");
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        alert("لا يوجد ميكروفون متصل.");
-      } else alert("تعذر بدء التسجيل، تأكد من صلاحيات الميكروفون.");
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") alert("تم رفض إذن الميكروفون.");
+      else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") alert("لا يوجد ميكروفون متصل.");
+      else alert("تعذر بدء التسجيل.");
     }
   }
 
@@ -560,9 +560,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     isStopping = true;
     const elapsed = Date.now() - recordingStartedAt;
     const finish = () => {
-      try {
-        if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-      } catch (err) {
+      try { if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop(); }
+      catch (err) {
         console.error("[VOICE] stop failed:", err);
         isRecording = false; isStopping = false;
         resetButton(); cleanupRecorder();
