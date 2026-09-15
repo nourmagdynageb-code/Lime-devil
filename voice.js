@@ -1,5 +1,5 @@
 // voice.js
-// Optimized stable voice recorder for desktop & mobile.
+// Optimized stable voice recorder for desktop & mobile with broad compatibility.
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -23,10 +23,10 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isStopping = false;
   let activePointerId = null;
   let recordingStartedAt = 0;
-  const MIN_RECORDING_MS = 500; // زادت قليلاً لضمان تسجيل بيانات كافية
+  const MIN_RECORDING_MS = 500;
 
   function getSupportedMimeType() {
-    // ترتيب البدائل مع مراعاة أجهزة iOS وسفاري
+    // ترتيب البدائل لضمان التوافقية بين الكمبيوتر والموبايل (سفاري وأندرويد)
     const candidates = [
       "audio/mp4",
       "audio/webm;codecs=opus",
@@ -39,7 +39,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         if (MediaRecorder.isTypeSupported(type)) return type;
       } catch (_) {}
     }
-    return ""; // ترك المتصفح يختار الافتراضي إذا لم يجد شيئاً
+    return "";
   }
 
   function cleanupStream() {
@@ -68,7 +68,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   function setRecordingButton() {
     micBtn.classList.add("recording-active");
     micBtn.textContent = "⏺️";
-    micBtn.title = "ارفع إصبعك للإرسال أو الإيقاف";
+    micBtn.title = "ارفع إصبعك لإيقاف التسجيل";
     micBtn.setAttribute("aria-pressed", "true");
   }
 
@@ -120,6 +120,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     audio.preload = "metadata";
     audio.src = audioPreviewUrl;
     audio.style.width = "100%";
+    audio.setAttribute("type", blob.type || "audio/webm");
 
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
@@ -196,6 +197,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   async function startRecording(pointerId = null) {
     if (isRecording || isStopping) return;
     try {
+      // هذا السطر يجبر المتصفح (سواء على الكمبيوتر أو الموبايل) على طلب صلاحية الميكروفون بمدخلات نقية
       mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -209,7 +211,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       }
 
       const mimeType = getSupportedMimeType();
-      const options = mimeType ? { mimeType } : {};
+      const options = mimeType ? { mimeType, audioBitsPerSecond: 64000 } : { audioBitsPerSecond: 64000 };
       
       mediaRecorder = new MediaRecorder(mediaStream, options);
       audioChunks = [];
@@ -251,11 +253,11 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       cleanupRecorder();
 
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        alert("تم رفض إذن الميكروفون. يرجى السماح به من إعدادات المتصفح.");
+        alert("تم رفض إذن الميكروفون. يرجى السماح به من إعدادات المتصفح (في شريط العنوان للأعلى).");
       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
         alert("لم يتم اكتشاف أي ميكروفون متصل بجهازك.");
       } else {
-        alert("تعذر بدء التسجيل الصوتي، تأكد من صلاحيات المتصفح.");
+        alert("تعذر بدء التسجيل الصوتي، تأكد من صلاحيات الميكروفون.");
       }
     }
   }
@@ -300,13 +302,11 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     cleanupRecorder();
   }
 
-  // استخدام أحداث اللمس والماوس المباشرة أو إلغاء التأخير الطويل لتجربة أسرع وأكثر استجابة
+  // أحداث الـ Pointer للكمبيوتر والموبايل بشكل فوري وآمن
   micBtn.addEventListener("pointerdown", event => {
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault();
     activePointerId = event.pointerId;
-    
-    // البدء الفوري للتسجيل عند الضغط لتجنب مشاكل تأخير الهواتف
     startRecording(event.pointerId);
   });
 
