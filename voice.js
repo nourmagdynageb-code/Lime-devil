@@ -1,5 +1,5 @@
 // voice.js
-// Final bulletproof voice recorder with helper for UI rendering.
+// Final bulletproof voice recorder & player renderer for desktop & mobile.
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -127,13 +127,14 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       audio.type = blob.type;
     }
 
-    // إصلاح مشكلة 0:00 للمتصفحات
+    // الحل الجذري والنهائي لقراءة الـ Duration فوراً في المعاينة
     audio.addEventListener("loadedmetadata", () => {
-      if (audio.duration === Infinity || isNaN(audio.duration)) {
-        audio.currentTime = 1e101;
+      if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
+        audio.currentTime = Number.MAX_SAFE_INTEGER;
         audio.ontimeupdate = () => {
           audio.ontimeupdate = null;
           audio.currentTime = 0;
+          audio.pause();
         };
       }
     });
@@ -297,7 +298,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       } catch (err) {
         console.error("[VOICE] Failed to stop recorder:", err);
         isRecording = false;
-        isStopping, isStopping = false;
+        isStopping = false;
         resetButton();
         cleanupRecorder();
       }
@@ -355,8 +356,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 }
 
 /**
- * دالة مساعدة لتوليد عنصر الـ Audio الخاص بالرسائل الواردة (Chat Message Renderer)
- * يجب استخدام هذه الدالة في الكود المسؤول عن عرض الرسائل في الشاشة لتجنب مشكلة 0:00 على الأجهزة الأخرى.
+ * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة (استخدمها عند عرض الرسائل في الشاشة)
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
@@ -367,13 +367,14 @@ export function createAudioElementForMessage(messageData) {
     audio.type = messageData.audioType;
   }
   
-  // حل مشكلة 0:00 نهائياً عند استقبال الفويس في الأجهزة الأخرى
+  // الحل الجذري والنهائي لقراءة الـ Duration فوراً في الرسائل المستلمة
   audio.addEventListener("loadedmetadata", () => {
-    if (audio.duration === Infinity || isNaN(audio.duration)) {
-      audio.currentTime = 1e101;
+    if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
+      audio.currentTime = Number.MAX_SAFE_INTEGER;
       audio.ontimeupdate = () => {
         audio.ontimeupdate = null;
         audio.currentTime = 0;
+        audio.pause();
       };
     }
   });
