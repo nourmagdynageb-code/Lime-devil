@@ -1,7 +1,7 @@
 // voice.js
 // Final bulletproof voice recorder & player.
-// v8: Prefer MP4/AAC for cross-device playback (iPhone + Android + PC).
-// Converts data: URLs to blob: URLs before playback (Chrome WebM/Opus fix).
+// v9: Converts all recordings to MP3 via server for universal playback.
+// Fallback: if server conversion fails, sends original recording.
 
 // ============================================================
 //  REGISTRY
@@ -32,8 +32,8 @@ function dataUrlToObjectUrl(dataUrl) {
     const base64 = dataUrl.slice(commaIdx + 1);
 
     const mimeMatch = header.match(/^data:([^;,]+)/i);
-    let mime = mimeMatch ? mimeMatch[1].toLowerCase() : "audio/webm";
-    if (!mime || mime === "application/octet-stream") mime = "audio/webm";
+    let mime = mimeMatch ? mimeMatch[1].toLowerCase() : "audio/mpeg";
+    if (!mime || mime === "application/octet-stream") mime = "audio/mpeg";
 
     const binary = atob(base64);
     const len = binary.length;
@@ -71,6 +71,36 @@ function getAudioSrc(audioEl) {
   }
   if (audioEl.currentSrc) return audioEl.currentSrc;
   return null;
+}
+
+// ============================================================
+//  SERVER CONVERSION — يبعت التسجيل للسيرفر يحوله MP3
+// ============================================================
+async function convertAudioToMp3(dataUrl) {
+  try {
+    console.log("[VOICE] Sending to server for MP3 conversion…");
+    const resp = await fetch("/api/convert-audio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audioDataUrl: dataUrl })
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      throw new Error("Server responded " + resp.status + ": " + errText.slice(0, 200));
+    }
+
+    const json = await resp.json();
+    if (!json || !json.audioDataUrl || !json.audioDataUrl.startsWith("data:audio")) {
+      throw new Error("Invalid server response");
+    }
+
+    console.log("[VOICE] ✅ Server conversion OK. New mime:", json.mimeType);
+    return { dataUrl: json.audioDataUrl, mimeType: json.mimeType || "audio/mpeg" };
+  } catch (err) {
+    console.warn("[VOICE] ⚠️ Server conversion failed, using original:", err);
+    return { dataUrl, mimeType: null };
+  }
 }
 
 // ============================================================
@@ -360,7 +390,8 @@ function scanAndWrapAll() {
     list: () => Array.from(document.querySelectorAll("audio")),
     registry: voiceDurationRegistry,
     convert: dataUrlToObjectUrl,
-    version: "blob-v8-mp4"
+    convertToMp3: convertAudioToMp3,
+    version: "mp3-v9"
   };
 })();
 
@@ -391,13 +422,13 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const MIN_RECORDING_MS = 1200;
   const STOP_WATCHDOG_MS = 4000;
 
-  // ✅ v8: MP4/AAC أولاً للتوافق بين كل الأجهزة (iPhone + Android + PC)
+  // نسجل بـ webm أو mp4 حسب المتصفح — السيرفر هيتحول لـ MP3 بعدين
   function getSupportedMimeType() {
     const candidates = [
-      "audio/mp4;codecs=mp4a.40.2",
-      "audio/mp4",
       "audio/webm;codecs=opus",
       "audio/webm",
+      "audio/mp4;codecs=mp4a.40.2",
+      "audio/mp4",
       "audio/ogg;codecs=opus",
       "audio/ogg",
       "audio/mpeg"
@@ -405,7 +436,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     for (const t of candidates) {
       try {
         if (MediaRecorder.isTypeSupported(t)) {
-          console.log("[VOICE] Selected mime type:", t);
+          console.log("[VOICE] Selected recording mime:", t);
           return t;
         }
       } catch (_) {}
@@ -478,17 +509,36 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         alert("التسجيل فارغ، يرجى إعادة المحاولة."); return;
       }
       sendBtn.disabled = true; deleteBtn.disabled = true;
-      sendBtn.textContent = "SENDING...";
+      sendBtn.textContent = "CONVERTING...";
+
       try {
-        const dataUrl = await blobToDataURL(audioBlob);
-        registerVoiceDuration(dataUrl, durationMs || 0);
+        // 1. حوّل الـ blob لـ data URL
+        const originalDataUrl = await blobToDataURL(audioBlob);
+        console.log("[VOICE] Original mime:", audioBlob.type, "| size:", audioBlob.size);
+
+        // 2. ابعت للسيرفر عشان يحولها MP3
+        sendBtn.textContent = "UPLOADING...";
+        const conversion = await convertAudioToMp3(originalDataUrl);
+
+        const finalDataUrl = conversion.dataUrl;
+        const finalMime = conversion.mimeType || audioBlob.type || "audio/mpeg";
+
+        console.log("[VOICE] Final mime:", finalMime);
+
+        // 3. سجّل المدة
+        registerVoiceDuration(finalDataUrl, durationMs || 0);
+
+        // 4. ابعت لـ Firestore
+        sendBtn.textContent = "SENDING...";
         await addDoc(messagesCol, {
-          type: "voice", audioData: dataUrl,
-          audioType: audioBlob.type || "audio/mp4",
+          type: "voice",
+          audioData: finalDataUrl,
+          audioType: finalMime,
           durationMs: durationMs || 0,
           from: myId, fromName: myName,
           userId: myId, user: myName, ts: Date.now()
         });
+
         setTimeout(scanAndWrapAll, 100);
         setTimeout(scanAndWrapAll, 500);
         setTimeout(scanAndWrapAll, 1500);
@@ -540,7 +590,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         clearWatchdog();
         const measuredMs = Date.now() - recordingStartedAt;
         lastRecordingMs = Math.max(measuredMs, MIN_RECORDING_MS);
-        const finalType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || "audio/mp4";
+        const finalType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || "audio/webm";
         if (audioChunks.length > 0) {
           audioBlob = new Blob(audioChunks, { type: finalType });
           if (audioBlob.size > 0) createPreviewPopup(audioBlob, lastRecordingMs);
