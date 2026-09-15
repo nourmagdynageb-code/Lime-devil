@@ -1,5 +1,5 @@
 // voice.js
-// Final stable voice recorder for desktop & mobile with correct codec fallback.
+// Final bulletproof voice recorder for desktop & mobile.
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -23,12 +23,10 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   let isStopping = false;
   let activePointerId = null;
   let recordingStartedAt = 0;
-  const MIN_RECORDING_MS = 600; // زيادة قليلاً لضمان التقاط بيانات كافية
+  const MIN_RECORDING_MS = 600;
 
   function getSupportedMimeType() {
-    // تحديد ما إذا كان الجهاز كمبيوتر أو موبايل لتحديد الصيغة الأنسب
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
     const candidates = isIOS ? [
       "audio/mp4",
       "audio/aac"
@@ -44,7 +42,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         if (MediaRecorder.isTypeSupported(type)) return type;
       } catch (_) {}
     }
-    return "";
+    return ""; // السماح للمتصفح باختيار الافتراضي الآمن إذا لزم الأمر
   }
 
   function cleanupStream() {
@@ -122,10 +120,24 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
     const audio = document.createElement("audio");
     audio.controls = true;
-    audio.preload = "auto"; // أجبر المتصفح على تحميل تفاصيل الملف ومعرفة المدة فوراً
+    audio.preload = "metadata";
     audio.src = audioPreviewUrl;
     audio.style.width = "100%";
-    
+    if (blob.type) {
+      audio.type = blob.type;
+    }
+
+    // خدعة برمجية لإجبار المتصفح على قراءة مدة الصوت فوراً وحل مشكلة 0:00
+    audio.addEventListener("loadedmetadata", () => {
+      if (audio.duration === Infinity || isNaN(audio.duration)) {
+        audio.currentTime = 1e101;
+        audio.ontimeupdate = () => {
+          audio.ontimeupdate = null;
+          audio.currentTime = 0;
+        };
+      }
+    });
+
     const actions = document.createElement("div");
     actions.style.cssText = `display: flex; gap: 8px; width: 100%;`;
 
@@ -252,8 +264,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         cleanupRecorder();
       });
 
-      // بدء التسجيل مع تجميع القطع كل 100ms لضمان عدم ضياع الداتا
-      mediaRecorder.start(100);
+      // تشغيل الركوردر بدون تمرير فاصل زمني (بدون 250 أو 100) لكي يترك المتصفح يجمع الـ Chunks بسلام وتجنب تلف ترويسة الملف (Header)
+      mediaRecorder.start();
       setRecordingButton();
     } catch (err) {
       console.error("[VOICE] Could not start recording:", err);
@@ -293,7 +305,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     };
 
     if (elapsed < MIN_RECORDING_MS) {
-      setTimeout(finish, MIN_RECORD_MS - elapsed);
+      setTimeout(finish, MIN_RECORDING_MS - elapsed);
     } else {
       finish();
     }
