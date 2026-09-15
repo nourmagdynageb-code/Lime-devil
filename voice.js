@@ -27,12 +27,15 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
   function getSupportedMimeType() {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const candidates = isIOS ? [
-      "audio/mp4",
-      "audio/aac"
-    ] : [
-      "audio/webm;codecs=opus",
+    if (isIOS) {
+      if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
+      if (MediaRecorder.isTypeSupported("audio/aac")) return "audio/aac";
+    }
+    
+    // الترتيب الجديد للكمبيوتر والموبايل لتجنب فشل التسجيل على بعض متصفحات سطح المكتب
+    const candidates = [
       "audio/webm",
+      "audio/webm;codecs=opus",
       "audio/ogg;codecs=opus",
       "audio/mp4"
     ];
@@ -127,7 +130,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       audio.type = blob.type;
     }
 
-    // الحل الجذري والنهائي لقراءة الـ Duration فوراً في المعاينة
+    // إجبار المتصفح على قراءة مدة الصوت في المعاينة
     audio.addEventListener("loadedmetadata", () => {
       if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
         audio.currentTime = Number.MAX_SAFE_INTEGER;
@@ -278,7 +281,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
         alert("تم رفض إذن الميكروفون. يرجى السماح به من إعدادات المتصفح.");
       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        alert("لم يتم اكتشاف أي ميكروفون متصل بجهازك.");
+        alert("لم يتم اكتشاف أي ميكروفون متصل بجهازك (تأكد من إعدادات الميكروفون في نظام التشغيل والمتصفح).");
       } else {
         alert("تعذر بدء التسجيل الصوتي، تأكد من صلاحيات الميكروفون.");
       }
@@ -356,7 +359,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 }
 
 /**
- * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة (استخدمها عند عرض الرسائل في الشاشة)
+ * دالة إنشاء عنصر الـ Audio للرسائل الواردة والصادرة
  */
 export function createAudioElementForMessage(messageData) {
   const audio = document.createElement("audio");
@@ -367,7 +370,7 @@ export function createAudioElementForMessage(messageData) {
     audio.type = messageData.audioType;
   }
   
-  // الحل الجذري والنهائي لقراءة الـ Duration فوراً في الرسائل المستلمة
+  // حل مشكلة 0:00 للرسائل المستلمة
   audio.addEventListener("loadedmetadata", () => {
     if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
       audio.currentTime = Number.MAX_SAFE_INTEGER;
