@@ -77,10 +77,12 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
 .stat-chip.clickable{cursor:pointer;}
 .dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--lime-glow);box-shadow:0 0 8px var(--lime-glow);}
 #purgeTimer{color:var(--crimson);font-weight:700;}
-.action-btn,#unlockBtn,#sendBtn{background:linear-gradient(135deg,#0d1a0d,#050a05);border:1px solid var(--lime-dim);color:var(--lime-glow);font-family:var(--mono);font-weight:800;padding:7px 11px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:0.5px;position:relative;overflow:hidden;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 12px rgba(57,255,20,0.08),inset 0 0 6px rgba(57,255,20,0.06);white-space:nowrap;}
-.action-btn::after,#unlockBtn::after,#sendBtn::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(57,255,20,0.15),transparent);transform:rotate(45deg) translateX(-100%);transition:transform 0.5s ease;}
-.action-btn:hover::after,#unlockBtn:hover::after,#sendBtn:hover::after{transform:rotate(45deg) translateX(100%);}
-.action-btn:hover,#unlockBtn:hover,#sendBtn:hover{background:var(--lime-dim);color:#031403;border-color:var(--lime);box-shadow:0 0 22px var(--lime);transform:translateY(-1px);}
+.action-btn,#unlockBtn,#sendBtn,#voiceMicBtn{background:linear-gradient(135deg,#0d1a0d,#050a05);border:1px solid var(--lime-dim);color:var(--lime-glow);font-family:var(--mono);font-weight:800;padding:7px 11px;border-radius:6px;cursor:pointer;font-size:11px;letter-spacing:0.5px;position:relative;overflow:hidden;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 12px rgba(57,255,20,0.08),inset 0 0 6px rgba(57,255,20,0.06);white-space:nowrap;}
+.action-btn::after,#unlockBtn::after,#sendBtn::after,#voiceMicBtn::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(57,255,20,0.15),transparent);transform:rotate(45deg) translateX(-100%);transition:transform 0.5s ease;}
+.action-btn:hover::after,#unlockBtn:hover::after,#sendBtn:hover::after,#voiceMicBtn:hover::after{transform:rotate(45deg) translateX(100%);}
+.action-btn:hover,#unlockBtn:hover,#sendBtn:hover,#voiceMicBtn:hover{background:var(--lime-dim);color:#031403;border-color:var(--lime);box-shadow:0 0 22px var(--lime);transform:translateY(-1px);}
+#voiceMicBtn.recording-active{background:var(--crimson)!important;color:#fff!important;border-color:var(--crimson)!important;box-shadow:0 0 25px var(--crimson)!important;animation:pulseMic 1s infinite alternate;}
+@keyframes pulseMic{0%{transform:scale(1);}100%{transform:scale(1.08);}}
 #emergencyBtnDesktop{background:linear-gradient(135deg,#26050a,#0a0103)!important;border-color:var(--crimson-dim)!important;color:var(--crimson)!important;}
 #emergencyBtnDesktop:hover{background:var(--crimson)!important;color:#fff!important;border-color:var(--crimson)!important;box-shadow:0 0 25px var(--crimson)!important;}
 #endBtnDesktop{background:linear-gradient(135deg,#1f080c,#0a0304)!important;border-color:#590a16!important;color:#ff4d6d!important;}
@@ -110,7 +112,8 @@ main::-webkit-scrollbar{width:6px;}main::-webkit-scrollbar-thumb{background:var(
 .msg-user{font-weight:700;}
 .msg-text{font-size:13px;word-break:break-word;color:#dfffe0;line-height:1.45;}
 #typingIndicator{flex:0 0 auto;width:100%;min-height:18px;padding:0 12px 4px;color:var(--lime-dim);font-size:10px;}
-form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;background:#080a08;border-top:1px solid var(--lime-dim);}
+form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;background:#080a08;border-top:1px solid var(--lime-dim);align-items:center;}
+#voiceMicBtn{flex:0 0 auto;padding:10px 14px;font-size:13px;}
 #msgInput{flex:1 1 auto;min-width:0;width:100%;background:#0b0e0b;border:1px solid var(--lime-dim);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;}
 #msgInput::placeholder{color:#555;}
 #sendBtn{flex:0 0 auto;padding:0 20px;font-size:13px;}
@@ -122,7 +125,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
 .log-item{background:var(--panel-2);padding:7px 9px;border-radius:4px;border-left:3px solid var(--lime-dim);word-break:break-all;}
 .log-item.failed{border-left-color:var(--crimson);}
 .close-modal-btn{width:100%;background:var(--panel-2);border:1px solid var(--lime-dim);color:var(--text);padding:8px;border-radius:4px;cursor:pointer;font-weight:700;font-size:11px;}
-@media (max-width:600px){#app{width:100%;height:100dvh;min-height:100dvh;}header{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:7px;width:100%;padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left));min-height:auto;flex:0 0 auto;}.logo{width:100%;text-align:center;font-size:15px;line-height:1.2;letter-spacing:1px;}.header-stats{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-width:0;}.stat-chip{padding:5px 8px;font-size:10px;min-height:29px;}.dot{width:6px;height:6px;flex:0 0 6px;}.action-btn{padding:6px 8px;min-height:29px;font-size:9px;letter-spacing:0.3px;}main{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;padding:10px 8px 6px;gap:7px;}.sys-msg{max-width:95%;font-size:9px;line-height:1.4;padding:5px 9px;text-align:center;word-break:break-word;}.msg{max-width:90%;padding:7px 9px;}.msg-meta{font-size:9px;}.msg-text{font-size:12px;line-height:1.45;}#typingIndicator{flex:0 0 auto;min-height:17px;padding:2px 10px 3px;font-size:9px;}form#composer{flex:0 0 auto;display:flex;width:100%;gap:6px;padding:7px max(7px,env(safe-area-inset-right)) 7px max(7px,env(safe-area-inset-left));min-height:60px;}#msgInput{flex:1 1 auto;min-width:0;width:100%;height:46px;font-size:12px;padding:10px;}#msgInput::placeholder{font-size:11px;}#sendBtn{flex:0 0 92px;width:92px;min-width:92px;height:46px;padding:0 8px;font-size:11px;}.footnote{flex:0 0 auto;font-size:7px;padding:3px 5px max(5px,env(safe-area-inset-bottom));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.custom-modal{padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left));}.modal-box{width:94vw;max-height:82vh;max-height:82dvh;padding:13px;}.modal-title{font-size:11px;}#callOverlay{padding:max(8px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));}.call-header{margin-top:2px;margin-bottom:4px;}.call-header h2{font-size:13px;letter-spacing:1px;}.call-status{font-size:10px;}.call-video-container{flex-direction:column;flex-wrap:nowrap;gap:0;max-width:100%;height:100%;position:relative;}.call-video-container .video-box:nth-child(2){width:100%;min-width:100%;height:100%;max-height:none;flex:1 1 auto;border-radius:12px;}.call-video-container .video-box:nth-child(1){position:absolute;bottom:10px;right:10px;width:108px;min-width:108px;height:144px;z-index:15;border-radius:10px;border-width:2px;box-shadow:0 4px 16px rgba(0,0,0,0.6),0 0 10px rgba(57,255,20,0.3);}.call-video-container .video-box:nth-child(1) .video-label{font-size:9px;padding:2px 5px;bottom:4px;left:4px;}.call-controls{gap:6px;padding:8px 2px 2px;margin-bottom:0;max-width:100%;}.call-btn{padding:11px 6px;font-size:11px;min-width:0;min-height:46px;flex:1 1 30%;border-radius:40px;}.call-btn.end-call{flex:1 1 100%;min-height:50px;font-size:13px;margin-top:2px;}}
+@media (max-width:600px){#app{width:100%;height:100dvh;min-height:100dvh;}header{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:7px;width:100%;padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left));min-height:auto;flex:0 0 auto;}.logo{width:100%;text-align:center;font-size:15px;line-height:1.2;letter-spacing:1px;}.header-stats{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-width:0;}.stat-chip{padding:5px 8px;font-size:10px;min-height:29px;}.dot{width:6px;height:6px;flex:0 0 6px;}.action-btn{padding:6px 8px;min-height:29px;font-size:9px;letter-spacing:0.3px;}main{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;padding:10px 8px 6px;gap:7px;}.sys-msg{max-width:95%;font-size:9px;line-height:1.4;padding:5px 9px;text-align:center;word-break:break-word;}.msg{max-width:90%;padding:7px 9px;}.msg-meta{font-size:9px;}.msg-text{font-size:12px;line-height:1.45;}#typingIndicator{flex:0 0 auto;min-height:17px;padding:2px 10px 3px;font-size:9px;}form#composer{flex:0 0 auto;display:flex;width:100%;gap:6px;padding:7px max(7px,env(safe-area-inset-right)) 7px max(7px,env(safe-area-inset-left));min-height:60px;align-items:center;}#voiceMicBtn{flex:0 0 auto;padding:8px 10px;font-size:11px;}#msgInput{flex:1 1 auto;min-width:0;width:100%;height:46px;font-size:12px;padding:10px;}#msgInput::placeholder{font-size:11px;}#sendBtn{flex:0 0 92px;width:92px;min-width:92px;height:46px;padding:0 8px;font-size:11px;}.footnote{flex:0 0 auto;font-size:7px;padding:3px 5px max(5px,env(safe-area-inset-bottom));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.custom-modal{padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left));}.modal-box{width:94vw;max-height:82vh;max-height:82dvh;padding:13px;}.modal-title{font-size:11px;}#callOverlay{padding:max(8px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));}.call-header{margin-top:2px;margin-bottom:4px;}.call-header h2{font-size:13px;letter-spacing:1px;}.call-status{font-size:10px;}.call-video-container{flex-direction:column;flex-wrap:nowrap;gap:0;max-width:100%;height:100%;position:relative;}.call-video-container .video-box:nth-child(2){width:100%;min-width:100%;height:100%;max-height:none;flex:1 1 auto;border-radius:12px;}.call-video-container .video-box:nth-child(1){position:absolute;bottom:10px;right:10px;width:108px;min-width:108px;height:144px;z-index:15;border-radius:10px;border-width:2px;box-shadow:0 4px 16px rgba(0,0,0,0.6),0 0 10px rgba(57,255,20,0.3);}.call-video-container .video-box:nth-child(1) .video-label{font-size:9px;padding:2px 5px;bottom:4px;left:4px;}.call-controls{gap:6px;padding:8px 2px 2px;margin-bottom:0;max-width:100%;}.call-btn{padding:11px 6px;font-size:11px;min-width:0;min-height:46px;flex:1 1 30%;border-radius:40px;}.call-btn.end-call{flex:1 1 100%;min-height:50px;font-size:13px;margin-top:2px;}}
 @media (max-width:380px){.logo{font-size:14px;}.header-stats{gap:4px;}.stat-chip{padding:4px 6px;font-size:9px;}.action-btn{padding:5px 6px;font-size:8px;}#sendBtn{flex-basis:82px;width:82px;min-width:82px;font-size:10px;}#msgInput::placeholder{font-size:10px;}}
 @media (max-width:600px) and (orientation:landscape){header{flex-direction:row;align-items:center;padding-top:6px;padding-bottom:6px;}.logo{width:auto;text-align:left;font-size:14px;}.header-stats{width:auto;justify-content:flex-end;}.action-btn{padding:5px 7px;}.stat-chip{padding:4px 7px;}#callOverlay{padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));}.call-header{margin-top:0;margin-bottom:2px;}.call-header h2{font-size:12px;}.call-status{font-size:9px;}.call-video-container{flex-direction:row;gap:8px;}.call-video-container .video-box:nth-child(1),.call-video-container .video-box:nth-child(2){position:relative;width:48%;min-width:0;height:100%;bottom:auto;right:auto;flex:1 1 45%;border-radius:8px;}.call-controls{flex-wrap:nowrap;gap:5px;padding:2px 0;}.call-btn{min-height:40px;padding:7px 5px;font-size:10px;flex:1 1 auto;}.call-btn.end-call{flex:0 0 auto;min-width:100px;margin-top:0;}}
 #searchFacade{position:fixed;inset:0;z-index:40000;display:flex;flex-direction:column;justify-content:center;align-items:center;background:linear-gradient(135deg,#0f0f13 0%,#1a1a24 50%,#0f0f13 100%);background-size:200% 200%;animation:searchGradient 12s ease infinite;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#e8e8e8;overflow:hidden;transition:opacity 0.55s ease,transform 0.55s ease;}
@@ -156,7 +159,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<!-- المرحلة 1: واجهة البحث Searchly (تظهر دائماً أولاً) -->
+<!-- المرحلة 1: واجهة البحث Searchly -->
 <div id="searchFacade">
   <div class="search-particles" id="searchParticles"></div>
   <div class="search-container">
@@ -245,7 +248,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </div>
 </div>
 
-<!-- المرحلة 2: شاشة القفل (تظهر بعد Searchly فقط) -->
+<!-- المرحلة 2: شاشة القفل -->
 <div id="lockScreen" class="flicker">
   <div class="lock-box">
     <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
@@ -285,7 +288,7 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </div>
 </div>
 
-<!-- اللوحة الرئيسية (تظهر فقط بعد إدخال 181) -->
+<!-- اللوحة الرئيسية -->
 <div id="app">
   <header>
     <div class="logo glitch" data-text="LIME DEVIL">LIME DEVIL</div>
@@ -301,10 +304,14 @@ form#composer{flex:0 0 auto;display:flex;width:100%;gap:8px;padding:10px;backgro
   </header>
   <main id="feed"></main>
   <div id="typingIndicator"></div>
+  
   <form id="composer" autocomplete="off">
+    <!-- زر الفويس على الشمال خالص بجانب خانة الكتابة -->
+    <button type="button" id="voiceMicBtn">🎙️</button>
     <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
     <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
+  
   <div class="footnote">ALL TRAFFIC ROUTED THROUGH LOCAL NODE // GLOBAL STEALTH ENABLED</div>
 </div>
 
@@ -313,6 +320,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, orderBy, getDocs, writeBatch, runTransaction, getDoc, limit, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initCallSystem } from "./call.js";
+import { initVoiceSystem } from "./voice.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
@@ -328,366 +336,31 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const auth = getAuth(fbApp);
 
-const messagesCol = collection(db,"messages");
-const presenceCol = collection(db,"presence");
-const typingCol = collection(db,"typing");
-const accessLogsCol = collection(db,"accessLogs");
-const signalingCol = collection(db,"signaling");
-const purgeRef = doc(db,"meta","purge");
-const globalLockRef = doc(db,"meta","globalLock");
-const globalStealthRef = doc(db,"meta","globalStealth");
-
-/* =========================
-   AUDIO + MATRIX + CONSTANTS
-   ========================= */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playKeyClickSound(){
-  if(audioCtx.state === "suspended") audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(120 + Math.random() * 40, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime + 0.04);
-}
-function playNotificationSound(){
-  if(audioCtx.state === "suspended") audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
-  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-}
-
-const canvas = document.getElementById("matrixCanvas");
-const ctx = canvas.getContext("2d");
-let cols, drops;
-function resizeCanvas(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  cols = Math.floor(canvas.width / 16);
-  drops = new Array(cols).fill(0).map(() => Math.random() * -100);
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-const chars = "01LIMEDEVIL01ΞΔ01";
-function drawMatrix(){
-  ctx.fillStyle = "rgba(5,5,5,0.08)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#39FF14";
-  ctx.font = "14px monospace";
-  for(let i = 0; i < cols; i++){
-    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 16, drops[i] * 16);
-    if(drops[i] * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-    drops[i]++;
-  }
-  requestAnimationFrame(drawMatrix);
-}
-drawMatrix();
-
-const PASSWORD = "181";
-const LOGS_PASSWORD = "1312";
-const END_PASSWORD = "sos";
-const PURGE_MS = 10 * 60 * 1000;
-const EMERGENCY_PASSWORD = "101";
-const LOCK_BUTTON_PASSWORD = "lime1280";
-const PREFIXES = ["Devil","Lime","Void","Ghost","Shadow","Cipher","Wraith","Static"];
-function generateCodename(){ return `${PREFIXES[Math.floor(Math.random()*PREFIXES.length)]}_${Math.floor(1000+Math.random()*8999)}`; }
-const myName = generateCodename();
-const myColor = ["#39FF14","#ff1744","#00eaff","#ffd600","#ff6e40","#b388ff"][Math.floor(Math.random()*6)];
-const myId = myName + "_" + Math.random().toString(36).slice(2,8);
-
-let deviceSignature = "Unknown Device";
-try{
-  const parser = new UAParser();
-  const uaResult = parser.getResult();
-  deviceSignature = `${uaResult.device.type ? uaResult.device.type.toUpperCase() : "PC"} (${uaResult.os.name||""} - ${uaResult.browser.name||""})`;
-}catch(e){}
-
-function getApproxLocation(){
-  try{
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    const lang = (navigator.language || "").toLowerCase();
-    const tzMap = {"Africa/Cairo":"Cairo, Egypt","Africa/Alexandria":"Alexandria, Egypt","Asia/Riyadh":"Riyadh, Saudi Arabia","Asia/Dubai":"Dubai, UAE","Asia/Kuwait":"Kuwait City, Kuwait","Asia/Qatar":"Doha, Qatar","Asia/Amman":"Amman, Jordan","Asia/Beirut":"Beirut, Lebanon","Europe/London":"London, UK","America/New_York":"New York, USA"};
-    if(tzMap[tz]) return tzMap[tz];
-    if(tz){ const parts=tz.split("/"); if(parts.length===2) return parts[1].replace(/_/g," ")+" ("+parts[0]+")"; return tz; }
-    if(lang.startsWith("ar")) return "Arabic Region (approx)";
-    return "Unknown Region";
-  }catch(e){ return "Unknown"; }
-}
-
-const feed = document.getElementById("feed");
-function escapeHTML(str){ const d=document.createElement("div"); d.textContent=str; return d.innerHTML; }
-function renderMessageDoc(m){
-  if(m.type==="system"){ const el=document.createElement("div"); el.className="sys-msg"; el.textContent=m.text; feed.appendChild(el); return; }
-  const el=document.createElement("div");
-  el.className="msg"+(m.userId===myId?" mine":"");
-  el.innerHTML=`<div class="msg-meta"><span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span><span class="msg-time">${new Date(m.ts).toTimeString().slice(0,8)}</span></div><div class="msg-text"></div>`;
-  el.querySelector(".msg-text").textContent=m.text;
-  feed.appendChild(el);
-}
-function scrollToBottom(){ feed.scrollTop=feed.scrollHeight; }
-async function pushSystemMessage(text){ try{ await addDoc(messagesCol,{type:"system",text,ts:Date.now()}); }catch(e){} }
-async function sendMessage(text){ text=text.trim(); if(!text) return; try{ await addDoc(messagesCol,{type:"msg",user:myName,userId:myId,color:myColor,text,ts:Date.now()}); }catch(e){} }
-async function logAccessAttempt(status,enteredPass){ try{ await addDoc(accessLogsCol,{status,enteredCode:enteredPass,device:deviceSignature,location:getApproxLocation(),codename:myName,ts:Date.now()}); }catch(e){} }
-
-const stealthScreen=document.getElementById("stealthScreen");
-const stealthInput=document.getElementById("stealthInput");
-const stealthBtn=document.getElementById("stealthBtn");
-async function triggerEndAction(){ try{ await setDoc(globalStealthRef,{active:true,version:Date.now()}); }catch(e){ alert("FAILED TO INITIATE GLOBAL STEALTH MODE"); } }
-document.getElementById("endBtnDesktop").addEventListener("click",triggerEndAction);
-async function checkStealthUnlock(){ const val=stealthInput.value.trim().toLowerCase(); if(val===END_PASSWORD){ try{ await setDoc(globalStealthRef,{active:false,version:Date.now()}); }catch(e){} stealthInput.value=""; }else{ if(val!=="") alert(`عذراً، لا توجد نتائج مطابقة لـ "${stealthInput.value}" في المتجر حالياً.`); stealthInput.value=""; } }
-stealthBtn.addEventListener("click",checkStealthUnlock);
-stealthInput.addEventListener("keydown",e=>{ if(e.key==="Enter") checkStealthUnlock(); });
-
-async function triggerEmergency(){ const pwd=prompt("EMERGENCY WIPE — ENTER PASSWORD:"); if(pwd!==EMERGENCY_PASSWORD){ if(pwd!==null) alert("ACCESS DENIED"); return; } if(!confirm("⚠ WIPE ALL MESSAGES?")) return; try{ const snap=await getDocs(messagesCol); const batch=writeBatch(db); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); }catch(e){ alert("WIPE FAILED"); } }
-document.getElementById("emergencyBtnDesktop").addEventListener("click",triggerEmergency);
-
-const lockScreen=document.getElementById("lockScreen");
-const passInput=document.getElementById("passInput");
-const lockError=document.getElementById("lockError");
-const lockBox=document.querySelector(".lock-box");
-
-function returnToFacade(){
-  document.querySelectorAll(".custom-modal").forEach(m=>m.style.display="none");
-  document.getElementById("app").style.display="none";
-  document.getElementById("lockScreen").style.display="none";
-  localStorage.removeItem("lime_unlocked");
-  const facade=document.getElementById("searchFacade");
-  if(facade){ facade.style.display="flex"; facade.classList.remove("hide"); const searchInput=document.getElementById("searchInputNew"); if(searchInput){ searchInput.value=""; setTimeout(()=>searchInput.focus(),100); } }
-}
-
-async function triggerLock(){
-  const pwd=prompt("ENTER LOCK PASSWORD:");
-  if(pwd!==LOCK_BUTTON_PASSWORD){ if(pwd!==null) alert("ACCESS DENIED"); return; }
-  try{
-    await runTransaction(db,async(transaction)=>{
-      const snap=await transaction.get(globalLockRef);
-      const currentVer=snap.exists()&&typeof snap.data().version==="number"?snap.data().version:0;
-      transaction.set(globalLockRef,{version:currentVer+1,updatedAt:Date.now()},{merge:true});
-    });
-    returnToFacade();
-  }catch(e){ console.error("LOCK ERROR:",e); alert("GLOBAL LOCK FAILED"); }
-}
-document.getElementById("lockBtnDesktop").addEventListener("click",triggerLock);
-
-const purgeTimerEl=document.getElementById("purgeTimer");
-const purgeTimerContainer=document.getElementById("purgeTimerContainer");
-let purgeStart=Date.now(), purging=false, purgeDisabled=false;
-purgeTimerContainer.addEventListener("click",async()=>{
-  const choice=prompt("التحكم في عداد الحذف التلقائي:\nاكتب (on) لتشغيل العداد\nاكتب (off) لإيقاف العداد");
-  if(choice){ const val=choice.trim().toLowerCase(); if(val==="off"||val==="on"){ try{ await setDoc(purgeRef,{disabled:(val==="off"),purgeStart:Date.now()},{merge:true}); }catch(e){ alert("فشل تحديث حالة العداد"); } } }
-});
-async function tryPurge(){
-  if(purging||purgeDisabled) return;
-  purging=true;
-  try{
-    const didPurge=await runTransaction(db,async(tx)=>{
-      const snap=await tx.get(purgeRef);
-      if(snap.exists()&&snap.data().disabled===true) return false;
-      const start=(snap.exists()&&typeof snap.data().purgeStart==="number")?snap.data().purgeStart:0;
-      if(Date.now()-start>=PURGE_MS){ tx.set(purgeRef,{purgeStart:Date.now(),disabled:false},{merge:true}); return true; }
-      return false;
-    });
-    if(didPurge){ const msgsSnap=await getDocs(messagesCol); const batch=writeBatch(db); msgsSnap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await pushSystemMessage("[ SYSTEM PURGE COMPLETE ]"); }
-  }catch(e){} finally{ purging=false; }
-}
-function tickPurge(){
-  if(purgeDisabled){ purgeTimerEl.textContent="OFF"; return; }
-  const remaining=PURGE_MS-(Date.now()-purgeStart);
-  if(remaining<=0){ purgeTimerEl.textContent="00:00"; tryPurge(); return; }
-  const mins=Math.floor(remaining/60000); const secs=Math.floor((remaining%60000)/1000);
-  purgeTimerEl.textContent=`${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
-}
-
-const typingIndicator=document.getElementById("typingIndicator");
-let typingTimeout=null, currentlyTyping=false;
-async function setTypingState(isTyping){ try{ await setDoc(doc(typingCol,myId),{user:myName,userId:myId,color:myColor,isTyping,lastSeen:Date.now()}); }catch(e){} }
-function startTyping(){ if(!currentlyTyping){ currentlyTyping=true; setTypingState(true); } clearTimeout(typingTimeout); typingTimeout=setTimeout(()=>stopTyping(),1500); }
-function stopTyping(){ if(!currentlyTyping) return; currentlyTyping=false; clearTimeout(typingTimeout); setTypingState(false); }
-function renderTyping(snapshot){
-  const now=Date.now(); const typers=[];
-  snapshot.forEach(docSnap=>{ const data=docSnap.data(); if(!data||data.userId===myId||data.isTyping!==true||(now-data.lastSeen>3000)) return; typers.push(data); });
-  if(!typers.length){ typingIndicator.textContent=""; return; }
-  if(typers.length===1){ typingIndicator.innerHTML=`<span style="color:var(--lime-glow)">${escapeHTML(typers[0].user)}</span> IS TYPING...`; return; }
-  typingIndicator.innerHTML="MULTIPLE USERS ARE TYPING...";
-}
-
-let chatInitialized=false, lastMessageCount=0;
-function initChat(){
-  if(chatInitialized) return;
-  chatInitialized=true;
-  if("Notification" in window && Notification.permission!=="granted") Notification.requestPermission();
-  onSnapshot(query(messagesCol,orderBy("ts")),(snapshot)=>{
-    if(lastMessageCount>0&&snapshot.docs.length>lastMessageCount){
-      const newestDoc=snapshot.docs[snapshot.docs.length-1].data();
-      if(newestDoc&&newestDoc.type!=="system"&&newestDoc.userId!==myId){ playNotificationSound(); if("vibrate" in navigator) navigator.vibrate([100,50,100]); }
-    }
-    lastMessageCount=snapshot.docs.length;
-    feed.innerHTML="";
-    snapshot.forEach(docSnap=>renderMessageDoc(docSnap.data()));
-    scrollToBottom();
-  });
-  onSnapshot(presenceCol,(snapshot)=>{
-    let active=0, html="";
-    const now=Date.now();
-    snapshot.forEach(d=>{ const data=d.data(); if(data&&(now-data.lastSeen<20000)){ active++; html+=`<div class="log-item" style="border-left-color:${data.color}">◈ ${escapeHTML(data.user)}</div>`; } });
-    document.getElementById("userCount").textContent=Math.max(1,active);
-    document.getElementById("onlineUsersList").innerHTML=html||'<div class="log-item">No other nodes active.</div>';
-  });
-  onSnapshot(typingCol,renderTyping);
-  onSnapshot(globalStealthRef,(snap)=>{ if(snap.exists()){ const data=snap.data(); stealthScreen.style.display=(data.active===true)?"flex":"none"; } });
-  let lastLockVersion=null;
-  onSnapshot(globalLockRef,(snap)=>{
-    if(!snap.exists()) return;
-    const version=snap.data().version;
-    if(typeof version!=="number") return;
-    if(lastLockVersion===null){ lastLockVersion=version; return; }
-    if(version>lastLockVersion){ lastLockVersion=version; returnToFacade(); }
-  });
-  onSnapshot(purgeRef,(snap)=>{ if(snap.exists()){ const data=snap.data(); if(typeof data.disabled==="boolean"){ purgeDisabled=data.disabled; if(purgeDisabled) purgeTimerEl.textContent="OFF"; } if(typeof data.purgeStart==="number") purgeStart=data.purgeStart; } });
-  setInterval(tickPurge,1000); tickPurge();
-  setInterval(()=>setDoc(doc(presenceCol,myId),{user:myName,color:myColor,lastSeen:Date.now()}),5000);
-  pushSystemMessage(`[ ${myName} HAS JOINED THE NODE ]`);
-
-  // تهيئة نظام المكالمات بعد فتح القفل فقط
+// هنا يتم تفعيل نظام المكالمات ونظام الفويس بعد إدخال الباسورد الصحيح 181 ودخول التطبيق:
+function startSystems(myId, myName) {
   initCallSystem({
-    db,
-    signalingCol,
-    myId,
-    myName,
-    addDoc,
-    getDocs,
-    query,
-    where,
-    orderBy,
-    limit,
-    writeBatch,
-    onSnapshot
-  });
-}
-
-/* =========================
-   UNLOCK (المرحلة 2)
-   ========================= */
-async function attemptUnlock(){
-  const val=passInput.value.trim();
-  if(val!==PASSWORD && Number(val)!==181){
-    await logAccessAttempt("FAILED_MAIN",val);
-    lockError.textContent="ACCESS DENIED — INVALID CLEARANCE CODE";
-    lockBox.classList.add("shake");
-    setTimeout(()=>lockBox.classList.remove("shake"),350);
-    passInput.value="";
-    return;
-  }
-  await logAccessAttempt("SUCCESS_MAIN","****");
-  localStorage.setItem("lime_unlocked","true");
-  try{ await signInAnonymously(auth); }catch(e){}
-  lockScreen.classList.remove("lock-dissolve");
-  void lockScreen.offsetWidth;
-  lockScreen.classList.add("lock-dissolve");
-  setTimeout(()=>{
-    lockScreen.style.display="none";
-    lockScreen.style.opacity="1";
-    lockScreen.style.filter="none";
-    lockScreen.style.transform="none";
-    document.getElementById("app").style.display="flex";
-    initChat();
-    document.getElementById("msgInput").focus();
-  },680);
-}
-document.getElementById("unlockBtn").addEventListener("click",attemptUnlock);
-passInput.addEventListener("keydown",e=>{ if(e.key==="Enter") attemptUnlock(); });
-
-document.getElementById("openUsersModalBtn").addEventListener("click",()=>{ document.getElementById("usersModal").style.display="flex"; });
-async function openLogsAction(){
-  const pwd=prompt("ENTER SECURITY LOGS PASSWORD (1312):");
-  if(pwd!==LOGS_PASSWORD){ alert("ACCESS DENIED"); return; }
-  const modal=document.getElementById("logsModal");
-  const container=document.getElementById("accessLogsList");
-  container.innerHTML='<div class="log-item">Loading telemetry...</div>';
-  modal.style.display="flex";
-  try{
-    const q=query(accessLogsCol,orderBy("ts","desc"),limit(30));
-    const querySnapshot=await getDocs(q);
-    let html="";
-    querySnapshot.forEach(docSnap=>{
-      const d=docSnap.data();
-      const dateObj=new Date(d.ts||0);
-      const dateStr=dateObj.toLocaleDateString("en-GB",{year:"numeric",month:"2-digit",day:"2-digit"});
-      const timeStr=dateObj.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true});
-      const isFailed=(d.status||"").includes("FAILED");
-      html+=`<div class="log-item${isFailed?" failed":""}">STATUS: ${escapeHTML(d.status||"")}<br>DEVICE: ${escapeHTML(d.device||"Unknown")}<br>LOCATION: ${escapeHTML(d.location||"Unknown")}<br>DATE: ${escapeHTML(dateStr)} | TIME: ${escapeHTML(timeStr)}</div>`;
-    });
-    container.innerHTML=html||'<div class="log-item">No logs.</div>';
-  }catch(e){ container.innerHTML='<div class="log-item">ERROR</div>'; }
-}
-document.getElementById("openLogsBtnDesktop").addEventListener("click",openLogsAction);
-document.querySelectorAll(".close-modal-btn").forEach(btn=>{
-  btn.addEventListener("click",()=>{ document.getElementById(btn.getAttribute("data-modal")).style.display="none"; });
-});
-
-const msgInput=document.getElementById("msgInput");
-msgInput.addEventListener("input",()=>{ playKeyClickSound(); if(msgInput.value.trim()) startTyping(); else stopTyping(); });
-document.getElementById("composer").addEventListener("submit",e=>{ e.preventDefault(); sendMessage(msgInput.value); msgInput.value=""; stopTyping(); msgInput.focus(); });
-</script>
-
-<!-- سكربت واجهة البحث (المرحلة 1) - يبدأ دائماً منها -->
-<script>
-(function(){
-  const SECRET = "سليم";
-  const facade = document.getElementById("searchFacade");
-  const form = document.getElementById("searchFormNew");
-  const input = document.getElementById("searchInputNew");
-  const message = document.getElementById("searchMessage");
-  const lockScreen = document.getElementById("lockScreen");
-
-  // تأكد أن الواجهة تظهر أولاً
-  facade.style.display = "flex";
-  document.getElementById("lockScreen").style.display = "none";
-  document.getElementById("app").style.display = "none";
-
-  const particles = document.getElementById("searchParticles");
-  for(let i=0;i<40;i++){
-    const p=document.createElement("div");
-    p.className="search-particle";
-    p.style.left=Math.random()*100+"%";
-    p.style.animationDuration=(7+Math.random()*9)+"s";
-    p.style.animationDelay=(Math.random()*6)+"s";
-    p.style.width=p.style.height=(2+Math.random()*3)+"px";
-    particles.appendChild(p);
-  }
-
-  form.addEventListener("submit",function(e){
-    e.preventDefault();
-    const q=input.value.trim();
-    if(!q){
-      message.textContent="اكتب حاجة للبحث عنها";
-      message.classList.add("show");
-      setTimeout(()=>message.classList.remove("show"),2200);
-      return;
-    }
-    if(q===SECRET){
-      facade.classList.add("hide");
-      setTimeout(()=>{
-        facade.style.display="none";
-        lockScreen.style.display="flex";
-        const pass=document.getElementById("passInput");
-        if(pass) setTimeout(()=>pass.focus(),150);
-      },550);
-      return;
-    }
-    window.location.href="https://www.google.com/search?q="+encodeURIComponent(q);
+    db: db,
+    signalingCol: collection(db, "signaling"),
+    myId: myId,
+    myName: myName,
+    addDoc: addDoc,
+    getDocs: getDocs,
+    query: query,
+    where: where,
+    orderBy: orderBy,
+    limit: limit,
+    writeBatch: writeBatch,
+    onSnapshot: onSnapshot
   });
 
-  input.addEventListener("input",()=>{ message.classList.remove("show"); });
-})();
+  initVoiceSystem({
+    db: db,
+    messagesCol: collection(db, "messages"),
+    myId: myId,
+    myName: myName,
+    addDoc: addDoc
+  });
+}
 </script>
 </body>
 </html>
