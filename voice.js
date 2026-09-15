@@ -1,4 +1,5 @@
-// voice.js - Professional Hold-to-Record Voice Notes System (Full Updated)
+// voice.js - Professional Hold-to-Record Voice Notes System
+// يطلب صلاحية المايك فور التشغيل
 
 export function initVoiceSystem({
   db,
@@ -19,6 +20,7 @@ export function initVoiceSystem({
   let isRecording = false;
   let audioBlob = null;
   let currentStream = null;
+  let micPermissionGranted = false;
 
   // ===== Popup تأكيد الإرسال / الحذف =====
   const actionPopup = document.createElement("div");
@@ -63,12 +65,43 @@ export function initVoiceSystem({
 
   document.body.appendChild(actionPopup);
 
+  // =====================================================
+  // طلب صلاحية المايك فور تشغيل النظام
+  // =====================================================
+  async function requestMicPermission() {
+    try {
+      console.log("[Voice] Requesting microphone permission...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // نوقف الـ stream فوراً بعد ما ناخد الصلاحية
+      stream.getTracks().forEach(track => track.stop());
+
+      micPermissionGranted = true;
+      console.log("[Voice] Microphone permission granted");
+      return true;
+    } catch (err) {
+      console.error("[Voice] Microphone permission denied:", err);
+      micPermissionGranted = false;
+      alert("يجب السماح بالوصول إلى الميكروفون لاستخدام الرسائل الصوتية.");
+      return false;
+    }
+  }
+
+  // نطلب الصلاحية فور استدعاء الدالة
+  requestMicPermission();
+
   // ===== بدء التسجيل =====
   async function startRecording(e) {
     e.preventDefault();
     e.stopPropagation();
 
     if (isRecording) return;
+
+    // لو الصلاحية لسه مش متاخدة، نحاول تاني
+    if (!micPermissionGranted) {
+      const granted = await requestMicPermission();
+      if (!granted) return;
+    }
 
     // إخفاء أي نافذة تأكيد قديمة
     actionPopup.style.display = "none";
@@ -112,7 +145,7 @@ export function initVoiceSystem({
         actionPopup.style.display = "flex";
       };
 
-      mediaRecorder.start(100); // جمع البيانات كل 100ms
+      mediaRecorder.start(100);
       isRecording = true;
       micButton.classList.add("recording-active");
 
@@ -145,7 +178,7 @@ export function initVoiceSystem({
   // Desktop
   micButton.addEventListener("mousedown", startRecording);
   micButton.addEventListener("mouseup", stopRecording);
-  micButton.addEventListener("mouseleave", stopRecording); // لو سحب الماوس برا الزر
+  micButton.addEventListener("mouseleave", stopRecording);
 
   // Mobile
   micButton.addEventListener("touchstart", startRecording, { passive: false });
@@ -165,7 +198,7 @@ export function initVoiceSystem({
       reader.onloadend = async () => {
         const base64Audio = reader.result;
 
-        // حماية من الملفات الكبيرة جداً (Firestore limit ~1MB)
+        // حماية من الملفات الكبيرة
         if (base64Audio.length > 900000) {
           alert("التسجيل طويل جداً. حاول تسجيل أقصر.");
           audioBlob = null;
@@ -177,7 +210,7 @@ export function initVoiceSystem({
           audioData: base64Audio,
           from: myId,
           fromName: myName,
-          userId: myId,        // للتوافق مع نظام الرسائل العادي
+          userId: myId,
           user: myName,
           color: "#39FF14",
           ts: Date.now()
