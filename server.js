@@ -1,8 +1,10 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const crypto = require('crypto');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const { PassThrough } = require('stream');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,49 +15,48 @@ const PORT = process.env.PORT || 3000;
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ============================================================
-//  Body parser (للتسجيلات الكبيرة)
+//  Body parser
 // ============================================================
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ============================================================
-//  Headers — إزالة أي قيود تمنع blob: أو Firebase
+//  Headers
 // ============================================================
 app.use((req, res, next) => {
   res.removeHeader('Cross-Origin-Embedder-Policy');
   res.removeHeader('Cross-Origin-Opener-Policy');
   res.removeHeader('Cross-Origin-Resource-Policy');
-  // ملاحظة: مفيش CSP هنا عشان ما نكسرش شاشة الباسورد
   next();
 });
 
 // ============================================================
 //  API: تحويل الصوت إلى MP3
-//  ✅ يدعم data URLs مع ;codecs=... (زي audio/webm;codecs=opus)
+//  ✅ الإصلاح: نستخدم ملفات مؤقتة بدل streams
+//     عشان ffmpeg يقدر يعمل seek ويحسب المدة الصح
 // ============================================================
 app.post('/api/convert-audio', async (req, res) => {
+  let inputPath = null;
+  let outputPath = null;
+
   try {
     const { audioDataUrl } = req.body;
     if (!audioDataUrl || typeof audioDataUrl !== 'string' || !audioDataUrl.startsWith('data:')) {
       return res.status(400).json({ error: 'Invalid audio data' });
     }
 
-    // ✅ الطريقة الصحيحة: افصل عند أول فاصلة
-    // مثال: "data:audio/webm;codecs=opus;base64,GkXfo..."
-    //           ↑ header                    ↑ comma    ↑ payload
+    // افصل الـ data URL
     const commaIdx = audioDataUrl.indexOf(',');
     if (commaIdx === -1) {
       return res.status(400).json({ error: 'No comma in data URL' });
     }
 
-    const header = audioDataUrl.slice(0, commaIdx);      // data:audio/webm;codecs=opus;base64
-    const base64Data = audioDataUrl.slice(commaIdx + 1); // GkXfo...
+    const header = audioDataUrl.slice(0, commaIdx);
+    const base64Data = audioDataUrl.slice(commaIdx + 1);
 
-    // استخرج الـ mime (أول حاجة بعد data: وقبل أي ;)
     const mimeMatch = header.match(/^data:([^;]+)/i);
     const inputMime = mimeMatch ? mimeMatch[1].toLowerCase() : 'audio/webm';
 
-    // فك الـ base64
     let inputBuffer;
     try {
       inputBuffer = Buffer.from(base64Data, 'base64');
@@ -67,67 +68,81 @@ app.post('/api/convert-audio', async (req, res) => {
       return res.status(400).json({ error: 'Empty audio data' });
     }
 
-    // حدد inputFormat من الـ mime
-    let inputFormat = 'webm';
-    if (inputMime.includes('mp4')) inputFormat = 'mp4';
-    else if (inputMime.includes('ogg')) inputFormat = 'ogg';
-    else if (inputMime.includes('webm')) inputFormat = 'webm';
-    else if (inputMime.includes('mpeg') || inputMime.includes('mp3')) inputFormat = 'mp3';
-    else if (inputMime.includes('wav')) inputFormat = 'wav';
-    else if (inputMime.includes('aac')) inputFormat = 'aac';
-    else if (inputMime.includes('m4a')) inputFormat = 'm4a';
+    // حدد الامتداد
+    let inputExt = 'webm';
+    if (inputMime.includes('mp4') || inputMime.includes('m4a')) inputExt = 'mp4';
+    else if (inputMime.includes('ogg')) inputExt = 'ogg';
+    else if (inputMime.includes('webm')) inputExt = 'webm';
+    else if (inputMime.includes('mpeg') || inputMime.includes('mp3')) inputExt = 'mp3';
+    else if (inputMime.includes('wav')) inputExt = 'wav';
+    else if (inputMime.includes('aac')) inputExt = 'aac';
 
-    console.log(`[convert] mime=${inputMime} format=${inputFormat} size=${inputBuffer.length} bytes`);
+    // ✅ اكتب على ملف مؤقت — الحل الجذري
+    const id = crypto.randomBytes(8).toString('hex');
+    inputPath = path.join(os.tmpdir(), `voice-in-${id}.${inputExt}`);
+    outputPath = path.join(os.tmpdir(), `voice-out-${id}.mp3`);
 
-    // حوّل الـ buffer لـ stream
-    const inputStream = new PassThrough();
-    inputStream.end(inputBuffer);
+    fs.writeFileSync(inputPath, inputBuffer);
+    console.log(`[convert] mime=${inputMime} ext=${inputExt} size=${inputBuffer.length} bytes`);
 
-    const outputStream = new PassThrough();
-    const chunks = [];
-    outputStream.on('data', (chunk) => chunks.push(chunk));
-
-    // شغّل ffmpeg
+    // ✅ شغّل ffmpeg على الملفات (يدعم seek → مدة صح)
     await new Promise((resolve, reject) => {
-      ffmpeg(inputStream)
-        .inputFormat(inputFormat)
+      ffmpeg(inputPath)
         .audioCodec('libmp3lame')
         .audioBitrate(128)
-        .audioChannels(1)         // mono — أقل حجماً وأوسع توافقاً
-        .audioFrequency(44100)    // sample rate قياسي
+        .audioChannels(1)
+        .audioFrequency(44100)
         .format('mp3')
-        .on('start', (cmd) => {
-          console.log('[convert] ffmpeg started');
-        })
+        // ✅ مهم جداً: خلي ffmpeg يكتب header الـ Xing/LAME
+        .outputOptions([
+          '-write_xing', '1',
+          '-id3v2_version', '3',
+          '-write_id3v1', '1'
+        ])
+        .on('start', (cmd) => console.log('[convert] ffmpeg started'))
         .on('error', (err) => {
           console.error('[convert] ffmpeg error:', err.message);
           reject(err);
         })
         .on('end', () => {
-          console.log('[convert] ffmpeg done. chunks:', chunks.length);
+          console.log('[convert] ffmpeg done');
           resolve();
         })
-        .pipe(outputStream, { end: true });
+        .save(outputPath);
     });
 
-    const mp3Buffer = Buffer.concat(chunks);
-    if (!mp3Buffer || mp3Buffer.length === 0) {
-      return res.status(500).json({ error: 'Conversion produced empty output' });
+    if (!fs.existsSync(outputPath)) {
+      return res.status(500).json({ error: 'Output file missing' });
     }
 
-    console.log(`[convert] output size: ${mp3Buffer.length} bytes`);
+    const mp3Buffer = fs.readFileSync(outputPath);
+    if (!mp3Buffer || mp3Buffer.length === 0) {
+      return res.status(500).json({ error: 'Empty MP3 output' });
+    }
+
+    console.log(`[convert] ✅ Output size: ${mp3Buffer.length} bytes`);
 
     const mp3DataUrl = `data:audio/mpeg;base64,${mp3Buffer.toString('base64')}`;
-
     res.json({ audioDataUrl: mp3DataUrl, mimeType: 'audio/mpeg' });
+
   } catch (error) {
     console.error('Conversion error:', error);
-    res.status(500).json({ error: 'Conversion failed', details: String(error) });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Conversion failed', details: String(error) });
+    }
+  } finally {
+    // نظّف الملفات المؤقتة
+    if (inputPath) {
+      try { fs.unlinkSync(inputPath); } catch (_) {}
+    }
+    if (outputPath) {
+      try { fs.unlinkSync(outputPath); } catch (_) {}
+    }
   }
 });
 
 // ============================================================
-//  Static files — index.html, voice.js, call.js, ...
+//  Static files
 // ============================================================
 app.use(express.static(__dirname, {
   setHeaders: (res, filePath) => {
@@ -141,11 +156,9 @@ app.use(express.static(__dirname, {
 }));
 
 // ============================================================
-//  Fallback: أي route غير معروف → index.html
-//  (بس 404 للملفات اللي ليها امتداد ومش موجودة)
+//  Fallback
 // ============================================================
 app.get('*', (req, res) => {
-  // لو الطلب لملف (فيه امتداد) → 404
   if (/\.\w+$/.test(req.path)) {
     return res.status(404).send('Not found');
   }
@@ -153,10 +166,9 @@ app.get('*', (req, res) => {
 });
 
 // ============================================================
-//  Start server
+//  Start
 // ============================================================
 app.listen(PORT, () => {
   console.log(`✅ Lime Devil server running on port ${PORT}`);
   console.log(`✅ ffmpeg path: ${ffmpegPath}`);
-  console.log(`✅ Ready to convert audio to MP3`);
 });
