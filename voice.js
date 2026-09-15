@@ -1,12 +1,15 @@
 // voice.js
 // Final bulletproof voice recorder & player.
-// Auto-replaces native <audio controls> with custom player:
-//  - MutationObserver (real-time)
-//  - Interval fallback every 400ms (safety net)
-//  - Detects src from attribute, property, <source> child, or currentSrc
+// Bootstrap installs hooks at MODULE LOAD TIME (not inside initVoiceSystem).
+// Uses 5 parallel strategies to catch ANY native <audio> element:
+//   1. Hook document.createElement
+//   2. Hook window.Audio constructor (Proxy)
+//   3. Hook Node.prototype.appendChild
+//   4. MutationObserver
+//   5. Interval scanner every 300ms
 
 // ============================================================
-//  GLOBAL REGISTRY: data URL → durationMs
+//  REGISTRY
 // ============================================================
 const voiceDurationRegistry = new Map();
 
@@ -16,13 +19,26 @@ export function registerVoiceDuration(src, durationMs) {
 }
 
 // ============================================================
-//  HELPERS
+//  UTILITIES
 // ============================================================
 function formatTime(sec) {
   if (!isFinite(sec) || sec < 0) sec = 0;
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function getAudioSrc(audioEl) {
+  let src = audioEl.getAttribute("src");
+  if (src) return src;
+  if (audioEl.src) return audioEl.src;
+  const sourceEl = audioEl.querySelector && audioEl.querySelector("source");
+  if (sourceEl) {
+    src = sourceEl.getAttribute("src") || sourceEl.src;
+    if (src) return src;
+  }
+  if (audioEl.currentSrc) return audioEl.currentSrc;
+  return null;
 }
 
 // ============================================================
@@ -138,131 +154,167 @@ function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
 }
 
 // ============================================================
-//  AUTO-REPLACE native <audio controls>
+//  REPLACER — one element
 // ============================================================
-function installAudioReplacer() {
-  if (typeof window === "undefined") return;
-  if (window.__voiceAudioReplacerInstalled) {
-    console.log("[VOICE] Replacer already installed.");
+function tryReplaceAudio(audioEl) {
+  if (!audioEl || audioEl.tagName !== "AUDIO") return;
+  if (audioEl.dataset && audioEl.dataset.voiceNativeHandled === "1") return;
+  if (audioEl.closest && audioEl.closest(".voice-preview-popup")) return;
+  if (audioEl.closest && audioEl.closest("[data-voice-player='1']")) return;
+  if (!audioEl.parentNode) return; // not in DOM yet
+
+  const src = getAudioSrc(audioEl);
+  if (!src) return;
+
+  if (audioEl.dataset) audioEl.dataset.voiceNativeHandled = "1";
+  if (audioEl.dataset) audioEl.dataset.voiceNative = "1";
+
+  const durationMs = voiceDurationRegistry.get(src) || 0;
+  const player = createCustomAudioPlayer(src, durationMs);
+
+  try {
+    audioEl.replaceWith(player.element);
+    console.log(
+      "[VOICE] ✅ Replaced audio | durationMs =", durationMs,
+      "| src =", String(src).slice(0, 60)
+    );
+  } catch (e) {
+    console.warn("[VOICE] replace failed:", e);
+    try {
+      audioEl.parentNode.insertBefore(player.element, audioEl.nextSibling);
+    } catch (_) {}
+  }
+}
+
+function scanAndReplaceAll() {
+  try {
+    const list = document.querySelectorAll("audio");
+    for (let i = 0; i < list.length; i++) tryReplaceAudio(list[i]);
+  } catch (_) {}
+}
+
+// ============================================================
+//  BOOTSTRAP — runs at module load time
+// ============================================================
+(function installVoiceHooks() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (window.__voiceHooksInstalled) {
+    console.log("[VOICE] Hooks already installed.");
     return;
   }
-  window.__voiceAudioReplacerInstalled = true;
-  console.log("[VOICE] Installing audio replacer…");
+  window.__voiceHooksInstalled = true;
 
-  // CSS: يخفي أي <audio> أصلي تمّ عليه استبدال فاشل
-  const style = document.createElement("style");
-  style.textContent = `
-    audio[controls][data-voice-native="1"] { display: none !important; }
-  `;
-  document.head.appendChild(style);
+  console.log("[VOICE] 🚀 Installing voice hooks (module-level)…");
 
-  /**
-   * استخراج رابط الصوت من عنصر <audio> مهما كانت طريقة ضبطه.
-   */
-  function getAudioSrc(audioEl) {
-    // 1) src attribute مباشر
-    let src = audioEl.getAttribute("src");
-    if (src) return src;
+  // ---- CSS to hide any leftover native audio ----
+  const injectStyle = () => {
+    if (!document.head) return;
+    const style = document.createElement("style");
+    style.textContent = `audio[controls][data-voice-native="1"]{display:none!important}`;
+    document.head.appendChild(style);
+  };
+  if (document.head) injectStyle();
+  else document.addEventListener("DOMContentLoaded", injectStyle, { once: true });
 
-    // 2) src property (المتصفح يحوّله لـ absolute URL)
-    if (audioEl.src) return audioEl.src;
+  // ---- Hook 1: document.createElement ----
+  try {
+    const origCreate = document.createElement.bind(document);
+    document.createElement = function (tag, ...rest) {
+      const el = origCreate(tag, ...rest);
+      if (typeof tag === "string" && tag.toLowerCase() === "audio") {
+        scheduleCheck(el);
+      }
+      return el;
+    };
+    console.log("[VOICE] Hook 1 installed: document.createElement");
+  } catch (e) { console.warn("[VOICE] Hook 1 failed:", e); }
 
-    // 3) <source> أول ابن
-    const sourceEl = audioEl.querySelector("source");
-    if (sourceEl) {
-      src = sourceEl.getAttribute("src") || sourceEl.src;
-      if (src) return src;
-    }
+  // ---- Hook 2: window.Audio constructor (Proxy) ----
+  try {
+    const OriginalAudio = window.Audio;
+    window.Audio = new Proxy(OriginalAudio, {
+      construct(target, args) {
+        const el = Reflect.construct(target, args);
+        scheduleCheck(el);
+        return el;
+      }
+    });
+    console.log("[VOICE] Hook 2 installed: window.Audio");
+  } catch (e) { console.warn("[VOICE] Hook 2 failed:", e); }
 
-    // 4) currentSrc (بعد بدء التحميل)
-    if (audioEl.currentSrc) return audioEl.currentSrc;
+  // ---- Hook 3: Node.prototype.appendChild & insertBefore ----
+  try {
+    const origAppend = Node.prototype.appendChild;
+    const origInsert = Node.prototype.insertBefore;
+    Node.prototype.appendChild = function (node) {
+      const res = origAppend.call(this, node);
+      if (node && node.tagName === "AUDIO") scheduleCheck(node);
+      return res;
+    };
+    Node.prototype.insertBefore = function (node, ref) {
+      const res = origInsert.call(this, node, ref);
+      if (node && node.tagName === "AUDIO") scheduleCheck(node);
+      return res;
+    };
+    console.log("[VOICE] Hook 3 installed: appendChild/insertBefore");
+  } catch (e) { console.warn("[VOICE] Hook 3 failed:", e); }
 
-    return null;
+  // ---- Hook 4: MutationObserver ----
+  try {
+    const observer = new MutationObserver((muts) => {
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (n.nodeType !== 1) continue;
+          if (n.tagName === "AUDIO") tryReplaceAudio(n);
+          else if (n.querySelectorAll) n.querySelectorAll("audio").forEach(tryReplaceAudio);
+        }
+      }
+    });
+    const startObs = () => {
+      try {
+        observer.observe(document.body, { childList: true, subtree: true });
+        console.log("[VOICE] Hook 4 installed: MutationObserver");
+      } catch (e) { console.warn("[VOICE] observer failed:", e); }
+    };
+    if (document.body) startObs();
+    else document.addEventListener("DOMContentLoaded", startObs, { once: true });
+  } catch (e) { console.warn("[VOICE] Hook 4 failed:", e); }
+
+  // ---- Hook 5: Interval scanner ----
+  setInterval(scanAndReplaceAll, 300);
+  console.log("[VOICE] Hook 5 installed: interval scanner (300ms)");
+
+  // ---- Initial scan ----
+  const initialScan = () => {
+    scanAndReplaceAll();
+    console.log("[VOICE] Initial scan complete. Audio elements found:", document.querySelectorAll("audio").length);
+  };
+  if (document.body) initialScan();
+  else document.addEventListener("DOMContentLoaded", initialScan, { once: true });
+
+  // ---- scheduleCheck helper ----
+  function scheduleCheck(el) {
+    if (!el || el.tagName !== "AUDIO") return;
+    setTimeout(() => tryReplaceAudio(el), 0);
+    setTimeout(() => tryReplaceAudio(el), 150);
+    setTimeout(() => tryReplaceAudio(el), 600);
+    setTimeout(() => tryReplaceAudio(el), 1500);
   }
 
-  const replaceOne = (audioEl) => {
-    if (!audioEl || audioEl.tagName !== "AUDIO") return;
-    if (audioEl.dataset.voiceNativeHandled === "1") return;
-    if (!audioEl.controls) return;
-    if (audioEl.closest(".voice-preview-popup")) return;
-    if (audioEl.closest("[data-voice-player='1']")) return;
-
-    const src = getAudioSrc(audioEl);
-    if (!src) return;
-
-    // نعتبره رسالة صوتية لو:
-    // - data URL، أو
-    // - الرابط ينتهي بامتداد صوتي
-    const isVoice =
-      src.startsWith("data:audio") ||
-      /\.(webm|ogg|mp3|m4a|mp4|wav|aac)(\?|$)/i.test(src) ||
-      voiceDurationRegistry.has(src);
-
-    if (!isVoice) return;
-
-    audioEl.dataset.voiceNativeHandled = "1";
-    audioEl.dataset.voiceNative = "1";
-
-    const durationMs = voiceDurationRegistry.get(src) || 0;
-    const player = createCustomAudioPlayer(src, durationMs);
-
-    try {
-      audioEl.replaceWith(player.element);
-    } catch (_) {
-      try {
-        audioEl.parentNode?.insertBefore(player.element, audioEl.nextSibling);
-      } catch (_) {}
-    }
-
-    console.log(
-      "[VOICE] Native audio replaced. durationMs =", durationMs,
-      "| src =", src.slice(0, 60)
-    );
+  // ---- Expose debug helpers ----
+  window.__voiceDebug = {
+    scan: scanAndReplaceAll,
+    list: () => Array.from(document.querySelectorAll("audio")),
+    registry: voiceDurationRegistry,
+    version: "final-v5"
   };
-
-  const scanAll = () => {
-    try {
-      document.querySelectorAll("audio").forEach(replaceOne);
-    } catch (_) {}
-  };
-
-  // MutationObserver: يلتقط أي عنصر جديد يُضاف للـ DOM
-  const observer = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      for (const node of m.addedNodes) {
-        if (node.nodeType !== 1) continue;
-        if (node.tagName === "AUDIO") replaceOne(node);
-        else if (node.querySelectorAll) node.querySelectorAll("audio").forEach(replaceOne);
-      }
-    }
-  });
-
-  const start = () => {
-    try {
-      observer.observe(document.body, { childList: true, subtree: true });
-    } catch (e) {
-      console.warn("[VOICE] MutationObserver failed:", e);
-    }
-
-    // فحص أولي
-    scanAll();
-
-    // فحص دوري كل 400ms كشبكة أمان
-    if (!window.__voiceScanInterval) {
-      window.__voiceScanInterval = setInterval(scanAll, 400);
-    }
-  };
-
-  if (document.body) start();
-  else document.addEventListener("DOMContentLoaded", start, { once: true });
-}
+})();
 
 // ============================================================
 //  MAIN: initVoiceSystem
 // ============================================================
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
-  // ✅ ثبّت المستبدل أول حاجة — قبل أي حاجة تانية
-  installAudioReplacer();
+  console.log("[VOICE] initVoiceSystem called");
 
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
@@ -420,7 +472,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       try {
         const dataUrl = await blobToDataURL(audioBlob);
 
-        // ✅ سجّل المدة في الـ registry عشان الـ observer يستخدمها
         registerVoiceDuration(dataUrl, durationMs || 0);
 
         await addDoc(messagesCol, {
@@ -434,6 +485,12 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
           user: myName,
           ts: Date.now()
         });
+
+        // بعد الإرسال، افحص الـ DOM فوراً
+        setTimeout(scanAndReplaceAll, 100);
+        setTimeout(scanAndReplaceAll, 500);
+        setTimeout(scanAndReplaceAll, 1500);
+
         try { player.audio.pause(); } catch (_) {}
         popup.remove();
         revokePreviewUrl();
