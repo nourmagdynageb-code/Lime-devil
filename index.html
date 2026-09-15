@@ -511,9 +511,17 @@ function renderMessageDoc(m) {
     `;
 
     const audio = el.querySelector("audio");
-    if (audio) {
-      audio.src = m.audioData || "";
-      if (m.audioType) audio.setAttribute("type", m.audioType);
+    if (audio && m.audioData) {
+      const audioType = m.audioType || "audio/webm";
+      const storedAudio = String(m.audioData);
+
+      // New records store a complete Data URL.
+      // Old records may contain only the Base64 payload.
+      audio.src = storedAudio.startsWith("data:")
+        ? storedAudio
+        : `data:${audioType};base64,${storedAudio}`;
+
+      audio.setAttribute("type", audioType);
       audio.load();
     }
 
