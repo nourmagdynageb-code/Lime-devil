@@ -1,8 +1,203 @@
 // voice.js
 // Final bulletproof voice recorder & player.
-// Custom audio player that doesn't rely on browser metadata (fixes 0:00 forever).
+// Auto-replaces native <audio controls> with a custom player (MutationObserver).
 
+// ============================================================
+//  GLOBAL REGISTRY: data URL → durationMs
+// ============================================================
+const voiceDurationRegistry = new Map();
+
+export function registerVoiceDuration(src, durationMs) {
+  if (!src || !durationMs) return;
+  voiceDurationRegistry.set(src, durationMs);
+}
+
+// ============================================================
+//  CUSTOM AUDIO PLAYER (module-level, shared everywhere)
+// ============================================================
+function formatTime(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
+  const wrap = document.createElement("div");
+  wrap.className = "custom-audio-player";
+  wrap.setAttribute("data-voice-player", "1");
+  wrap.style.cssText = `
+    display: flex; align-items: center; gap: 10px;
+    background: #0a0d0a; border: 1px solid #1c8a0c;
+    border-radius: 22px; padding: 6px 12px;
+    width: 100%; max-width: 340px;
+    font: 12px monospace; color: ${accent};
+    box-sizing: border-box;
+  `;
+
+  const playBtn = document.createElement("button");
+  playBtn.type = "button";
+  playBtn.textContent = "▶";
+  playBtn.setAttribute("aria-label", "play");
+  playBtn.style.cssText = `
+    background: transparent; border: none; color: ${accent};
+    font-size: 18px; cursor: pointer; padding: 0;
+    width: 32px; height: 32px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  `;
+
+  const progressWrap = document.createElement("div");
+  progressWrap.style.cssText = `
+    flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px;
+    cursor: pointer; position: relative; overflow: hidden;
+    min-width: 60px;
+  `;
+
+  const progressBar = document.createElement("div");
+  progressBar.style.cssText = `
+    height: 100%; background: ${accent}; border-radius: 3px;
+    width: 0%; transition: width 0.08s linear;
+  `;
+  progressWrap.appendChild(progressBar);
+
+  const timeLabel = document.createElement("span");
+  timeLabel.style.cssText = `
+    font: 11px monospace; color: ${accent}; min-width: 66px;
+    text-align: right; flex-shrink: 0; opacity: .85;
+  `;
+
+  const audio = new Audio();
+  audio.src = src;
+  audio.preload = "metadata";
+
+  let totalDuration = (durationMs && durationMs > 0) ? durationMs / 1000 : 0;
+
+  function updateLabel() {
+    timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(totalDuration)}`;
+  }
+
+  audio.addEventListener("loadedmetadata", () => {
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      totalDuration = audio.duration;
+    } else if (totalDuration === 0) {
+      const onDur = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          totalDuration = audio.duration;
+          audio.removeEventListener("durationchange", onDur);
+          try { audio.currentTime = 0; } catch (_) {}
+          updateLabel();
+        }
+      };
+      audio.addEventListener("durationchange", onDur);
+      try { audio.currentTime = 1e101; } catch (_) {}
+    }
+    updateLabel();
+  });
+
+  audio.addEventListener("timeupdate", () => {
+    if (totalDuration > 0) {
+      progressBar.style.width =
+        Math.min(100, (audio.currentTime / totalDuration) * 100) + "%";
+    }
+    updateLabel();
+  });
+
+  audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
+  audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
+  audio.addEventListener("ended", () => {
+    playBtn.textContent = "▶";
+    progressBar.style.width = "0%";
+    try { audio.currentTime = 0; } catch (_) {}
+    updateLabel();
+  });
+
+  playBtn.addEventListener("click", () => {
+    if (audio.paused) audio.play().catch(err => console.warn("[VOICE] play failed:", err));
+    else audio.pause();
+  });
+
+  progressWrap.addEventListener("click", (e) => {
+    if (!totalDuration || totalDuration <= 0) return;
+    const rect = progressWrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    try { audio.currentTime = ratio * totalDuration; } catch (_) {}
+  });
+
+  updateLabel();
+  wrap.append(playBtn, progressWrap, timeLabel);
+  return { element: wrap, audio };
+}
+
+// ============================================================
+//  AUTO-REPLACE native <audio controls> in the DOM
+// ============================================================
+function installAudioReplacer() {
+  if (typeof window === "undefined") return;
+  if (window.__voiceAudioReplacerInstalled) return;
+  window.__voiceAudioReplacerInstalled = true;
+
+  // CSS لإخفاء المشغلات الأصلية فوراً لمنع الوميض
+  const style = document.createElement("style");
+  style.textContent = `
+    audio[controls][data-voice-native="1"] { display: none !important; }
+  `;
+  document.head.appendChild(style);
+
+  const replaceOne = (audioEl) => {
+    if (!audioEl || audioEl.tagName !== "AUDIO") return;
+    if (audioEl.dataset.voiceNativeHandled === "1") return;
+    if (!audioEl.controls) return;
+    if (audioEl.closest(".voice-preview-popup")) return;
+    if (audioEl.closest("[data-voice-player='1']")) return;
+
+    const src = audioEl.getAttribute("src") || audioEl.src || audioEl.currentSrc;
+    if (!src || !src.startsWith("data:audio")) return;
+
+    audioEl.dataset.voiceNativeHandled = "1";
+    audioEl.dataset.voiceNative = "1";
+
+    const durationMs = voiceDurationRegistry.get(src) || 0;
+    const player = createCustomAudioPlayer(src, durationMs);
+
+    try {
+      audioEl.replaceWith(player.element);
+    } catch (_) {
+      // fallback: append after and hide
+      audioEl.parentNode?.insertBefore(player.element, audioEl.nextSibling);
+    }
+    console.log("[VOICE] Native audio replaced. durationMs =", durationMs);
+  };
+
+  const scan = (root) => {
+    if (!root) return;
+    if (root.nodeType !== 1) return;
+    if (root.tagName === "AUDIO") replaceOne(root);
+    else if (root.querySelectorAll) root.querySelectorAll("audio").forEach(replaceOne);
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) scan(node);
+    }
+  });
+
+  const start = () => {
+    observer.observe(document.body, { childList: true, subtree: true });
+    document.querySelectorAll("audio").forEach(replaceOne);
+  };
+
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start, { once: true });
+}
+
+// ============================================================
+//  MAIN: initVoiceSystem
+// ============================================================
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
+  // ✅ نثبّت المستبدل أول حاجة
+  installAudioReplacer();
+
   const micBtn = document.getElementById("voiceMicBtn");
   if (!micBtn) {
     console.error("[VOICE] #voiceMicBtn not found.");
@@ -29,130 +224,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const MIN_RECORDING_MS = 1200;
   const STOP_WATCHDOG_MS = 4000;
 
-  // ============================================================
-  //  CUSTOM AUDIO PLAYER (no native controls, no metadata needed)
-  // ============================================================
-  function formatTime(sec) {
-    if (!isFinite(sec) || sec < 0) sec = 0;
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
-
-  function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
-    const wrap = document.createElement("div");
-    wrap.className = "custom-audio-player";
-    wrap.style.cssText = `
-      display: flex; align-items: center; gap: 10px;
-      background: #0a0d0a; border: 1px solid #1c8a0c;
-      border-radius: 22px; padding: 6px 12px;
-      width: 100%; max-width: 340px;
-      font: 12px monospace; color: ${accent};
-      box-sizing: border-box;
-    `;
-
-    const playBtn = document.createElement("button");
-    playBtn.type = "button";
-    playBtn.textContent = "▶";
-    playBtn.setAttribute("aria-label", "play");
-    playBtn.style.cssText = `
-      background: transparent; border: none; color: ${accent};
-      font-size: 18px; cursor: pointer; padding: 0;
-      width: 32px; height: 32px; line-height: 1;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    `;
-
-    const progressWrap = document.createElement("div");
-    progressWrap.style.cssText = `
-      flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px;
-      cursor: pointer; position: relative; overflow: hidden;
-      min-width: 60px;
-    `;
-
-    const progressBar = document.createElement("div");
-    progressBar.style.cssText = `
-      height: 100%; background: ${accent}; border-radius: 3px;
-      width: 0%; transition: width 0.08s linear;
-    `;
-    progressWrap.appendChild(progressBar);
-
-    const timeLabel = document.createElement("span");
-    timeLabel.style.cssText = `
-      font: 11px monospace; color: ${accent}; min-width: 66px;
-      text-align: right; flex-shrink: 0; opacity: .85;
-    `;
-
-    const audio = new Audio();
-    audio.src = src;
-    audio.preload = "metadata";
-
-    // المدة الابتدائية من الوقت المسجّل فعلياً
-    let totalDuration = (durationMs && durationMs > 0) ? durationMs / 1000 : 0;
-
-    function updateLabel() {
-      timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(totalDuration)}`;
-    }
-
-    // لو مفيش durationMs (رسالة قديمة)، جرّب تقرأها من الملف بالحيلة
-    audio.addEventListener("loadedmetadata", () => {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        totalDuration = audio.duration;
-      } else if (totalDuration === 0) {
-        const onDur = () => {
-          if (isFinite(audio.duration) && audio.duration > 0) {
-            totalDuration = audio.duration;
-            audio.removeEventListener("durationchange", onDur);
-            try { audio.currentTime = 0; } catch (_) {}
-            updateLabel();
-          }
-        };
-        audio.addEventListener("durationchange", onDur);
-        try { audio.currentTime = 1e101; } catch (_) {}
-      }
-      updateLabel();
-    });
-
-    audio.addEventListener("timeupdate", () => {
-      if (totalDuration > 0) {
-        const pct = Math.min(100, (audio.currentTime / totalDuration) * 100);
-        progressBar.style.width = pct + "%";
-      }
-      updateLabel();
-    });
-
-    audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
-    audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
-    audio.addEventListener("ended", () => {
-      playBtn.textContent = "▶";
-      progressBar.style.width = "0%";
-      try { audio.currentTime = 0; } catch (_) {}
-      updateLabel();
-    });
-
-    playBtn.addEventListener("click", () => {
-      if (audio.paused) {
-        audio.play().catch(err => console.warn("[VOICE] play failed:", err));
-      } else {
-        audio.pause();
-      }
-    });
-
-    progressWrap.addEventListener("click", (e) => {
-      if (!totalDuration || totalDuration <= 0) return;
-      const rect = progressWrap.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      try { audio.currentTime = ratio * totalDuration; } catch (_) {}
-    });
-
-    updateLabel();
-    wrap.append(playBtn, progressWrap, timeLabel);
-    return { element: wrap, audio };
-  }
-
-  // ============================================================
-  //  MIME TYPE
-  // ============================================================
   function getSupportedMimeType() {
     const candidates = [
       "audio/webm;codecs=opus",
@@ -164,9 +235,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       "audio/mpeg"
     ];
     for (const type of candidates) {
-      try {
-        if (MediaRecorder.isTypeSupported(type)) return type;
-      } catch (_) {}
+      try { if (MediaRecorder.isTypeSupported(type)) return type; } catch (_) {}
     }
     return "";
   }
@@ -214,9 +283,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     document.querySelectorAll(".voice-preview-popup").forEach(el => el.remove());
   }
 
-  // ============================================================
-  //  PREVIEW POPUP
-  // ============================================================
   function createPreviewPopup(blob, durationMs) {
     removeExistingPopup();
     revokePreviewUrl();
@@ -244,12 +310,9 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     const title = document.createElement("div");
     title.textContent = "// VOICE TRANSMISSION READY";
     title.style.cssText = `
-      color: #39FF14;
-      font: 700 11px monospace;
-      letter-spacing: .6px;
+      color: #39FF14; font: 700 11px monospace; letter-spacing: .6px;
     `;
 
-    // ✅ مشغل مخصص بدل controls الافتراضي
     const player = createCustomAudioPlayer(audioPreviewUrl, durationMs);
 
     const actions = document.createElement("div");
@@ -290,11 +353,15 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       sendBtn.textContent = "SENDING...";
       try {
         const dataUrl = await blobToDataURL(audioBlob);
+
+        // ✅ سجّل المدة في الـ registry عشان الـ observer يستخدمها
+        registerVoiceDuration(dataUrl, durationMs || 0);
+
         await addDoc(messagesCol, {
           type: "voice",
           audioData: dataUrl,
           audioType: audioBlob.type || "audio/webm",
-          durationMs: durationMs || 0,   // ✅ المدة الحقيقية محفوظة
+          durationMs: durationMs || 0,
           from: myId,
           fromName: myName,
           userId: myId,
@@ -328,9 +395,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     });
   }
 
-  // ============================================================
-  //  RECORDING
-  // ============================================================
   async function startRecording() {
     if (isRecording || isStopping) return;
     try {
@@ -362,7 +426,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 
       mediaRecorder.addEventListener("stop", () => {
         clearWatchdog();
-        // ✅ نحسب المدة الحقيقية من وقت التسجيل
         const measuredMs = Date.now() - recordingStartedAt;
         lastRecordingMs = Math.max(measuredMs, MIN_RECORDING_MS);
 
@@ -476,117 +539,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
 //  PUBLIC: create audio element for a chat message
 // ============================================================
 export function createAudioElementForMessage(messageData) {
-  // نستخدم نفس المشغل المخصص — يدعم durationMs المخزنة أو يقرأ من الملف
-  const wrap = document.createElement("div");
-  wrap.className = "custom-audio-player";
-  wrap.style.cssText = `
-    display: flex; align-items: center; gap: 10px;
-    background: #0a0d0a; border: 1px solid #1c8a0c;
-    border-radius: 22px; padding: 6px 12px;
-    width: 100%; max-width: 340px;
-    font: 12px monospace; color: #39FF14;
-    box-sizing: border-box;
-  `;
-
-  const playBtn = document.createElement("button");
-  playBtn.type = "button";
-  playBtn.textContent = "▶";
-  playBtn.style.cssText = `
-    background: transparent; border: none; color: #39FF14;
-    font-size: 18px; cursor: pointer; padding: 0;
-    width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  `;
-
-  const progressWrap = document.createElement("div");
-  progressWrap.style.cssText = `
-    flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px;
-    cursor: pointer; overflow: hidden; min-width: 60px;
-  `;
-
-  const progressBar = document.createElement("div");
-  progressBar.style.cssText = `
-    height: 100%; background: #39FF14; border-radius: 3px;
-    width: 0%; transition: width 0.08s linear;
-  `;
-  progressWrap.appendChild(progressBar);
-
-  const timeLabel = document.createElement("span");
-  timeLabel.style.cssText = `
-    font: 11px monospace; color: #39FF14; min-width: 66px;
-    text-align: right; flex-shrink: 0; opacity: .85;
-  `;
-
-  const audio = new Audio();
-  audio.src = messageData.audioData;
-  audio.preload = "metadata";
-
-  let totalDuration = (messageData.durationMs && messageData.durationMs > 0)
-    ? messageData.durationMs / 1000
-    : 0;
-
-  function fmt(s) {
-    if (!isFinite(s) || s < 0) s = 0;
-    const m = Math.floor(s / 60);
-    const ss = Math.floor(s % 60);
-    return `${m}:${ss.toString().padStart(2, "0")}`;
-  }
-
-  function updateLabel() {
-    timeLabel.textContent = `${fmt(audio.currentTime)} / ${fmt(totalDuration)}`;
-  }
-
-  audio.addEventListener("loadedmetadata", () => {
-    if (isFinite(audio.duration) && audio.duration > 0) {
-      totalDuration = audio.duration;
-    } else if (totalDuration === 0) {
-      const onDur = () => {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          totalDuration = audio.duration;
-          audio.removeEventListener("durationchange", onDur);
-          try { audio.currentTime = 0; } catch (_) {}
-          updateLabel();
-        }
-      };
-      audio.addEventListener("durationchange", onDur);
-      try { audio.currentTime = 1e101; } catch (_) {}
-    }
-    updateLabel();
-  });
-
-  audio.addEventListener("timeupdate", () => {
-    if (totalDuration > 0) {
-      progressBar.style.width = Math.min(100, (audio.currentTime / totalDuration) * 100) + "%";
-    }
-    updateLabel();
-  });
-
-  audio.addEventListener("play", () => { playBtn.textContent = "⏸"; });
-  audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
-  audio.addEventListener("ended", () => {
-    playBtn.textContent = "▶";
-    progressBar.style.width = "0%";
-    try { audio.currentTime = 0; } catch (_) {}
-    updateLabel();
-  });
-
-  playBtn.addEventListener("click", () => {
-    if (audio.paused) audio.play().catch(() => {});
-    else audio.pause();
-  });
-
-  progressWrap.addEventListener("click", (e) => {
-    if (!totalDuration) return;
-    const rect = progressWrap.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    try { audio.currentTime = ratio * totalDuration; } catch (_) {}
-  });
-
-  updateLabel();
-  wrap.append(playBtn, progressWrap, timeLabel);
-
-  // نرجّع wrapper اللي فيه audio — مع خاصية audio للوصول له لو محتاج
-  wrap.audioElement = audio;
-  return wrap;
+  return createCustomAudioPlayer(
+    messageData.audioData,
+    messageData.durationMs || 0
+  ).element;
 }
