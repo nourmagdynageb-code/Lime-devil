@@ -32,10 +32,9 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       if (MediaRecorder.isTypeSupported("audio/aac")) return "audio/aac";
     }
     
-    // الترتيب الجديد للكمبيوتر والموبايل لتجنب فشل التسجيل على بعض متصفحات سطح المكتب
     const candidates = [
-      "audio/webm",
       "audio/webm;codecs=opus",
+      "audio/webm",
       "audio/ogg;codecs=opus",
       "audio/mp4"
     ];
@@ -130,7 +129,6 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       audio.type = blob.type;
     }
 
-    // إجبار المتصفح على قراءة مدة الصوت في المعاينة
     audio.addEventListener("loadedmetadata", () => {
       if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
         audio.currentTime = Number.MAX_SAFE_INTEGER;
@@ -268,7 +266,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         cleanupRecorder();
       });
 
-      mediaRecorder.start();
+      // بدء التسجيل مع ضبط الفاصل الزمني لضمان تدفق البيانات
+      mediaRecorder.start(250);
       setRecordingButton();
     } catch (err) {
       console.error("[VOICE] Could not start recording:", err);
@@ -281,7 +280,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
         alert("تم رفض إذن الميكروفون. يرجى السماح به من إعدادات المتصفح.");
       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        alert("لم يتم اكتشاف أي ميكروفون متصل بجهازك (تأكد من إعدادات الميكروفون في نظام التشغيل والمتصفح).");
+        alert("لم يتم اكتشاف أي ميكروفون متصل بجهازك.");
       } else {
         alert("تعذر بدء التسجيل الصوتي، تأكد من صلاحيات الميكروفون.");
       }
@@ -296,6 +295,8 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
     const finish = () => {
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          // إجبار المتصفح على دفع آخر حزمة بيانات قبل الإيقاف مباشرة
+          try { mediaRecorder.requestData(); } catch (_) {}
           mediaRecorder.stop();
         }
       } catch (err) {
@@ -370,7 +371,6 @@ export function createAudioElementForMessage(messageData) {
     audio.type = messageData.audioType;
   }
   
-  // حل مشكلة 0:00 للرسائل المستلمة
   audio.addEventListener("loadedmetadata", () => {
     if (audio.duration === Infinity || isNaN(audio.duration) || audio.duration === 0) {
       audio.currentTime = Number.MAX_SAFE_INTEGER;
