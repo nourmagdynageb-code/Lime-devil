@@ -1,6 +1,9 @@
 // voice.js
 // Final bulletproof voice recorder & player.
-// Auto-replaces native <audio controls> with a custom player (MutationObserver).
+// Auto-replaces native <audio controls> with custom player:
+//  - MutationObserver (real-time)
+//  - Interval fallback every 400ms (safety net)
+//  - Detects src from attribute, property, <source> child, or currentSrc
 
 // ============================================================
 //  GLOBAL REGISTRY: data URL → durationMs
@@ -13,7 +16,7 @@ export function registerVoiceDuration(src, durationMs) {
 }
 
 // ============================================================
-//  CUSTOM AUDIO PLAYER (module-level, shared everywhere)
+//  HELPERS
 // ============================================================
 function formatTime(sec) {
   if (!isFinite(sec) || sec < 0) sec = 0;
@@ -22,6 +25,9 @@ function formatTime(sec) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// ============================================================
+//  CUSTOM AUDIO PLAYER
+// ============================================================
 function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
   const wrap = document.createElement("div");
   wrap.className = "custom-audio-player";
@@ -112,7 +118,9 @@ function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
     updateLabel();
   });
 
-  playBtn.addEventListener("click", () => {
+  playBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (audio.paused) audio.play().catch(err => console.warn("[VOICE] play failed:", err));
     else audio.pause();
   });
@@ -130,19 +138,47 @@ function createCustomAudioPlayer(src, durationMs, accent = "#39FF14") {
 }
 
 // ============================================================
-//  AUTO-REPLACE native <audio controls> in the DOM
+//  AUTO-REPLACE native <audio controls>
 // ============================================================
 function installAudioReplacer() {
   if (typeof window === "undefined") return;
-  if (window.__voiceAudioReplacerInstalled) return;
+  if (window.__voiceAudioReplacerInstalled) {
+    console.log("[VOICE] Replacer already installed.");
+    return;
+  }
   window.__voiceAudioReplacerInstalled = true;
+  console.log("[VOICE] Installing audio replacer…");
 
-  // CSS لإخفاء المشغلات الأصلية فوراً لمنع الوميض
+  // CSS: يخفي أي <audio> أصلي تمّ عليه استبدال فاشل
   const style = document.createElement("style");
   style.textContent = `
     audio[controls][data-voice-native="1"] { display: none !important; }
   `;
   document.head.appendChild(style);
+
+  /**
+   * استخراج رابط الصوت من عنصر <audio> مهما كانت طريقة ضبطه.
+   */
+  function getAudioSrc(audioEl) {
+    // 1) src attribute مباشر
+    let src = audioEl.getAttribute("src");
+    if (src) return src;
+
+    // 2) src property (المتصفح يحوّله لـ absolute URL)
+    if (audioEl.src) return audioEl.src;
+
+    // 3) <source> أول ابن
+    const sourceEl = audioEl.querySelector("source");
+    if (sourceEl) {
+      src = sourceEl.getAttribute("src") || sourceEl.src;
+      if (src) return src;
+    }
+
+    // 4) currentSrc (بعد بدء التحميل)
+    if (audioEl.currentSrc) return audioEl.currentSrc;
+
+    return null;
+  }
 
   const replaceOne = (audioEl) => {
     if (!audioEl || audioEl.tagName !== "AUDIO") return;
@@ -151,8 +187,18 @@ function installAudioReplacer() {
     if (audioEl.closest(".voice-preview-popup")) return;
     if (audioEl.closest("[data-voice-player='1']")) return;
 
-    const src = audioEl.getAttribute("src") || audioEl.src || audioEl.currentSrc;
-    if (!src || !src.startsWith("data:audio")) return;
+    const src = getAudioSrc(audioEl);
+    if (!src) return;
+
+    // نعتبره رسالة صوتية لو:
+    // - data URL، أو
+    // - الرابط ينتهي بامتداد صوتي
+    const isVoice =
+      src.startsWith("data:audio") ||
+      /\.(webm|ogg|mp3|m4a|mp4|wav|aac)(\?|$)/i.test(src) ||
+      voiceDurationRegistry.has(src);
+
+    if (!isVoice) return;
 
     audioEl.dataset.voiceNativeHandled = "1";
     audioEl.dataset.voiceNative = "1";
@@ -163,28 +209,48 @@ function installAudioReplacer() {
     try {
       audioEl.replaceWith(player.element);
     } catch (_) {
-      // fallback: append after and hide
-      audioEl.parentNode?.insertBefore(player.element, audioEl.nextSibling);
+      try {
+        audioEl.parentNode?.insertBefore(player.element, audioEl.nextSibling);
+      } catch (_) {}
     }
-    console.log("[VOICE] Native audio replaced. durationMs =", durationMs);
+
+    console.log(
+      "[VOICE] Native audio replaced. durationMs =", durationMs,
+      "| src =", src.slice(0, 60)
+    );
   };
 
-  const scan = (root) => {
-    if (!root) return;
-    if (root.nodeType !== 1) return;
-    if (root.tagName === "AUDIO") replaceOne(root);
-    else if (root.querySelectorAll) root.querySelectorAll("audio").forEach(replaceOne);
+  const scanAll = () => {
+    try {
+      document.querySelectorAll("audio").forEach(replaceOne);
+    } catch (_) {}
   };
 
+  // MutationObserver: يلتقط أي عنصر جديد يُضاف للـ DOM
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
-      for (const node of m.addedNodes) scan(node);
+      for (const node of m.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.tagName === "AUDIO") replaceOne(node);
+        else if (node.querySelectorAll) node.querySelectorAll("audio").forEach(replaceOne);
+      }
     }
   });
 
   const start = () => {
-    observer.observe(document.body, { childList: true, subtree: true });
-    document.querySelectorAll("audio").forEach(replaceOne);
+    try {
+      observer.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {
+      console.warn("[VOICE] MutationObserver failed:", e);
+    }
+
+    // فحص أولي
+    scanAll();
+
+    // فحص دوري كل 400ms كشبكة أمان
+    if (!window.__voiceScanInterval) {
+      window.__voiceScanInterval = setInterval(scanAll, 400);
+    }
   };
 
   if (document.body) start();
@@ -195,7 +261,7 @@ function installAudioReplacer() {
 //  MAIN: initVoiceSystem
 // ============================================================
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
-  // ✅ نثبّت المستبدل أول حاجة
+  // ✅ ثبّت المستبدل أول حاجة — قبل أي حاجة تانية
   installAudioReplacer();
 
   const micBtn = document.getElementById("voiceMicBtn");
