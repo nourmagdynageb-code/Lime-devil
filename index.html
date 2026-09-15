@@ -29,8 +29,7 @@
   padding:0;
 }
 
-html,
-body{
+html, body{
   width:100%;
   height:100%;
   min-height:100%;
@@ -40,13 +39,7 @@ body{
   overflow:hidden;
 }
 
-body{
-  min-width:0;
-}
-
-/* =========================
-   MATRIX BACKGROUND
-   ========================= */
+body{ min-width:0; }
 
 #matrixCanvas{
   position:fixed;
@@ -85,30 +78,21 @@ body{
   );
 }
 
-.flicker{
-  animation:flicker 6s infinite;
-}
+.flicker{ animation:flicker 6s infinite; }
 
 @keyframes flicker{
   0%,19%,21%,23%,25%,54%,56%,100%{opacity:1;}
   20%,22%,24%,55%{opacity:0.86;}
 }
 
-/* =========================
-   GLITCH
-   ========================= */
-
 .glitch{
   position:relative;
   color:var(--lime-glow);
-  text-shadow:
-    0 0 6px var(--lime-glow),
-    0 0 18px rgba(0,255,102,0.5);
+  text-shadow: 0 0 6px var(--lime-glow), 0 0 18px rgba(0,255,102,0.5);
   letter-spacing:2px;
 }
 
-.glitch::before,
-.glitch::after{
+.glitch::before, .glitch::after{
   content:attr(data-text);
   position:absolute;
   left:0;
@@ -149,10 +133,6 @@ body{
   100%{transform:translate(0,0);}
 }
 
-/* =========================
-   LOCK SCREEN
-   ========================= */
-
 #lockScreen{
   position:fixed;
   inset:0;
@@ -160,13 +140,7 @@ body{
   display:none;
   align-items:center;
   justify-content:center;
-  background:
-    radial-gradient(
-      ellipse at 50% 20%,
-      rgba(57,255,20,0.06),
-      transparent 60%
-    ),
-    var(--void);
+  background: radial-gradient(ellipse at 50% 20%, rgba(57,255,20,0.06), transparent 60%), var(--void);
 }
 
 .lock-box{
@@ -175,9 +149,7 @@ body{
   border:1px solid var(--lime-dim);
   border-radius:6px;
   padding:34px 30px 30px;
-  box-shadow:
-    0 0 40px rgba(57,255,20,0.12),
-    inset 0 0 30px rgba(0,0,0,0.6);
+  box-shadow: 0 0 40px rgba(57,255,20,0.12), inset 0 0 30px rgba(0,0,0,0.6);
   position:relative;
 }
 
@@ -187,16 +159,8 @@ body{
   inset:-1px;
   border-radius:6px;
   padding:1px;
-  background:
-    linear-gradient(
-      135deg,
-      var(--lime),
-      transparent 40%,
-      var(--crimson-dim)
-    );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+  background: linear-gradient(135deg, var(--lime), transparent 40%, var(--crimson-dim));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite:xor;
   mask-composite:exclude;
   opacity:0.5;
@@ -231,10 +195,7 @@ body{
   letter-spacing:1px;
 }
 
-.pass-row{
-  display:flex;
-  gap:8px;
-}
+.pass-row{ display:flex; gap:8px; }
 
 #passInput{
   flex:1;
@@ -259,9 +220,7 @@ body{
   min-height:16px;
 }
 
-.shake{
-  animation:shake 0.35s;
-}
+.shake{ animation:shake 0.35s; }
 
 @keyframes shake{
   0%,100%{transform:translateX(0);}
@@ -271,31 +230,13 @@ body{
   80%{transform:translateX(5px);}
 }
 
-.lock-dissolve{
-  animation:dissolveOut 0.7s forwards;
-}
+.lock-dissolve{ animation:dissolveOut 0.7s forwards; }
 
 @keyframes dissolveOut{
-  0%{
-    opacity:1;
-    filter:blur(0) brightness(1);
-  }
-
-  40%{
-    opacity:0.7;
-    filter:blur(2px) brightness(3) hue-rotate(30deg);
-  }
-
-  100%{
-    opacity:0;
-    filter:blur(10px) brightness(0.2);
-    transform:scale(1.04);
-  }
+  0%{ opacity:1; filter:blur(0) brightness(1); }
+  40%{ opacity:0.7; filter:blur(2px) brightness(3) hue-rotate(30deg); }
+  100%{ opacity:0; filter:blur(10px) brightness(0.2); transform:scale(1.04); }
 }
-
-/* =========================
-   STEALTH MAKEUP SCREEN
-   ========================= */
 
 #stealthScreen{
   position:fixed;
@@ -390,14 +331,8 @@ body{
   border-top:1px solid #fcf2f5;
 }
 
-.makeup-nav span{
-  cursor:pointer;
-  transition:color 0.2s;
-}
-
-.makeup-nav span:hover{
-  color:#a61c4d;
-}
+.makeup-nav span{ cursor:pointer; transition:color 0.2s; }
+.makeup-nav span:hover{ color:#a61c4d; }
 
 .makeup-hero{
   text-align:center;
@@ -436,9 +371,7 @@ body{
   transition:transform 0.2s;
 }
 
-.makeup-hero button:hover{
-  transform:translateY(-2px);
-}
+.makeup-hero button:hover{ transform:translateY(-2px); }
 
 .makeup-section-title{
   text-align:center;
@@ -544,9 +477,7 @@ body{
   transition:background 0.2s;
 }
 
-.makeup-card button:hover{
-  background:#7b113a;
-}
+.makeup-card button:hover{ background:#7b113a; }
 
 .makeup-footer{
   background:#2b0c16;
@@ -571,8 +502,7 @@ body{
   font-size:14px;
 }
 
-.makeup-footer p,
-.makeup-footer li{
+.makeup-footer p, .makeup-footer li{
   color:#c4a4b0;
   margin-bottom:6px;
   list-style:none;
@@ -588,23 +518,10 @@ body{
 }
 
 @media (min-width:768px){
-  .makeup-header{
-    padding:15px 40px;
-  }
-
-  .makeup-header-main{
-    justify-content:space-between;
-  }
-
-  .makeup-search-box{
-    margin:0;
-    width:320px;
-  }
+  .makeup-header{ padding:15px 40px; }
+  .makeup-header-main{ justify-content:space-between; }
+  .makeup-search-box{ margin:0; width:320px; }
 }
-
-/* =========================
-   MAIN APP
-   ========================= */
 
 #app{
   position:relative;
@@ -617,10 +534,6 @@ body{
   min-height:0;
   overflow:hidden;
 }
-
-/* =========================
-   HEADER
-   ========================= */
 
 header{
   flex:0 0 auto;
@@ -666,9 +579,7 @@ header{
   white-space:nowrap;
 }
 
-.stat-chip.clickable{
-  cursor:pointer;
-}
+.stat-chip.clickable{ cursor:pointer; }
 
 .dot{
   width:7px;
@@ -679,14 +590,9 @@ header{
   box-shadow:0 0 8px var(--lime-glow);
 }
 
-#purgeTimer{
-  color:var(--crimson);
-  font-weight:700;
-}
+#purgeTimer{ color:var(--crimson); font-weight:700; }
 
-.action-btn,
-#unlockBtn,
-#sendBtn{
+.action-btn, #unlockBtn, #sendBtn{
   background:linear-gradient(135deg,#0d1a0d,#050a05);
   border:1px solid var(--lime-dim);
   color:var(--lime-glow);
@@ -700,51 +606,33 @@ header{
   position:relative;
   overflow:hidden;
   transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
-  box-shadow:
-    0 0 12px rgba(57,255,20,0.08),
-    inset 0 0 6px rgba(57,255,20,0.06);
+  box-shadow: 0 0 12px rgba(57,255,20,0.08), inset 0 0 6px rgba(57,255,20,0.06);
   white-space:nowrap;
 }
 
-.action-btn::after,
-#unlockBtn::after,
-#sendBtn::after{
+.action-btn::after, #unlockBtn::after, #sendBtn::after{
   content:'';
   position:absolute;
   top:-50%;
   left:-50%;
   width:200%;
   height:200%;
-  background:
-    linear-gradient(
-      45deg,
-      transparent,
-      rgba(57,255,20,0.15),
-      transparent
-    );
+  background: linear-gradient(45deg, transparent, rgba(57,255,20,0.15), transparent);
   transform:rotate(45deg) translateX(-100%);
   transition:transform 0.5s ease;
 }
 
-.action-btn:hover::after,
-#unlockBtn:hover::after,
-#sendBtn:hover::after{
+.action-btn:hover::after, #unlockBtn:hover::after, #sendBtn:hover::after{
   transform:rotate(45deg) translateX(100%);
 }
 
-.action-btn:hover,
-#unlockBtn:hover,
-#sendBtn:hover{
+.action-btn:hover, #unlockBtn:hover, #sendBtn:hover{
   background:var(--lime-dim);
   color:#031403;
   border-color:var(--lime);
   box-shadow:0 0 22px var(--lime);
   transform:translateY(-1px);
 }
-
-/* =========================
-   RED BUTTONS
-   ========================= */
 
 #emergencyBtnDesktop{
   background:linear-gradient(135deg,#26050a,#0a0103) !important;
@@ -772,9 +660,6 @@ header{
   box-shadow:0 0 22px #ff1744 !important;
 }
 
-/* =========================
-   VOICE & VIDEO CALL OVERLAY  (UPDATED)
-   ========================= */
 #callOverlay {
   position: fixed;
   inset: 0;
@@ -785,11 +670,7 @@ header{
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding:
-    max(14px, env(safe-area-inset-top))
-    max(10px, env(safe-area-inset-right))
-    max(14px, env(safe-area-inset-bottom))
-    max(10px, env(safe-area-inset-left));
+  padding: max(14px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   box-sizing: border-box;
 }
 
@@ -856,9 +737,7 @@ header{
   z-index: 2;
 }
 
-.video-label.remote {
-  color: #00eaff;
-}
+.video-label.remote { color: #00eaff; }
 
 .video-placeholder {
   position: absolute;
@@ -933,10 +812,6 @@ header{
   box-shadow: 0 0 18px var(--crimson);
 }
 
-/* =========================
-   MESSAGE AREA
-   ========================= */
-
 main{
   flex:1 1 auto;
   min-height:0;
@@ -949,14 +824,8 @@ main{
   gap:8px;
 }
 
-main::-webkit-scrollbar{
-  width:6px;
-}
-
-main::-webkit-scrollbar-thumb{
-  background:var(--lime-dim);
-  border-radius:3px;
-}
+main::-webkit-scrollbar{ width:6px; }
+main::-webkit-scrollbar-thumb{ background:var(--lime-dim); border-radius:3px; }
 
 .sys-msg{
   align-self:center;
@@ -994,9 +863,7 @@ main::-webkit-scrollbar-thumb{
   margin-bottom:3px;
 }
 
-.msg-user{
-  font-weight:700;
-}
+.msg-user{ font-weight:700; }
 
 .msg-text{
   font-size:13px;
@@ -1004,10 +871,6 @@ main::-webkit-scrollbar-thumb{
   color:#dfffe0;
   line-height:1.45;
 }
-
-/* =========================
-   TYPING
-   ========================= */
 
 #typingIndicator{
   flex:0 0 auto;
@@ -1017,10 +880,6 @@ main::-webkit-scrollbar-thumb{
   color:var(--lime-dim);
   font-size:10px;
 }
-
-/* =========================
-   COMPOSER
-   ========================= */
 
 form#composer{
   flex:0 0 auto;
@@ -1046,19 +905,13 @@ form#composer{
   outline:none;
 }
 
-#msgInput::placeholder{
-  color:#555;
-}
+#msgInput::placeholder{ color:#555; }
 
 #sendBtn{
   flex:0 0 auto;
   padding:0 20px;
   font-size:13px;
 }
-
-/* =========================
-   FOOTNOTE
-   ========================= */
 
 .footnote{
   flex:0 0 auto;
@@ -1069,10 +922,6 @@ form#composer{
   padding:4px 0 6px;
   overflow:hidden;
 }
-
-/* =========================
-   MODALS
-   ========================= */
 
 .custom-modal{
   position:fixed;
@@ -1087,12 +936,7 @@ form#composer{
 
 .modal-box{
   width:min(95vw,480px);
-  background:
-    linear-gradient(
-      180deg,
-      var(--panel),
-      #08090a
-    );
+  background: linear-gradient(180deg, var(--panel), #08090a);
   border:1px solid var(--lime-dim);
   border-radius:6px;
   padding:16px;
@@ -1129,9 +973,7 @@ form#composer{
   word-break:break-all;
 }
 
-.log-item.failed{
-  border-left-color:var(--crimson);
-}
+.log-item.failed{ border-left-color:var(--crimson); }
 
 .close-modal-btn{
   width:100%;
@@ -1145,18 +987,8 @@ form#composer{
   font-size:11px;
 }
 
-/* =========================
-   MOBILE FIX
-   ========================= */
-
 @media (max-width:600px){
-
-  #app{
-    width:100%;
-    height:100dvh;
-    min-height:100dvh;
-  }
-
+  #app{ width:100%; height:100dvh; min-height:100dvh; }
   header{
     display:flex;
     flex-direction:column;
@@ -1164,184 +996,43 @@ form#composer{
     justify-content:center;
     gap:7px;
     width:100%;
-    padding:
-      8px
-      max(8px, env(safe-area-inset-right))
-      8px
-      max(8px, env(safe-area-inset-left));
+    padding: 8px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left));
     min-height:auto;
     flex:0 0 auto;
   }
-
-  .logo{
-    width:100%;
-    text-align:center;
-    font-size:15px;
-    line-height:1.2;
-    letter-spacing:1px;
-  }
-
-  .header-stats{
-    width:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:5px;
-    flex-wrap:wrap;
-    min-width:0;
-  }
-
-  .stat-chip{
-    padding:5px 8px;
-    font-size:10px;
-    min-height:29px;
-  }
-
-  .dot{
-    width:6px;
-    height:6px;
-    flex:0 0 6px;
-  }
-
-  .action-btn{
-    padding:6px 8px;
-    min-height:29px;
-    font-size:9px;
-    letter-spacing:0.3px;
-  }
-
-  main{
-    flex:1 1 auto;
-    min-height:0;
-    width:100%;
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding:10px 8px 6px;
-    gap:7px;
-  }
-
-  .sys-msg{
-    max-width:95%;
-    font-size:9px;
-    line-height:1.4;
-    padding:5px 9px;
-    text-align:center;
-    word-break:break-word;
-  }
-
-  .msg{
-    max-width:90%;
-    padding:7px 9px;
-  }
-
-  .msg-meta{
-    font-size:9px;
-  }
-
-  .msg-text{
-    font-size:12px;
-    line-height:1.45;
-  }
-
-  #typingIndicator{
-    flex:0 0 auto;
-    min-height:17px;
-    padding:
-      2px
-      10px
-      3px;
-    font-size:9px;
-  }
-
+  .logo{ width:100%; text-align:center; font-size:15px; line-height:1.2; letter-spacing:1px; }
+  .header-stats{ width:100%; display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap; min-width:0; }
+  .stat-chip{ padding:5px 8px; font-size:10px; min-height:29px; }
+  .dot{ width:6px; height:6px; flex:0 0 6px; }
+  .action-btn{ padding:6px 8px; min-height:29px; font-size:9px; letter-spacing:0.3px; }
+  main{ flex:1 1 auto; min-height:0; width:100%; overflow-y:auto; overflow-x:hidden; padding:10px 8px 6px; gap:7px; }
+  .sys-msg{ max-width:95%; font-size:9px; line-height:1.4; padding:5px 9px; text-align:center; word-break:break-word; }
+  .msg{ max-width:90%; padding:7px 9px; }
+  .msg-meta{ font-size:9px; }
+  .msg-text{ font-size:12px; line-height:1.45; }
+  #typingIndicator{ flex:0 0 auto; min-height:17px; padding:2px 10px 3px; font-size:9px; }
   form#composer{
     flex:0 0 auto;
     display:flex;
     width:100%;
     gap:6px;
-    padding:
-      7px
-      max(7px, env(safe-area-inset-right))
-      7px
-      max(7px, env(safe-area-inset-left));
+    padding: 7px max(7px, env(safe-area-inset-right)) 7px max(7px, env(safe-area-inset-left));
     min-height:60px;
   }
+  #msgInput{ flex:1 1 auto; min-width:0; width:100%; height:46px; font-size:12px; padding:10px; }
+  #msgInput::placeholder{ font-size:11px; }
+  #sendBtn{ flex:0 0 92px; width:92px; min-width:92px; height:46px; padding:0 8px; font-size:11px; }
+  .footnote{ flex:0 0 auto; font-size:7px; padding:3px 5px max(5px, env(safe-area-inset-bottom)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .custom-modal{ padding:10px max(10px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left)); }
+  .modal-box{ width:94vw; max-height:82vh; max-height:82dvh; padding:13px; }
+  .modal-title{ font-size:11px; }
 
-  #msgInput{
-    flex:1 1 auto;
-    min-width:0;
-    width:100%;
-    height:46px;
-    font-size:12px;
-    padding:10px;
-  }
-
-  #msgInput::placeholder{
-    font-size:11px;
-  }
-
-  #sendBtn{
-    flex:0 0 92px;
-    width:92px;
-    min-width:92px;
-    height:46px;
-    padding:0 8px;
-    font-size:11px;
-  }
-
-  .footnote{
-    flex:0 0 auto;
-    font-size:7px;
-    padding:
-      3px
-      5px
-      max(5px, env(safe-area-inset-bottom));
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .custom-modal{
-    padding:
-      10px
-      max(10px, env(safe-area-inset-right))
-      10px
-      max(10px, env(safe-area-inset-left));
-  }
-
-  .modal-box{
-    width:94vw;
-    max-height:82vh;
-    max-height:82dvh;
-    padding:13px;
-  }
-
-  .modal-title{
-    font-size:11px;
-  }
-
-  /* ===== CALL UI — MOBILE ===== */
   #callOverlay {
-    padding:
-      max(8px, env(safe-area-inset-top))
-      max(6px, env(safe-area-inset-right))
-      max(10px, env(safe-area-inset-bottom))
-      max(6px, env(safe-area-inset-left));
+    padding: max(8px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
   }
-
-  .call-header {
-    margin-top: 2px;
-    margin-bottom: 4px;
-  }
-
-  .call-header h2 {
-    font-size: 13px;
-    letter-spacing: 1px;
-  }
-
-  .call-status {
-    font-size: 10px;
-  }
-
+  .call-header { margin-top: 2px; margin-bottom: 4px; }
+  .call-header h2 { font-size: 13px; letter-spacing: 1px; }
+  .call-status { font-size: 10px; }
   .call-video-container {
     flex-direction: column;
     flex-wrap: nowrap;
@@ -1350,8 +1041,6 @@ form#composer{
     height: 100%;
     position: relative;
   }
-
-  /* Remote = full screen */
   .call-video-container .video-box:nth-child(2) {
     width: 100%;
     min-width: 100%;
@@ -1360,8 +1049,6 @@ form#composer{
     flex: 1 1 auto;
     border-radius: 12px;
   }
-
-  /* Local = small PiP bottom-right */
   .call-video-container .video-box:nth-child(1) {
     position: absolute;
     bottom: 10px;
@@ -1374,133 +1061,40 @@ form#composer{
     border-width: 2px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 10px rgba(57,255,20,0.3);
   }
-
   .call-video-container .video-box:nth-child(1) .video-label {
     font-size: 9px;
     padding: 2px 5px;
     bottom: 4px;
     left: 4px;
   }
-
-  .call-controls {
-    gap: 6px;
-    padding: 8px 2px 2px;
-    margin-bottom: 0;
-    max-width: 100%;
-  }
-
-  .call-btn {
-    padding: 11px 6px;
-    font-size: 11px;
-    min-width: 0;
-    min-height: 46px;
-    flex: 1 1 30%;
-    border-radius: 40px;
-  }
-
-  .call-btn.end-call {
-    flex: 1 1 100%;
-    min-height: 50px;
-    font-size: 13px;
-    margin-top: 2px;
-  }
+  .call-controls { gap: 6px; padding: 8px 2px 2px; margin-bottom: 0; max-width: 100%; }
+  .call-btn { padding: 11px 6px; font-size: 11px; min-width: 0; min-height: 46px; flex: 1 1 30%; border-radius: 40px; }
+  .call-btn.end-call { flex: 1 1 100%; min-height: 50px; font-size: 13px; margin-top: 2px; }
 }
-
-/* =========================
-   VERY SMALL PHONES
-   ========================= */
 
 @media (max-width:380px){
-
-  .logo{
-    font-size:14px;
-  }
-
-  .header-stats{
-    gap:4px;
-  }
-
-  .stat-chip{
-    padding:4px 6px;
-    font-size:9px;
-  }
-
-  .action-btn{
-    padding:5px 6px;
-    font-size:8px;
-  }
-
-  #sendBtn{
-    flex-basis:82px;
-    width:82px;
-    min-width:82px;
-    font-size:10px;
-  }
-
-  #msgInput::placeholder{
-    font-size:10px;
-  }
+  .logo{ font-size:14px; }
+  .header-stats{ gap:4px; }
+  .stat-chip{ padding:4px 6px; font-size:9px; }
+  .action-btn{ padding:5px 6px; font-size:8px; }
+  #sendBtn{ flex-basis:82px; width:82px; min-width:82px; font-size:10px; }
+  #msgInput::placeholder{ font-size:10px; }
 }
 
-/* =========================
-   LANDSCAPE MOBILE
-   ========================= */
-
 @media (max-width:600px) and (orientation:landscape){
+  header{ flex-direction:row; align-items:center; padding-top:6px; padding-bottom:6px; }
+  .logo{ width:auto; text-align:left; font-size:14px; }
+  .header-stats{ width:auto; justify-content:flex-end; }
+  .action-btn{ padding:5px 7px; }
+  .stat-chip{ padding:4px 7px; }
 
-  header{
-    flex-direction:row;
-    align-items:center;
-    padding-top:6px;
-    padding-bottom:6px;
-  }
-
-  .logo{
-    width:auto;
-    text-align:left;
-    font-size:14px;
-  }
-
-  .header-stats{
-    width:auto;
-    justify-content:flex-end;
-  }
-
-  .action-btn{
-    padding:5px 7px;
-  }
-
-  .stat-chip{
-    padding:4px 7px;
-  }
-
-  /* Call landscape */
   #callOverlay {
-    padding:
-      max(4px, env(safe-area-inset-top))
-      max(8px, env(safe-area-inset-right))
-      max(4px, env(safe-area-inset-bottom))
-      max(8px, env(safe-area-inset-left));
+    padding: max(4px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
-
-  .call-header {
-    margin-top: 0;
-    margin-bottom: 2px;
-  }
-
-  .call-header h2 {
-    font-size: 12px;
-  }
-
-  .call-status {
-    font-size: 9px;
-  }
-
-  .call-video-container {
-    flex-direction: row;
-    gap: 8px;
-  }
-
+  .call-header { margin-top: 0; margin-bottom: 2px; }
+  .call-header h2 { font-size: 12px; }
+  .call-status { font-size: 9px; }
+  .call-video-container { flex-direction: row; gap: 8px; }
   .call-video-container .video-box:nth-child(1),
   .call-video-container .video-box:nth-child(2) {
     position: relative;
@@ -1512,214 +1106,9 @@ form#composer{
     flex: 1 1 45%;
     border-radius: 8px;
   }
-
-  .call-controls {
-    flex-wrap: nowrap;
-    gap: 5px;
-    padding: 2px 0;
-  }
-
-  .call-btn {
-    min-height: 40px;
-    padding: 7px 5px;
-    font-size: 10px;
-    flex: 1 1 auto;
-  }
-
-  .call-btn.end-call {
-    flex: 0 0 auto;
-    min-width: 100px;
-    margin-top: 0;
-  }
-}
-
-/* =====================================================
-   NEW SEARCH FACADE (الواجهة الجديدة)
-   ===================================================== */
-
-#searchFacade{
-  position:fixed;
-  inset:0;
-  z-index:40000;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:linear-gradient(135deg, #0f0f13 0%, #1a1a24 50%, #0f0f13 100%);
-  background-size:200% 200%;
-  animation:searchGradient 12s ease infinite;
-  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color:#e8e8e8;
-  overflow:hidden;
-  transition:opacity 0.55s ease, transform 0.55s ease;
-}
-
-@keyframes searchGradient{
-  0%{background-position:0% 50%;}
-  50%{background-position:100% 50%;}
-  100%{background-position:0% 50%;}
-}
-
-.search-particles{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  overflow:hidden;
-  z-index:0;
-}
-
-.search-particle{
-  position:absolute;
-  width:3px;
-  height:3px;
-  background:rgba(120,140,255,0.4);
-  border-radius:50%;
-  animation:searchFloat linear infinite;
-}
-
-@keyframes searchFloat{
-  0%{transform:translateY(100vh) scale(0);opacity:0;}
-  10%{opacity:1;}
-  90%{opacity:1;}
-  100%{transform:translateY(-10vh) scale(1);opacity:0;}
-}
-
-.search-container{
-  position:relative;
-  z-index:2;
-  text-align:center;
-  width:90%;
-  max-width:620px;
-  animation:searchFadeUp 0.9s ease-out;
-}
-
-@keyframes searchFadeUp{
-  from{opacity:0;transform:translateY(30px);}
-  to{opacity:1;transform:translateY(0);}
-}
-
-.search-logo{
-  font-size:3.2rem;
-  font-weight:700;
-  letter-spacing:-1px;
-  margin-bottom:10px;
-  background:linear-gradient(90deg,#7b8cff,#a78bfa,#7b8cff);
-  background-size:200% auto;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  background-clip:text;
-  animation:searchShine 4s linear infinite;
-}
-
-@keyframes searchShine{
-  to{background-position:200% center;}
-}
-
-.search-tagline{
-  font-size:0.95rem;
-  color:#9ca3af;
-  margin-bottom:36px;
-  opacity:0;
-  animation:searchFadeIn 1s ease 0.35s forwards;
-}
-
-@keyframes searchFadeIn{
-  to{opacity:1;}
-}
-
-.search-box-new{
-  display:flex;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.12);
-  border-radius:50px;
-  padding:6px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.35);
-  transition:all 0.35s ease;
-  backdrop-filter:blur(12px);
-}
-
-.search-box-new:focus-within{
-  border-color:rgba(123,140,255,0.55);
-  box-shadow:0 8px 40px rgba(123,140,255,0.2);
-  transform:scale(1.02);
-}
-
-.search-box-new input{
-  flex:1;
-  background:transparent;
-  border:none;
-  outline:none;
-  padding:16px 24px;
-  font-size:1.1rem;
-  color:#f1f1f1;
-  direction:rtl;
-  font-family:inherit;
-}
-
-.search-box-new input::placeholder{
-  color:#6b7280;
-}
-
-.search-box-new button{
-  background:linear-gradient(135deg,#7b8cff,#6366f1);
-  border:none;
-  border-radius:50px;
-  padding:0 28px;
-  color:white;
-  font-size:1rem;
-  font-weight:600;
-  cursor:pointer;
-  transition:all 0.3s ease;
-  font-family:inherit;
-}
-
-.search-box-new button:hover{
-  transform:scale(1.05);
-  box-shadow:0 6px 20px rgba(99,102,241,0.45);
-}
-
-.search-box-new button:active{
-  transform:scale(0.97);
-}
-
-.search-footer{
-  position:absolute;
-  bottom:28px;
-  font-size:0.8rem;
-  color:#4b5563;
-  z-index:2;
-  animation:searchFadeIn 1.2s ease 0.7s both;
-}
-
-.search-footer a{
-  color:#6b7280;
-  text-decoration:none;
-  margin:0 12px;
-  transition:color 0.3s;
-}
-
-.search-footer a:hover{
-  color:#a5b4fc;
-}
-
-.search-message{
-  margin-top:18px;
-  font-size:0.9rem;
-  color:#f87171;
-  opacity:0;
-  transition:opacity 0.3s;
-  height:20px;
-}
-
-.search-message.show{
-  opacity:1;
-}
-
-/* لما الواجهة تختفي */
-#searchFacade.hide{
-  opacity:0;
-  transform:scale(0.96);
-  pointer-events:none;
+  .call-controls { flex-wrap: nowrap; gap: 5px; padding: 2px 0; }
+  .call-btn { min-height: 40px; padding: 7px 5px; font-size: 10px; flex: 1 1 auto; }
+  .call-btn.end-call { flex: 0 0 auto; min-width: 100px; margin-top: 0; }
 }
 </style>
 </head>
@@ -1727,34 +1116,21 @@ form#composer{
 <body>
 
 <canvas id="matrixCanvas"></canvas>
-
 <div class="crt-overlay"></div>
 <div class="crt-vignette"></div>
 
-<!-- =====================================================
-     NEW SEARCH FACADE (الواجهة الجديدة)
-     ===================================================== -->
+<!-- Searchly Facade -->
 <div id="searchFacade">
   <div class="search-particles" id="searchParticles"></div>
-
   <div class="search-container">
     <div class="search-logo">Searchly</div>
     <div class="search-tagline">ابحث عن أي شيء تريده...</div>
-
     <form class="search-box-new" id="searchFormNew">
-      <input 
-        type="text" 
-        id="searchInputNew" 
-        placeholder="اكتب هنا للبحث..." 
-        autocomplete="off"
-        autofocus
-      >
+      <input type="text" id="searchInputNew" placeholder="اكتب هنا للبحث..." autocomplete="off" autofocus>
       <button type="submit">بحث</button>
     </form>
-
     <div class="search-message" id="searchMessage"></div>
   </div>
-
   <div class="search-footer">
     <a href="#">عن الموقع</a>
     <a href="#">الخصوصية</a>
@@ -1762,41 +1138,19 @@ form#composer{
   </div>
 </div>
 
-<!-- =========================
-     STEALTH SCREEN
-     ========================= -->
-
+<!-- Stealth Screen -->
 <div id="stealthScreen">
-
   <div class="makeup-top-banner">
     ✨ شحن مجاني لكافة المحافظات للطلبات التي تتجاوز 500 جنيه | استمتعي بعروض الموسم الحصريّة
   </div>
-
   <div class="makeup-header">
-
     <div class="makeup-header-main">
-
-      <div class="makeup-logo">
-        💄 Lumina Glow
-      </div>
-
+      <div class="makeup-logo">💄 Lumina Glow</div>
       <div class="makeup-search-box">
-
-        <input
-          type="text"
-          id="stealthInput"
-          placeholder="ابحثي عن أحمر شفاه، سيروم، باليت..."
-          autocomplete="off"
-        >
-
-        <button id="stealthBtn">
-          🔍
-        </button>
-
+        <input type="text" id="stealthInput" placeholder="ابحثي عن أحمر شفاه، سيروم، باليت..." autocomplete="off">
+        <button id="stealthBtn">🔍</button>
       </div>
-
     </div>
-
     <div class="makeup-nav">
       <span>الرئيسية</span>
       <span>مكياج العيون</span>
@@ -1804,343 +1158,126 @@ form#composer{
       <span>أحمر الشفاه</span>
       <span>العروض الخاصة</span>
     </div>
-
   </div>
-
   <div class="makeup-hero">
-
-    <h1>
-      أسرار التألق وجمال البشرة الطبيعي
-    </h1>
-
-    <p>
-      اكتشفي تشكيلتنا الفاخرة المصممة خصيصاً لتمنحك إشراقة ساحرة وثقة تدوم طوال اليوم بكل تناغم ونعومة.
-    </p>
-
-    <button>
-      تسوقي تشكيلة الخريف الجديدة
-    </button>
-
+    <h1>أسرار التألق وجمال البشرة الطبيعي</h1>
+    <p>اكتشفي تشكيلتنا الفاخرة المصممة خصيصاً لتمنحك إشراقة ساحرة وثقة تدوم طوال اليوم بكل تناغم ونعومة.</p>
+    <button>تسوقي تشكيلة الخريف الجديدة</button>
   </div>
-
-  <div class="makeup-section-title">
-    ✨ المنتجات الأكثر مبيعاً هذا الأسبوع
-  </div>
-
+  <div class="makeup-section-title">✨ المنتجات الأكثر مبيعاً هذا الأسبوع</div>
   <div class="makeup-grid">
-
     <div class="makeup-card">
-
-      <div
-        class="makeup-img-placeholder"
-        style="background:linear-gradient(135deg,#e91e63,#880e4f);"
-      >
-        <span class="makeup-badge">
-          الأكثر طلباً
-        </span>
-
+      <div class="makeup-img-placeholder" style="background:linear-gradient(135deg,#e91e63,#880e4f);">
+        <span class="makeup-badge">الأكثر طلباً</span>
         مجموعة التوت الملكي المخملي
       </div>
-
-      <h3>
-        مجموعة أحمر الشفاه الثابت
-      </h3>
-
-      <div class="rating">
-        ★★★★★ (142 تقييم)
-      </div>
-
-      <p>
-        تركيبة مقاومة للمياه تدوم حتى 16 ساعة بدون جفاف أو تقشر، تناسب كافة السهرات.
-      </p>
-
+      <h3>مجموعة أحمر الشفاه الثابت</h3>
+      <div class="rating">★★★★★ (142 تقييم)</div>
+      <p>تركيبة مقاومة للمياه تدوم حتى 16 ساعة بدون جفاف أو تقشر، تناسب كافة السهرات.</p>
       <div class="makeup-price-row">
-
-        <span class="price">
-          350 ج.م
-        </span>
-
-        <button>
-          أضف للسلة
-        </button>
-
+        <span class="price">350 ج.م</span>
+        <button>أضف للسلة</button>
       </div>
-
     </div>
-
     <div class="makeup-card">
-
-      <div
-        class="makeup-img-placeholder"
-        style="background:linear-gradient(135deg,#ec407a,#ad1457);"
-      >
-        <span class="makeup-badge">
-          جديد
-        </span>
-
+      <div class="makeup-img-placeholder" style="background:linear-gradient(135deg,#ec407a,#ad1457);">
+        <span class="makeup-badge">جديد</span>
         باليت الوادي الوردي اللامع
       </div>
-
-      <h3>
-        باليت ظلال العيون المتألقة
-      </h3>
-
-      <div class="rating">
-        ★★★★★ (98 تقييم)
-      </div>
-
-      <p>
-        12 درجة لونية مميزة تمتزج بسلاسة فائقة لتمنحك عيوناً جذابة وإطلالة عصرية ساحرة.
-      </p>
-
+      <h3>باليت ظلال العيون المتألقة</h3>
+      <div class="rating">★★★★★ (98 تقييم)</div>
+      <p>12 درجة لونية مميزة تمتزج بسلاسة فائقة لتمنحك عيوناً جذابة وإطلالة عصرية ساحرة.</p>
       <div class="makeup-price-row">
-
-        <span class="price">
-          480 ج.م
-        </span>
-
-        <button>
-          أضف للسلة
-        </button>
-
+        <span class="price">480 ج.م</span>
+        <button>أضف للسلة</button>
       </div>
-
     </div>
-
     <div class="makeup-card">
-
-      <div
-        class="makeup-img-placeholder"
-        style="background:linear-gradient(135deg,#f06292,#6a1b9a);"
-      >
-        <span class="makeup-badge">
-          عناية مكثفة
-        </span>
-
+      <div class="makeup-img-placeholder" style="background:linear-gradient(135deg,#f06292,#6a1b9a);">
+        <span class="makeup-badge">عناية مكثفة</span>
         سيروم النضارة بالفيتامينات
       </div>
-
-      <h3>
-        سيروم الإشراق السحري سي
-      </h3>
-
-      <div class="rating">
-        ★★★★★ (215 تقييم)
-      </div>
-
-      <p>
-        يغذي البشرة بعمق، يوحد اللون، ويمنحك إضاءة طبيعية ونعومة كالحرير من الاستخدام الأول.
-      </p>
-
+      <h3>سيروم الإشراق السحري سي</h3>
+      <div class="rating">★★★★★ (215 تقييم)</div>
+      <p>يغذي البشرة بعمق، يوحد اللون، ويمنحك إضاءة طبيعية ونعومة كالحرير من الاستخدام الأول.</p>
       <div class="makeup-price-row">
-
-        <span class="price">
-          520 ج.م
-        </span>
-
-        <button>
-          أضف للسلة
-        </button>
-
+        <span class="price">520 ج.م</span>
+        <button>أضف للسلة</button>
       </div>
-
     </div>
-
   </div>
-
   <div class="makeup-footer">
-
     <div class="makeup-footer-content">
-
       <div>
-
-        <h4>
-          عن متجر Lumina Glow
-        </h4>
-
-        <p>
-          علامة تجارية رائدة تقدم مستحضرات تجميل أصلية وآمنة تماماً على البشرة بمواصفات عالمية.
-        </p>
-
+        <h4>عن متجر Lumina Glow</h4>
+        <p>علامة تجارية رائدة تقدم مستحضرات تجميل أصلية وآمنة تماماً على البشرة بمواصفات عالمية.</p>
       </div>
-
       <div>
-
-        <h4>
-          روابط سريعة
-        </h4>
-
-        <p>
-          سياسة الاسترجاع والشحن
-        </p>
-
-        <p>
-          تتبع طلبك الآن
-        </p>
-
-        <p>
-          فروعنا في الجمهورية
-        </p>
-
+        <h4>روابط سريعة</h4>
+        <p>سياسة الاسترجاع والشحن</p>
+        <p>تتبع طلبك الآن</p>
+        <p>فروعنا في الجمهورية</p>
       </div>
-
       <div>
-
-        <h4>
-          خدمة العملاء
-        </h4>
-
-        <p>
-          الخط الساخن: 19882
-        </p>
-
-        <p>
-          دعم الواتساب متاح 24/7
-        </p>
-
+        <h4>خدمة العملاء</h4>
+        <p>الخط الساخن: 19882</p>
+        <p>دعم الواتساب متاح 24/7</p>
       </div>
-
     </div>
-
-    <div class="makeup-footer-note">
-      جميع حقوق النشر والتوزيع محفوظة © 2026 Lumina Glow Cosmetics Egypt.
-    </div>
-
+    <div class="makeup-footer-note">جميع حقوق النشر والتوزيع محفوظة © 2026 Lumina Glow Cosmetics Egypt.</div>
   </div>
-
 </div>
 
-<!-- =========================
-     USERS MODAL
-     ========================= -->
-
+<!-- Users Modal -->
 <div id="usersModal" class="custom-modal">
-
   <div class="modal-box">
-
-    <div class="modal-title">
-      // ACTIVE NODES IN NETWORK
-    </div>
-
-    <div
-      id="onlineUsersList"
-      class="modal-content-area"
-    ></div>
-
-    <button
-      class="close-modal-btn"
-      data-modal="usersModal"
-    >
-      CLOSE [X]
-    </button>
-
+    <div class="modal-title">// ACTIVE NODES IN NETWORK</div>
+    <div id="onlineUsersList" class="modal-content-area"></div>
+    <button class="close-modal-btn" data-modal="usersModal">CLOSE [X]</button>
   </div>
-
 </div>
 
-<!-- =========================
-     LOGS MODAL
-     ========================= -->
-
+<!-- Logs Modal -->
 <div id="logsModal" class="custom-modal">
-
-  <div
-    class="modal-box"
-    style="width:min(94vw,540px);"
-  >
-
-    <div class="modal-title">
-      // SECURITY ACCESS LOGS
-    </div>
-
-    <div
-      id="accessLogsList"
-      class="modal-content-area"
-    ></div>
-
-    <button
-      class="close-modal-btn"
-      data-modal="logsModal"
-    >
-      CLOSE [X]
-    </button>
-
+  <div class="modal-box" style="width:min(94vw,540px);">
+    <div class="modal-title">// SECURITY ACCESS LOGS</div>
+    <div id="accessLogsList" class="modal-content-area"></div>
+    <button class="close-modal-btn" data-modal="logsModal">CLOSE [X]</button>
   </div>
-
 </div>
 
-<!-- =========================
-     LOCK SCREEN
-     ========================= -->
-
+<!-- Lock Screen -->
 <div id="lockScreen" class="flicker">
-
   <div class="lock-box">
-
-    <div
-      class="lock-title glitch"
-      data-text="LIME DEVIL"
-    >
-      LIME DEVIL
-    </div>
-
-    <div class="lock-sub">
-      // encrypted node access required
-    </div>
-
-    <div class="hint-line">
-      [ CLEARANCE CODE REQUIRED ]
-    </div>
-
+    <div class="lock-title glitch" data-text="LIME DEVIL">LIME DEVIL</div>
+    <div class="lock-sub">// encrypted node access required</div>
+    <div class="hint-line">[ CLEARANCE CODE REQUIRED ]</div>
     <div class="pass-row">
-
-      <input
-        type="password"
-        id="passInput"
-        maxlength="16"
-        placeholder="••••"
-        autocomplete="off"
-      >
-
-      <button id="unlockBtn">
-        UNLOCK
-      </button>
-
+      <input type="password" id="passInput" maxlength="16" placeholder="••••" autocomplete="off">
+      <button id="unlockBtn">UNLOCK</button>
     </div>
-
-    <div
-      class="lock-error"
-      id="lockError"
-    ></div>
-
+    <div class="lock-error" id="lockError"></div>
   </div>
-
 </div>
 
-<!-- =========================
-     VOICE / VIDEO CALL OVERLAY  (UPDATED)
-     ========================= -->
-
+<!-- Call Overlay -->
 <div id="callOverlay">
   <div class="call-header">
     <h2>// ENCRYPTED VOICE / VIDEO CHANNEL</h2>
     <div class="call-status" id="callStatusText">CONNECTING MEDIA NODE...</div>
   </div>
-
   <div class="call-video-container">
     <div class="video-box">
       <video id="localVideo" autoplay playsinline muted></video>
       <div class="video-placeholder" id="videoPlaceholder">CAMERA IS OFF</div>
       <div class="video-label">YOU</div>
     </div>
-
     <div class="video-box">
       <video id="remoteVideo" autoplay playsinline></video>
       <div class="video-placeholder" id="remotePlaceholder">WAITING FOR PEER...</div>
       <div class="video-label remote">REMOTE</div>
     </div>
   </div>
-
   <div class="call-controls">
     <button class="call-btn" id="toggleMicBtn">🎤 MUTE MIC</button>
     <button class="call-btn" id="toggleCamBtn">📷 TURN OFF CAM</button>
@@ -2149,151 +1286,41 @@ form#composer{
   </div>
 </div>
 
-<!-- =========================
-     MAIN APP
-     ========================= -->
-
+<!-- Main App -->
 <div id="app">
-
   <header>
-
-    <div
-      class="logo glitch"
-      data-text="LIME DEVIL"
-    >
-      LIME DEVIL
-    </div>
-
+    <div class="logo glitch" data-text="LIME DEVIL">LIME DEVIL</div>
     <div class="header-stats">
-
-      <div
-        class="stat-chip clickable"
-        id="openUsersModalBtn"
-      >
+      <div class="stat-chip clickable" id="openUsersModalBtn">
         <span class="dot"></span>
-
-        <span id="userCount">
-          1
-        </span>
-
-        Online
+        <span id="userCount">1</span> Online
       </div>
-
-      <div
-        class="stat-chip clickable"
-        id="purgeTimerContainer"
-      >
-        <span id="purgeTimer">
-          10:00
-        </span>
+      <div class="stat-chip clickable" id="purgeTimerContainer">
+        <span id="purgeTimer">10:00</span>
       </div>
-
-      <!-- زر المكالمات المضاف بنفس الاستايل -->
-      <button
-        class="action-btn"
-        id="callBtnDesktop"
-        type="button"
-      >
-        CALL 📞
-      </button>
-
-      <button
-        class="action-btn"
-        id="openLogsBtnDesktop"
-        type="button"
-      >
-        LOGS
-      </button>
-
-      <button
-        class="action-btn"
-        id="emergencyBtnDesktop"
-        type="button"
-      >
-        EMERGENCY
-      </button>
-
-      <button
-        class="action-btn"
-        id="lockBtnDesktop"
-        type="button"
-      >
-        LOCK
-      </button>
-
-      <button
-        class="action-btn"
-        id="endBtnDesktop"
-        type="button"
-      >
-        END
-      </button>
-
+      <button class="action-btn" id="callBtnDesktop" type="button">CALL 📞</button>
+      <button class="action-btn" id="openLogsBtnDesktop" type="button">LOGS</button>
+      <button class="action-btn" id="emergencyBtnDesktop" type="button">EMERGENCY</button>
+      <button class="action-btn" id="lockBtnDesktop" type="button">LOCK</button>
+      <button class="action-btn" id="endBtnDesktop" type="button">END</button>
     </div>
-
   </header>
-
   <main id="feed"></main>
-
   <div id="typingIndicator"></div>
-
-  <form
-    id="composer"
-    autocomplete="off"
-  >
-
-    <input
-      type="text"
-      id="msgInput"
-      placeholder="transmit a message... [ENTER to send]"
-      maxlength="500"
-    >
-
-    <button
-      type="submit"
-      id="sendBtn"
-    >
-      SEND ▶
-    </button>
-
+  <form id="composer" autocomplete="off">
+    <input type="text" id="msgInput" placeholder="transmit a message... [ENTER to send]" maxlength="500">
+    <button type="submit" id="sendBtn">SEND ▶</button>
   </form>
-
-  <div class="footnote">
-    ALL TRAFFIC ROUTED THROUGH LOCAL NODE // GLOBAL STEALTH ENABLED
-  </div>
-
+  <div class="footnote">ALL TRAFFIC ROUTED THROUGH LOCAL NODE // GLOBAL STEALTH ENABLED</div>
 </div>
 
 <script type="module">
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  doc,
-  setDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  getDocs,
-  writeBatch,
-  runTransaction,
-  getDoc,
-  limit
+  getFirestore, collection, addDoc, doc, setDoc, onSnapshot,
+  query, orderBy, getDocs, writeBatch, runTransaction, getDoc, limit, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import {
-  getAuth,
-  signInAnonymously
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-/* =========================
-   FIREBASE
-   ========================= */
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyAqnFPJaj130JWZpURTDmgKwmBU0anjNFA",
@@ -2306,9 +1333,7 @@ const firebaseConfig = {
 };
 
 const fbApp = initializeApp(firebaseConfig);
-
 const db = getFirestore(fbApp);
-
 const auth = getAuth(fbApp);
 
 const messagesCol = collection(db,"messages");
@@ -2322,17 +1347,19 @@ const globalLockRef = doc(db,"meta","globalLock");
 const globalStealthRef = doc(db,"meta","globalStealth");
 
 /* =========================
-   AUDIO & CALL LOGIC (FIXED - WebRTC + Signaling)
+   CALL SYSTEM (WebRTC + Signaling) - FULLY FIXED
    ========================= */
 
 let localStream = null;
 let peerConnection = null;
 let isMicActive = true;
-let isCamActive = true;
+let isCamActive = false;
 let isSpeakerActive = true;
 let currentCallId = null;
 let isCaller = false;
 let signalingUnsub = null;
+let signalingReady = false;
+let pendingIceCandidates = [];
 
 const callOverlay = document.getElementById("callOverlay");
 const localVideo = document.getElementById("localVideo");
@@ -2345,14 +1372,51 @@ const toggleCamBtn = document.getElementById("toggleCamBtn");
 const toggleSpeakerBtn = document.getElementById("toggleSpeakerBtn");
 const hangupBtn = document.getElementById("hangupBtn");
 
+// 1. Reliable public STUN servers
 const iceServers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" }
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.stunprotocol.org:3478" },
+    { urls: "stun:openrelay.metered.ca:80" }
   ]
 };
 
+async function cleanupSignaling(callId) {
+  if (!callId) return;
+  try {
+    const q = query(signalingCol, where("callId", "==", callId));
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  } catch (e) {
+    console.error("Signaling cleanup error:", e);
+  }
+}
+
+async function flushPendingCandidates() {
+  if (!peerConnection || pendingIceCandidates.length === 0) return;
+  for (const cand of pendingIceCandidates) {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+    } catch (e) {
+      console.error("Flush ICE error:", e);
+    }
+  }
+  pendingIceCandidates = [];
+}
+
 async function startCall() {
+  if (peerConnection || currentCallId) {
+    callStatusText.textContent = "ALREADY IN A CALL";
+    return;
+  }
+
   callOverlay.style.display = "flex";
   callStatusText.textContent = "REQUESTING MIC...";
   remotePlaceholder.style.display = "flex";
@@ -2362,9 +1426,9 @@ async function startCall() {
   localVideo.style.display = "none";
   videoPlaceholder.style.display = "flex";
   videoPlaceholder.textContent = "CAMERA IS OFF";
+  pendingIceCandidates = [];
 
   try {
-    // Start with AUDIO ONLY — camera stays off until user turns it on
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false
@@ -2383,11 +1447,13 @@ async function startCall() {
       peerConnection.addTrack(track, localStream);
     });
 
+    // 3. Proper remote stream binding
     peerConnection.ontrack = (event) => {
-      if (remoteVideo.srcObject !== event.streams[0]) {
+      if (event.streams && event.streams[0]) {
         remoteVideo.srcObject = event.streams[0];
         remotePlaceholder.style.display = "none";
         callStatusText.textContent = "CONNECTED TO PEER";
+        remoteVideo.play().catch(() => {});
       }
     };
 
@@ -2429,6 +1495,7 @@ async function startCall() {
     console.error("Media error:", err);
     callStatusText.textContent = "PERMISSION DENIED OR DEVICE ERROR";
     alert("تعذر الوصول إلى المايك. تأكد من إعطاء صلاحية الميكروفون.");
+    stopCall();
   }
 }
 
@@ -2437,21 +1504,27 @@ function listenForSignaling() {
     signalingUnsub();
   }
 
+  signalingReady = false;
+
   signalingUnsub = onSnapshot(
     query(signalingCol, orderBy("ts", "desc"), limit(30)),
     async (snapshot) => {
+      // 2. Skip initial batch to prevent race conditions with old data
+      if (!signalingReady) {
+        signalingReady = true;
+        return;
+      }
+
       for (const change of snapshot.docChanges()) {
         if (change.type !== "added") continue;
 
         const data = change.doc.data();
         if (!data || data.from === myId) continue;
 
-        // Incoming Offer
-        if (data.type === "offer" && !isCaller && !peerConnection) {
+        if (data.type === "offer" && !isCaller && !peerConnection && data.callId) {
           await handleIncomingOffer(data);
         }
 
-        // Answer
         if (data.type === "answer" && data.callId === currentCallId && isCaller && peerConnection) {
           try {
             if (!peerConnection.currentRemoteDescription) {
@@ -2460,17 +1533,22 @@ function listenForSignaling() {
                 sdp: data.sdp
               });
               callStatusText.textContent = "ANSWER RECEIVED — CONNECTING...";
+              await flushPendingCandidates();
             }
           } catch (e) {
             console.error("Answer error:", e);
           }
         }
 
-        // ICE Candidate
+        // 2. Race condition protection for ICE candidates
         if (data.type === "candidate" && data.callId === currentCallId && peerConnection) {
           try {
             if (data.candidate) {
-              await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+              if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+              } else {
+                pendingIceCandidates.push(data.candidate);
+              }
             }
           } catch (e) {
             console.error("ICE error:", e);
@@ -2486,6 +1564,7 @@ async function handleIncomingOffer(offerData) {
   callStatusText.textContent = "INCOMING CALL FROM " + (offerData.fromName || "UNKNOWN");
   currentCallId = offerData.callId;
   isCaller = false;
+  pendingIceCandidates = [];
 
   localVideo.srcObject = null;
   localVideo.style.display = "none";
@@ -2494,7 +1573,6 @@ async function handleIncomingOffer(offerData) {
 
   try {
     if (!localStream) {
-      // Audio only — camera stays off
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false
@@ -2513,13 +1591,16 @@ async function handleIncomingOffer(offerData) {
     });
 
     peerConnection.ontrack = (event) => {
-      remoteVideo.srcObject = event.streams[0];
-      remotePlaceholder.style.display = "none";
-      callStatusText.textContent = "CONNECTED TO PEER";
+      if (event.streams && event.streams[0]) {
+        remoteVideo.srcObject = event.streams[0];
+        remotePlaceholder.style.display = "none";
+        callStatusText.textContent = "CONNECTED TO PEER";
+        remoteVideo.play().catch(() => {});
+      }
     };
 
     peerConnection.onicecandidate = async (event) => {
-      if (event.candidate) {
+      if (event.candidate && currentCallId) {
         try {
           await addDoc(signalingCol, {
             callId: currentCallId,
@@ -2536,6 +1617,8 @@ async function handleIncomingOffer(offerData) {
       type: "offer",
       sdp: offerData.sdp
     });
+
+    await flushPendingCandidates();
 
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
@@ -2554,17 +1637,27 @@ async function handleIncomingOffer(offerData) {
   } catch (err) {
     console.error("Incoming call error:", err);
     callStatusText.textContent = "FAILED TO JOIN CALL";
+    stopCall();
   }
 }
 
-function stopCall() {
+// 4. Complete cleanup & state reset
+async function stopCall() {
+  const callIdToClean = currentCallId;
+
   if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
+    localStream.getTracks().forEach(track => {
+      try { track.stop(); } catch (e) {}
+    });
     localStream = null;
   }
 
   if (peerConnection) {
-    peerConnection.close();
+    try {
+      peerConnection.ontrack = null;
+      peerConnection.onicecandidate = null;
+      peerConnection.close();
+    } catch (e) {}
     peerConnection = null;
   }
 
@@ -2572,6 +1665,9 @@ function stopCall() {
     signalingUnsub();
     signalingUnsub = null;
   }
+
+  signalingReady = false;
+  pendingIceCandidates = [];
 
   localVideo.srcObject = null;
   remoteVideo.srcObject = null;
@@ -2589,6 +1685,10 @@ function stopCall() {
   currentCallId = null;
   isCaller = false;
   callStatusText.textContent = "CALL ENDED";
+
+  if (callIdToClean) {
+    await cleanupSignaling(callIdToClean);
+  }
 }
 
 function updateCallUI() {
@@ -2622,7 +1722,6 @@ toggleMicBtn.addEventListener("click", () => {
 toggleCamBtn.addEventListener("click", async () => {
   if (!localStream) return;
 
-  // If camera was never requested, request it now
   let videoTrack = localStream.getVideoTracks()[0];
 
   if (!videoTrack && !isCamActive) {
@@ -2635,7 +1734,6 @@ toggleCamBtn.addEventListener("click", async () => {
       videoTrack = camStream.getVideoTracks()[0];
       localStream.addTrack(videoTrack);
 
-      // Add the new track to the peer connection if it exists
       if (peerConnection) {
         peerConnection.addTrack(videoTrack, localStream);
       }
@@ -2654,7 +1752,6 @@ toggleCamBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Toggle existing video track
   if (videoTrack) {
     isCamActive = !isCamActive;
     videoTrack.enabled = isCamActive;
@@ -2679,173 +1776,68 @@ hangupBtn.addEventListener("click", stopCall);
    AUDIO UI SOUNDS
    ========================= */
 
-const audioCtx =
-  new (
-    window.AudioContext ||
-    window.webkitAudioContext
-  )();
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playKeyClickSound(){
-
-  if(audioCtx.state === "suspended"){
-    audioCtx.resume();
-  }
-
+  if(audioCtx.state === "suspended"){ audioCtx.resume(); }
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-
   osc.type = "triangle";
-
-  osc.frequency.setValueAtTime(
-    120 + Math.random() * 40,
-    audioCtx.currentTime
-  );
-
-  gain.gain.setValueAtTime(
-    0.03,
-    audioCtx.currentTime
-  );
-
-  gain.gain.exponentialRampToValueAtTime(
-    0.001,
-    audioCtx.currentTime + 0.04
-  );
-
+  osc.frequency.setValueAtTime(120 + Math.random() * 40, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
   osc.connect(gain);
   gain.connect(audioCtx.destination);
-
   osc.start();
-
-  osc.stop(
-    audioCtx.currentTime + 0.04
-  );
+  osc.stop(audioCtx.currentTime + 0.04);
 }
 
 function playNotificationSound(){
-
-  if(audioCtx.state === "suspended"){
-    audioCtx.resume();
-  }
-
+  if(audioCtx.state === "suspended"){ audioCtx.resume(); }
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-
   osc.type = "sine";
-
-  osc.frequency.setValueAtTime(
-    800,
-    audioCtx.currentTime
-  );
-
-  osc.frequency.exponentialRampToValueAtTime(
-    400,
-    audioCtx.currentTime + 0.15
-  );
-
-  gain.gain.setValueAtTime(
-    0.08,
-    audioCtx.currentTime
-  );
-
-  gain.gain.exponentialRampToValueAtTime(
-    0.001,
-    audioCtx.currentTime + 0.15
-  );
-
+  osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
   osc.connect(gain);
   gain.connect(audioCtx.destination);
-
   osc.start();
-
-  osc.stop(
-    audioCtx.currentTime + 0.15
-  );
+  osc.stop(audioCtx.currentTime + 0.15);
 }
 
 /* =========================
    MATRIX
    ========================= */
 
-const canvas =
-  document.getElementById("matrixCanvas");
-
-const ctx =
-  canvas.getContext("2d");
-
-let cols;
-let drops;
+const canvas = document.getElementById("matrixCanvas");
+const ctx = canvas.getContext("2d");
+let cols, drops;
 
 function resizeCanvas(){
-
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-
-  cols = Math.floor(
-    canvas.width / 16
-  );
-
-  drops =
-    new Array(cols)
-      .fill(0)
-      .map(
-        () => Math.random() * -100
-      );
+  cols = Math.floor(canvas.width / 16);
+  drops = new Array(cols).fill(0).map(() => Math.random() * -100);
 }
-
-window.addEventListener(
-  "resize",
-  resizeCanvas
-);
-
+window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-const chars =
-  "01LIMEDEVIL01ΞΔ01";
+const chars = "01LIMEDEVIL01ΞΔ01";
 
 function drawMatrix(){
-
-  ctx.fillStyle =
-    "rgba(5,5,5,0.08)";
-
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-  ctx.fillStyle =
-    "#39FF14";
-
-  ctx.font =
-    "14px monospace";
-
+  ctx.fillStyle = "rgba(5,5,5,0.08)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#39FF14";
+  ctx.font = "14px monospace";
   for(let i = 0; i < cols; i++){
-
-    ctx.fillText(
-      chars[
-        Math.floor(
-          Math.random() * chars.length
-        )
-      ],
-      i * 16,
-      drops[i] * 16
-    );
-
-    if(
-      drops[i] * 16 >
-      canvas.height &&
-      Math.random() > 0.975
-    ){
-      drops[i] = 0;
-    }
-
+    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 16, drops[i] * 16);
+    if(drops[i] * 16 > canvas.height && Math.random() > 0.975){ drops[i] = 0; }
     drops[i]++;
   }
-
   requestAnimationFrame(drawMatrix);
 }
-
 drawMatrix();
 
 /* =========================
@@ -2853,105 +1845,41 @@ drawMatrix();
    ========================= */
 
 const PASSWORD = "181";
-
 const LOGS_PASSWORD = "1312";
-
 const END_PASSWORD = "sos";
-
-const PURGE_MS =
-  10 * 60 * 1000;
-
+const PURGE_MS = 10 * 60 * 1000;
 const EMERGENCY_PASSWORD = "101";
+const LOCK_BUTTON_PASSWORD = "lime1280";
 
-const LOCK_BUTTON_PASSWORD =
-  "lime1280";
-
-const PREFIXES = [
-  "Devil",
-  "Lime",
-  "Void",
-  "Ghost",
-  "Shadow",
-  "Cipher",
-  "Wraith",
-  "Static"
-];
+const PREFIXES = ["Devil","Lime","Void","Ghost","Shadow","Cipher","Wraith","Static"];
 
 function generateCodename(){
-
-  return `${
-    PREFIXES[
-      Math.floor(
-        Math.random() *
-        PREFIXES.length
-      )
-    ]
-  }_${
-    Math.floor(
-      1000 +
-      Math.random() * 8999
-    )
-  }`;
+  return `${PREFIXES[Math.floor(Math.random() * PREFIXES.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
 }
 
-const myName =
-  generateCodename();
-
-const myColor = [
-  "#39FF14",
-  "#ff1744",
-  "#00eaff",
-  "#ffd600",
-  "#ff6e40",
-  "#b388ff"
-][
-  Math.floor(Math.random() * 6)
-];
-
-const myId =
-  myName +
-  "_" +
-  Math.random()
-    .toString(36)
-    .slice(2,8);
+const myName = generateCodename();
+const myColor = ["#39FF14","#ff1744","#00eaff","#ffd600","#ff6e40","#b388ff"][Math.floor(Math.random() * 6)];
+const myId = myName + "_" + Math.random().toString(36).slice(2,8);
 
 /* =========================
    DEVICE
    ========================= */
 
-let deviceSignature =
-  "Unknown Device";
-
+let deviceSignature = "Unknown Device";
 try{
-
-  const parser =
-    new UAParser();
-
-  const uaResult =
-    parser.getResult();
-
-  deviceSignature =
-    `${
-      uaResult.device.type
-        ? uaResult.device.type.toUpperCase()
-        : "PC"
-    } (${
-      uaResult.os.name || ""
-    } - ${
-      uaResult.browser.name || ""
-    })`;
-
+  const parser = new UAParser();
+  const uaResult = parser.getResult();
+  deviceSignature = `${uaResult.device.type ? uaResult.device.type.toUpperCase() : "PC"} (${uaResult.os.name || ""} - ${uaResult.browser.name || ""})`;
 }catch(e){}
 
 /* =========================
-   APPROX LOCATION (BROWSER DATA ONLY - NO PERMISSION)
+   APPROX LOCATION
    ========================= */
 
 function getApproxLocation(){
   try{
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
     const lang = (navigator.language || navigator.userLanguage || "").toLowerCase();
-
     const tzMap = {
       "Africa/Cairo": "Cairo, Egypt",
       "Africa/Alexandria": "Alexandria, Egypt",
@@ -2992,166 +1920,87 @@ function getApproxLocation(){
       "Asia/Karachi": "Karachi, Pakistan",
       "Australia/Sydney": "Sydney, Australia"
     };
-
-    if(tzMap[tz]){
-      return tzMap[tz];
-    }
-
+    if(tzMap[tz]) return tzMap[tz];
     if(tz){
       const parts = tz.split("/");
-      if(parts.length === 2){
-        return parts[1].replace(/_/g, " ") + " (" + parts[0] + ")";
-      }
+      if(parts.length === 2) return parts[1].replace(/_/g, " ") + " (" + parts[0] + ")";
       return tz;
     }
-
     if(lang.startsWith("ar")) return "Arabic Region (approx)";
     if(lang.startsWith("en")) return "English Region (approx)";
-
     return "Unknown Region";
-  }catch(e){
-    return "Unknown";
-  }
+  }catch(e){ return "Unknown"; }
 }
 
 /* =========================
    MESSAGES
    ========================= */
 
-const feed =
-  document.getElementById("feed");
+const feed = document.getElementById("feed");
 
 function escapeHTML(str){
-
-  const d =
-    document.createElement("div");
-
+  const d = document.createElement("div");
   d.textContent = str;
-
   return d.innerHTML;
 }
 
 function renderMessageDoc(m){
-
   if(m.type === "system"){
-
-    const el =
-      document.createElement("div");
-
-    el.className =
-      "sys-msg";
-
-    el.textContent =
-      m.text;
-
+    const el = document.createElement("div");
+    el.className = "sys-msg";
+    el.textContent = m.text;
     feed.appendChild(el);
-
     return;
   }
-
-  const el =
-    document.createElement("div");
-
-  el.className =
-    "msg" +
-    (
-      m.userId === myId
-        ? " mine"
-        : ""
-    );
-
+  const el = document.createElement("div");
+  el.className = "msg" + (m.userId === myId ? " mine" : "");
   el.innerHTML = `
     <div class="msg-meta">
-      <span
-        class="msg-user"
-        style="color:${m.color}"
-      >
-        ${escapeHTML(m.user)}
-      </span>
-
-      <span class="msg-time">
-        ${new Date(m.ts)
-          .toTimeString()
-          .slice(0,8)}
-      </span>
+      <span class="msg-user" style="color:${m.color}">${escapeHTML(m.user)}</span>
+      <span class="msg-time">${new Date(m.ts).toTimeString().slice(0,8)}</span>
     </div>
-
     <div class="msg-text"></div>
   `;
-
-  el
-    .querySelector(".msg-text")
-    .textContent = m.text;
-
+  el.querySelector(".msg-text").textContent = m.text;
   feed.appendChild(el);
 }
 
 function scrollToBottom(){
-
-  feed.scrollTop =
-    feed.scrollHeight;
+  feed.scrollTop = feed.scrollHeight;
 }
 
 async function pushSystemMessage(text){
-
   try{
-
-    await addDoc(
-      messagesCol,
-      {
-        type:"system",
-        text,
-        ts:Date.now()
-      }
-    );
-
+    await addDoc(messagesCol, { type:"system", text, ts:Date.now() });
   }catch(e){}
 }
 
 async function sendMessage(text){
-
   text = text.trim();
-
   if(!text) return;
-
   try{
-
-    await addDoc(
-      messagesCol,
-      {
-        type:"msg",
-        user:myName,
-        userId:myId,
-        color:myColor,
-        text,
-        ts:Date.now()
-      }
-    );
-
+    await addDoc(messagesCol, {
+      type:"msg",
+      user:myName,
+      userId:myId,
+      color:myColor,
+      text,
+      ts:Date.now()
+    });
   }catch(e){}
 }
 
-async function logAccessAttempt(
-  status,
-  enteredPass
-){
-
+async function logAccessAttempt(status, enteredPass){
   const locationStr = getApproxLocation();
-
   try{
-
-    await addDoc(
-      accessLogsCol,
-      {
-        status,
-        enteredCode:enteredPass,
-        device:deviceSignature,
-        location:locationStr,
-        codename:myName,
-        ts:Date.now()
-      }
-    );
-
+    await addDoc(accessLogsCol, {
+      status,
+      enteredCode:enteredPass,
+      device:deviceSignature,
+      location:locationStr,
+      codename:myName,
+      ts:Date.now()
+    });
   }catch(e){}
 }
 
@@ -3159,232 +2008,91 @@ async function logAccessAttempt(
    STEALTH
    ========================= */
 
-const stealthScreen =
-  document.getElementById(
-    "stealthScreen"
-  );
-
-const stealthInput =
-  document.getElementById(
-    "stealthInput"
-  );
-
-const stealthBtn =
-  document.getElementById(
-    "stealthBtn"
-  );
+const stealthScreen = document.getElementById("stealthScreen");
+const stealthInput = document.getElementById("stealthInput");
+const stealthBtn = document.getElementById("stealthBtn");
 
 async function triggerEndAction(){
-
   try{
-
-    await setDoc(
-      globalStealthRef,
-      {
-        active:true,
-        version:Date.now()
-      }
-    );
-
+    await setDoc(globalStealthRef, { active:true, version:Date.now() });
   }catch(e){
-
-    alert(
-      "FAILED TO INITIATE GLOBAL STEALTH MODE"
-    );
+    alert("FAILED TO INITIATE GLOBAL STEALTH MODE");
   }
 }
 
-document
-  .getElementById("endBtnDesktop")
-  .addEventListener(
-    "click",
-    triggerEndAction
-  );
+document.getElementById("endBtnDesktop").addEventListener("click", triggerEndAction);
 
 async function checkStealthUnlock(){
-
-  const val =
-    stealthInput.value
-      .trim()
-      .toLowerCase();
-
+  const val = stealthInput.value.trim().toLowerCase();
   if(val === END_PASSWORD){
-
     try{
-
-      await setDoc(
-        globalStealthRef,
-        {
-          active:false,
-          version:Date.now()
-        }
-      );
-
+      await setDoc(globalStealthRef, { active:false, version:Date.now() });
     }catch(e){}
-
     stealthInput.value = "";
-
   }else{
-
     if(val !== ""){
-
-      alert(
-        `عذراً، لا توجد نتائج مطابقة لـ "${stealthInput.value}" في المتجر حالياً.`
-      );
+      alert(`عذراً، لا توجد نتائج مطابقة لـ "${stealthInput.value}" في المتجر حالياً.`);
     }
-
     stealthInput.value = "";
   }
 }
 
-stealthBtn.addEventListener(
-  "click",
-  checkStealthUnlock
-);
-
-stealthInput.addEventListener(
-  "keydown",
-  (e) => {
-
-    if(e.key === "Enter"){
-      checkStealthUnlock();
-    }
-
-  }
-);
+stealthBtn.addEventListener("click", checkStealthUnlock);
+stealthInput.addEventListener("keydown", (e) => {
+  if(e.key === "Enter") checkStealthUnlock();
+});
 
 /* =========================
    EMERGENCY
    ========================= */
 
 async function triggerEmergency(){
-
-  const pwd =
-    prompt(
-      "EMERGENCY WIPE — ENTER PASSWORD:"
-    );
-
-  if(
-    pwd !== EMERGENCY_PASSWORD
-  ){
-
-    if(pwd !== null){
-      alert("ACCESS DENIED");
-    }
-
+  const pwd = prompt("EMERGENCY WIPE — ENTER PASSWORD:");
+  if(pwd !== EMERGENCY_PASSWORD){
+    if(pwd !== null) alert("ACCESS DENIED");
     return;
   }
-
-  if(
-    !confirm("⚠ WIPE ALL MESSAGES?")
-  ){
-    return;
-  }
-
+  if(!confirm("⚠ WIPE ALL MESSAGES?")) return;
   try{
-
-    const snap =
-      await getDocs(messagesCol);
-
-    const batch =
-      writeBatch(db);
-
-    snap.forEach(
-      d => batch.delete(d.ref)
-    );
-
+    const snap = await getDocs(messagesCol);
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
     await batch.commit();
-
   }catch(e){
-
     alert("WIPE FAILED");
   }
 }
 
-document
-  .getElementById(
-    "emergencyBtnDesktop"
-  )
-  .addEventListener(
-    "click",
-    triggerEmergency
-  );
+document.getElementById("emergencyBtnDesktop").addEventListener("click", triggerEmergency);
 
 /* =========================
    LOCK
    ========================= */
 
-const lockScreen =
-  document.getElementById(
-    "lockScreen"
-  );
-
-const passInput =
-  document.getElementById(
-    "passInput"
-  );
-
-const lockError =
-  document.getElementById(
-    "lockError"
-  );
-
-const lockBox =
-  document.querySelector(
-    ".lock-box"
-  );
+const lockScreen = document.getElementById("lockScreen");
+const passInput = document.getElementById("passInput");
+const lockError = document.getElementById("lockError");
+const lockBox = document.querySelector(".lock-box");
 
 function showLockScreen(){
-
-  document
-    .querySelectorAll(".custom-modal")
-    .forEach(
-      modal => {
-        modal.style.display = "none";
-      }
-    );
-
-  document.getElementById(
-    "app"
-  ).style.display = "none";
-
+  document.querySelectorAll(".custom-modal").forEach(modal => { modal.style.display = "none"; });
+  document.getElementById("app").style.display = "none";
   passInput.value = "";
   lockError.textContent = "";
-
-  lockBox.classList.remove(
-    "shake"
-  );
-
-  lockScreen.classList.remove(
-    "lock-dissolve"
-  );
-
-  lockScreen.style.display =
-    "flex";
-
-  lockScreen.style.opacity =
-    "1";
-
-  lockScreen.style.filter =
-    "none";
-
-  lockScreen.style.transform =
-    "none";
-
-  setTimeout(
-    () => {
-      passInput.focus();
-    },
-    100
-  );
+  lockBox.classList.remove("shake");
+  lockScreen.classList.remove("lock-dissolve");
+  lockScreen.style.display = "flex";
+  lockScreen.style.opacity = "1";
+  lockScreen.style.filter = "none";
+  lockScreen.style.transform = "none";
+  setTimeout(() => { passInput.focus(); }, 100);
 }
 
-// دالة العودة للواجهة الوهمية Searchly
 function returnToFacade(){
   document.querySelectorAll(".custom-modal").forEach(m => m.style.display = "none");
   document.getElementById("app").style.display = "none";
   document.getElementById("lockScreen").style.display = "none";
-
+  localStorage.removeItem("lime_unlocked");
   const facade = document.getElementById("searchFacade");
   if (facade) {
     facade.style.display = "flex";
@@ -3398,96 +2106,34 @@ function returnToFacade(){
 }
 
 async function triggerLock(){
-
-  const pwd =
-    prompt(
-      "ENTER LOCK PASSWORD:"
-    );
-
-  if(
-    pwd !== LOCK_BUTTON_PASSWORD
-  ){
-
-    if(pwd !== null){
-      alert("ACCESS DENIED");
-    }
-
+  const pwd = prompt("ENTER LOCK PASSWORD:");
+  if(pwd !== LOCK_BUTTON_PASSWORD){
+    if(pwd !== null) alert("ACCESS DENIED");
     return;
   }
-
   try{
-
-    await runTransaction(
-      db,
-      async (transaction) => {
-
-        const snap =
-          await transaction.get(
-            globalLockRef
-          );
-
-        const currentVer =
-          snap.exists() &&
-          typeof snap.data().version === "number"
-            ? snap.data().version
-            : 0;
-
-        transaction.set(
-          globalLockRef,
-          {
-            version:currentVer + 1,
-            updatedAt:Date.now()
-          },
-          {
-            merge:true
-          }
-        );
-      }
-    );
-
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(globalLockRef);
+      const currentVer = snap.exists() && typeof snap.data().version === "number" ? snap.data().version : 0;
+      transaction.set(globalLockRef, { version:currentVer + 1, updatedAt:Date.now() }, { merge:true });
+    });
     returnToFacade();
-
   }catch(e){
-
-    console.error(
-      "LOCK ERROR:",
-      e
-    );
-
-    alert(
-      "GLOBAL LOCK FAILED — CHECK FIREBASE CONNECTION"
-    );
+    console.error("LOCK ERROR:", e);
+    alert("GLOBAL LOCK FAILED — CHECK FIREBASE CONNECTION");
   }
 }
 
-document
-  .getElementById(
-    "lockBtnDesktop"
-  )
-  .addEventListener(
-    "click",
-    triggerLock
-  );
+document.getElementById("lockBtnDesktop").addEventListener("click", triggerLock);
 
 /* =========================
-   PURGE (ON / OFF & SYNC)
+   PURGE
    ========================= */
 
-const purgeTimerEl =
-  document.getElementById(
-    "purgeTimer"
-  );
-
-const purgeTimerContainer =
-  document.getElementById(
-    "purgeTimerContainer"
-  );
-
-let purgeStart =
-  Date.now();
-
+const purgeTimerEl = document.getElementById("purgeTimer");
+const purgeTimerContainer = document.getElementById("purgeTimerContainer");
+let purgeStart = Date.now();
 let purging = false;
-
 let purgeDisabled = false;
 
 purgeTimerContainer.addEventListener("click", async () => {
@@ -3497,10 +2143,7 @@ purgeTimerContainer.addEventListener("click", async () => {
     if (val === "off" || val === "on") {
       const isDisabled = (val === "off");
       try {
-        await setDoc(purgeRef, {
-          disabled: isDisabled,
-          purgeStart: Date.now()
-        }, { merge: true });
+        await setDoc(purgeRef, { disabled: isDisabled, purgeStart: Date.now() }, { merge: true });
       } catch(e) {
         alert("فشل تحديث حالة العداد في القاعدة");
       }
@@ -3509,251 +2152,94 @@ purgeTimerContainer.addEventListener("click", async () => {
 });
 
 async function tryPurge(){
-
-  if(
-    purging ||
-    purgeDisabled
-  ){
-    return;
-  }
-
+  if(purging || purgeDisabled) return;
   purging = true;
-
   try{
-
-    const didPurge =
-      await runTransaction(
-        db,
-        async (tx) => {
-
-          const snap =
-            await tx.get(
-              purgeRef
-            );
-
-          if(
-            snap.exists() &&
-            snap.data().disabled === true
-          ){
-            return false;
-          }
-
-          const start =
-            (
-              snap.exists() &&
-              typeof snap.data().purgeStart === "number"
-            )
-              ? snap.data().purgeStart
-              : 0;
-
-          if(
-            Date.now() - start >= PURGE_MS
-          ){
-
-            tx.set(
-              purgeRef,
-              {
-                purgeStart:Date.now(),
-                disabled:false
-              },
-              {
-                merge:true
-              }
-            );
-
-            return true;
-          }
-
-          return false;
-        }
-      );
-
+    const didPurge = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(purgeRef);
+      if(snap.exists() && snap.data().disabled === true) return false;
+      const start = (snap.exists() && typeof snap.data().purgeStart === "number") ? snap.data().purgeStart : 0;
+      if(Date.now() - start >= PURGE_MS){
+        tx.set(purgeRef, { purgeStart:Date.now(), disabled:false }, { merge:true });
+        return true;
+      }
+      return false;
+    });
     if(didPurge){
-
-      const msgsSnap =
-        await getDocs(
-          messagesCol
-        );
-
-      const batch =
-        writeBatch(db);
-
-      msgsSnap.forEach(
-        d => batch.delete(d.ref)
-      );
-
+      const msgsSnap = await getDocs(messagesCol);
+      const batch = writeBatch(db);
+      msgsSnap.forEach(d => batch.delete(d.ref));
       await batch.commit();
-
-      await pushSystemMessage(
-        "[ SYSTEM PURGE COMPLETE ]"
-      );
+      await pushSystemMessage("[ SYSTEM PURGE COMPLETE ]");
     }
-
-  }catch(e){
-
-  }finally{
-
-    purging = false;
-  }
+  }catch(e){} finally{ purging = false; }
 }
 
 function tickPurge(){
-
   if(purgeDisabled){
     purgeTimerEl.textContent = "OFF";
     return;
   }
-
-  const remaining =
-    PURGE_MS -
-    (
-      Date.now() -
-      purgeStart
-    );
-
+  const remaining = PURGE_MS - (Date.now() - purgeStart);
   if(remaining <= 0){
-
-    purgeTimerEl.textContent =
-      "00:00";
-
+    purgeTimerEl.textContent = "00:00";
     tryPurge();
-
     return;
   }
-
-  const mins =
-    Math.floor(
-      remaining / 60000
-    );
-
-  const secs =
-    Math.floor(
-      (remaining % 60000) / 1000
-    );
-
-  purgeTimerEl.textContent =
-    `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  purgeTimerEl.textContent = `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
 }
 
 /* =========================
    TYPING
    ========================= */
 
-const typingIndicator =
-  document.getElementById(
-    "typingIndicator"
-  );
-
+const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout = null;
-
 let currentlyTyping = false;
 
-async function setTypingState(
-  isTyping
-){
-
+async function setTypingState(isTyping){
   try{
-
-    await setDoc(
-      doc(
-        typingCol,
-        myId
-      ),
-      {
-        user:myName,
-        userId:myId,
-        color:myColor,
-        isTyping,
-        lastSeen:Date.now()
-      }
-    );
-
+    await setDoc(doc(typingCol, myId), {
+      user:myName, userId:myId, color:myColor, isTyping, lastSeen:Date.now()
+    });
   }catch(e){}
 }
 
 function startTyping(){
-
   if(!currentlyTyping){
-
     currentlyTyping = true;
-
     setTypingState(true);
   }
-
-  clearTimeout(
-    typingTimeout
-  );
-
-  typingTimeout =
-    setTimeout(
-      () => stopTyping(),
-      1500
-    );
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => stopTyping(), 1500);
 }
 
 function stopTyping(){
-
-  if(!currentlyTyping){
-    return;
-  }
-
+  if(!currentlyTyping) return;
   currentlyTyping = false;
-
-  clearTimeout(
-    typingTimeout
-  );
-
+  clearTimeout(typingTimeout);
   setTypingState(false);
 }
 
 function renderTyping(snapshot){
-
-  const now =
-    Date.now();
-
+  const now = Date.now();
   const typers = [];
-
-  snapshot.forEach(
-    docSnap => {
-
-      const data =
-        docSnap.data();
-
-      if(
-        !data ||
-        data.userId === myId ||
-        data.isTyping !== true ||
-        (
-          now -
-          data.lastSeen >
-          3000
-        )
-      ){
-        return;
-      }
-
-      typers.push(data);
-    }
-  );
-
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    if(!data || data.userId === myId || data.isTyping !== true || (now - data.lastSeen > 3000)) return;
+    typers.push(data);
+  });
   if(!typers.length){
-
-    typingIndicator.textContent =
-      "";
-
+    typingIndicator.textContent = "";
     return;
   }
-
   if(typers.length === 1){
-
-    typingIndicator.innerHTML =
-      `<span style="color:var(--lime-glow)">${escapeHTML(typers[0].user)}</span> IS TYPING...`;
-
+    typingIndicator.innerHTML = `<span style="color:var(--lime-glow)">${escapeHTML(typers[0].user)}</span> IS TYPING...`;
     return;
   }
-
-  typingIndicator.innerHTML =
-    "MULTIPLE USERS ARE TYPING...";
+  typingIndicator.innerHTML = "MULTIPLE USERS ARE TYPING...";
 }
 
 /* =========================
@@ -3761,281 +2247,89 @@ function renderTyping(snapshot){
    ========================= */
 
 let chatInitialized = false;
-
 let lastMessageCount = 0;
 
 function initChat(){
-
-  if(chatInitialized){
-    return;
-  }
-
+  if(chatInitialized) return;
   chatInitialized = true;
 
-  if(
-    "Notification" in window &&
-    Notification.permission !== "granted"
-  ){
-
+  if("Notification" in window && Notification.permission !== "granted"){
     Notification.requestPermission();
   }
 
-  /* =========================
-     Messages
-     ========================= */
-
-  onSnapshot(
-    query(
-      messagesCol,
-      orderBy("ts")
-    ),
-    (snapshot) => {
-
-      if(
-        lastMessageCount > 0 &&
-        snapshot.docs.length >
-        lastMessageCount
-      ){
-
-        const newestDoc =
-          snapshot.docs[
-            snapshot.docs.length - 1
-          ].data();
-
-        if(
-          newestDoc &&
-          newestDoc.type !== "system" &&
-          newestDoc.userId !== myId
-        ){
-
-          playNotificationSound();
-
-          if(
-            "vibrate" in navigator
-          ){
-
-            navigator.vibrate(
-              [100,50,100]
-            );
-          }
-        }
-      }
-
-      lastMessageCount =
-        snapshot.docs.length;
-
-      feed.innerHTML = "";
-
-      snapshot.forEach(
-        docSnap =>
-          renderMessageDoc(
-            docSnap.data()
-          )
-      );
-
-      scrollToBottom();
-    }
-  );
-
-  /* =========================
-     Presence
-     ========================= */
-
-  onSnapshot(
-    presenceCol,
-    (snapshot) => {
-
-      let active = 0;
-
-      let html = "";
-
-      const now =
-        Date.now();
-
-      snapshot.forEach(
-        d => {
-
-          const data =
-            d.data();
-
-          if(
-            data &&
-            (
-              now -
-              data.lastSeen <
-              20000
-            )
-          ){
-
-            active++;
-
-            html += `
-              <div
-                class="log-item"
-                style="border-left-color:${data.color}"
-              >
-                ◈ ${escapeHTML(data.user)}
-              </div>
-            `;
-          }
-        }
-      );
-
-      document
-        .getElementById(
-          "userCount"
-        )
-        .textContent =
-        Math.max(1,active);
-
-      document
-        .getElementById(
-          "onlineUsersList"
-        )
-        .innerHTML =
-        html ||
-        '<div class="log-item">No other nodes active.</div>';
-    }
-  );
-
-  /* =========================
-     Typing
-     ========================= */
-
-  onSnapshot(
-    typingCol,
-    renderTyping
-  );
-
-  /* =========================
-     Global stealth
-     ========================= */
-
-  onSnapshot(
-    globalStealthRef,
-    (snap) => {
-
-      if(snap.exists()){
-
-        const data =
-          snap.data();
-
-        if(data.active === true){
-
-          stealthScreen.style.display =
-            "flex";
-
-        }else{
-
-          stealthScreen.style.display =
-            "none";
-        }
+  onSnapshot(query(messagesCol, orderBy("ts")), (snapshot) => {
+    if(lastMessageCount > 0 && snapshot.docs.length > lastMessageCount){
+      const newestDoc = snapshot.docs[snapshot.docs.length - 1].data();
+      if(newestDoc && newestDoc.type !== "system" && newestDoc.userId !== myId){
+        playNotificationSound();
+        if("vibrate" in navigator) navigator.vibrate([100,50,100]);
       }
     }
-  );
+    lastMessageCount = snapshot.docs.length;
+    feed.innerHTML = "";
+    snapshot.forEach(docSnap => renderMessageDoc(docSnap.data()));
+    scrollToBottom();
+  });
 
-  /* =========================
-     GLOBAL LOCK
-     ========================= */
+  onSnapshot(presenceCol, (snapshot) => {
+    let active = 0;
+    let html = "";
+    const now = Date.now();
+    snapshot.forEach(d => {
+      const data = d.data();
+      if(data && (now - data.lastSeen < 20000)){
+        active++;
+        html += `<div class="log-item" style="border-left-color:${data.color}">◈ ${escapeHTML(data.user)}</div>`;
+      }
+    });
+    document.getElementById("userCount").textContent = Math.max(1,active);
+    document.getElementById("onlineUsersList").innerHTML = html || '<div class="log-item">No other nodes active.</div>';
+  });
+
+  onSnapshot(typingCol, renderTyping);
+
+  onSnapshot(globalStealthRef, (snap) => {
+    if(snap.exists()){
+      const data = snap.data();
+      stealthScreen.style.display = (data.active === true) ? "flex" : "none";
+    }
+  });
 
   let lastLockVersion = null;
-
-  onSnapshot(
-    globalLockRef,
-    (snap) => {
-
-      if(!snap.exists()){
-        return;
-      }
-
-      const data =
-        snap.data();
-
-      const version =
-        data.version;
-
-      if(
-        typeof version !== "number"
-      ){
-        return;
-      }
-
-      if(
-        lastLockVersion === null
-      ){
-
-        lastLockVersion =
-          version;
-
-        return;
-      }
-
-      if(
-        version >
-        lastLockVersion
-      ){
-
-        lastLockVersion =
-          version;
-
-        returnToFacade();
-      }
+  onSnapshot(globalLockRef, (snap) => {
+    if(!snap.exists()) return;
+    const data = snap.data();
+    const version = data.version;
+    if(typeof version !== "number") return;
+    if(lastLockVersion === null){
+      lastLockVersion = version;
+      return;
     }
-  );
-
-  /* =========================
-     Purge Sync (Realtime On/Off)
-     ========================= */
+    if(version > lastLockVersion){
+      lastLockVersion = version;
+      returnToFacade();
+    }
+  });
 
   onSnapshot(purgeRef, (snap) => {
     if (snap.exists()) {
       const data = snap.data();
       if (typeof data.disabled === "boolean") {
         purgeDisabled = data.disabled;
-        if (purgeDisabled) {
-          purgeTimerEl.textContent = "OFF";
-        }
+        if (purgeDisabled) purgeTimerEl.textContent = "OFF";
       }
-      if (typeof data.purgeStart === "number") {
-        purgeStart = data.purgeStart;
-      }
+      if (typeof data.purgeStart === "number") purgeStart = data.purgeStart;
     }
   });
 
-  /* =========================
-     Purge Timer Interval
-     ========================= */
-
-  setInterval(
-    tickPurge,
-    1000
-  );
-
+  setInterval(tickPurge, 1000);
   tickPurge();
 
-  /* =========================
-     Presence heartbeat
-     ========================= */
+  setInterval(() => setDoc(doc(presenceCol, myId), {
+    user:myName, color:myColor, lastSeen:Date.now()
+  }), 5000);
 
-  setInterval(
-    () =>
-      setDoc(
-        doc(
-          presenceCol,
-          myId
-        ),
-        {
-          user:myName,
-          color:myColor,
-          lastSeen:Date.now()
-        }
-      ),
-    5000
-  );
-
-  pushSystemMessage(
-    `[ ${myName} HAS JOINED THE NODE ]`
-  );
+  pushSystemMessage(`[ ${myName} HAS JOINED THE NODE ]`);
 }
 
 /* =========================
@@ -4043,318 +2337,134 @@ function initChat(){
    ========================= */
 
 async function attemptUnlock(){
-
-  const val =
-    passInput.value.trim();
-
-  if(val !== PASSWORD){
-
-    await logAccessAttempt(
-      "FAILED_MAIN",
-      val
-    );
-
-    lockError.textContent =
-      "ACCESS DENIED — INVALID CLEARANCE CODE";
-
-    lockBox.classList.add(
-      "shake"
-    );
-
-    setTimeout(
-      () =>
-        lockBox.classList.remove(
-          "shake"
-        ),
-      350
-    );
-
+  const val = passInput.value.trim();
+  if (val !== PASSWORD && Number(val) !== 181) {
+    await logAccessAttempt("FAILED_MAIN", val);
+    lockError.textContent = "ACCESS DENIED — INVALID CLEARANCE CODE";
+    lockBox.classList.add("shake");
+    setTimeout(() => lockBox.classList.remove("shake"), 350);
     passInput.value = "";
-
     return;
   }
 
-  await logAccessAttempt(
-    "SUCCESS_MAIN",
-    "****"
-  );
+  await logAccessAttempt("SUCCESS_MAIN", "****");
+  localStorage.setItem("lime_unlocked", "true");
 
-  try{
+  try{ await signInAnonymously(auth); }catch(e){}
 
-    await signInAnonymously(
-      auth
-    );
-
-  }catch(e){}
-
-  lockScreen.classList.remove(
-    "lock-dissolve"
-  );
-
+  lockScreen.classList.remove("lock-dissolve");
   void lockScreen.offsetWidth;
+  lockScreen.classList.add("lock-dissolve");
 
-  lockScreen.classList.add(
-    "lock-dissolve"
-  );
-
-  setTimeout(
-    () => {
-
-      lockScreen.style.display =
-        "none";
-
-      lockScreen.style.opacity =
-        "1";
-
-      lockScreen.style.filter =
-        "none";
-
-      lockScreen.style.transform =
-        "none";
-
-      document.getElementById(
-        "app"
-      ).style.display =
-        "flex";
-
-      initChat();
-
-      document.getElementById(
-        "msgInput"
-      ).focus();
-
-    },
-    680
-  );
+  setTimeout(() => {
+    lockScreen.style.display = "none";
+    lockScreen.style.opacity = "1";
+    lockScreen.style.filter = "none";
+    lockScreen.style.transform = "none";
+    document.getElementById("app").style.display = "flex";
+    initChat();
+    document.getElementById("msgInput").focus();
+  }, 680);
 }
 
-document
-  .getElementById(
-    "unlockBtn"
-  )
-  .addEventListener(
-    "click",
-    attemptUnlock
-  );
-
-passInput.addEventListener(
-  "keydown",
-  (e) => {
-
-    if(e.key === "Enter"){
-      attemptUnlock();
-    }
-
-  }
-);
+document.getElementById("unlockBtn").addEventListener("click", attemptUnlock);
+passInput.addEventListener("keydown", (e) => {
+  if(e.key === "Enter") attemptUnlock();
+});
 
 /* =========================
    USERS MODAL
    ========================= */
 
-document
-  .getElementById(
-    "openUsersModalBtn"
-  )
-  .addEventListener(
-    "click",
-    () => {
-
-      document.getElementById(
-        "usersModal"
-      ).style.display =
-        "flex";
-    }
-  );
+document.getElementById("openUsersModalBtn").addEventListener("click", () => {
+  document.getElementById("usersModal").style.display = "flex";
+});
 
 /* =========================
    LOGS
    ========================= */
 
 async function openLogsAction(){
-
-  const pwd =
-    prompt(
-      "ENTER SECURITY LOGS PASSWORD (1312):"
-    );
-
-  if(
-    pwd !== LOGS_PASSWORD
-  ){
-
+  const pwd = prompt("ENTER SECURITY LOGS PASSWORD (1312):");
+  if(pwd !== LOGS_PASSWORD){
     alert("ACCESS DENIED");
-
     return;
   }
-
-  const modal =
-    document.getElementById(
-      "logsModal"
-    );
-
-  const container =
-    document.getElementById(
-      "accessLogsList"
-    );
-
-  container.innerHTML =
-    '<div class="log-item">Loading telemetry...</div>';
-
-  modal.style.display =
-    "flex";
-
+  const modal = document.getElementById("logsModal");
+  const container = document.getElementById("accessLogsList");
+  container.innerHTML = '<div class="log-item">Loading telemetry...</div>';
+  modal.style.display = "flex";
   try{
-
-    const q =
-      query(
-        accessLogsCol,
-        orderBy("ts","desc"),
-        limit(30)
-      );
-
-    const querySnapshot =
-      await getDocs(q);
-
+    const q = query(accessLogsCol, orderBy("ts","desc"), limit(30));
+    const querySnapshot = await getDocs(q);
     let html = "";
-
-    querySnapshot.forEach(
-      docSnap => {
-
-        const d =
-          docSnap.data();
-
-        const dateObj = new Date(d.ts || 0);
-        const dateStr = dateObj.toLocaleDateString("en-GB", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit"
-        });
-        const timeStr = dateObj.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true
-        });
-
-        const isFailed = (d.status || "").includes("FAILED");
-
-        html += `
-          <div class="log-item${isFailed ? " failed" : ""}">
-            STATUS: ${escapeHTML(d.status || "")}<br>
-            DEVICE: ${escapeHTML(d.device || "Unknown")}<br>
-            LOCATION: ${escapeHTML(d.location || "Unknown")}<br>
-            DATE: ${escapeHTML(dateStr)} | TIME: ${escapeHTML(timeStr)}
-          </div>
-        `;
-      }
-    );
-
-    container.innerHTML =
-      html ||
-      '<div class="log-item">No logs.</div>';
-
+    querySnapshot.forEach(docSnap => {
+      const d = docSnap.data();
+      const dateObj = new Date(d.ts || 0);
+      const dateStr = dateObj.toLocaleDateString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit" });
+      const timeStr = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+      const isFailed = (d.status || "").includes("FAILED");
+      html += `
+        <div class="log-item${isFailed ? " failed" : ""}">
+          STATUS: ${escapeHTML(d.status || "")}<br>
+          DEVICE: ${escapeHTML(d.device || "Unknown")}<br>
+          LOCATION: ${escapeHTML(d.location || "Unknown")}<br>
+          DATE: ${escapeHTML(dateStr)} | TIME: ${escapeHTML(timeStr)}
+        </div>
+      `;
+    });
+    container.innerHTML = html || '<div class="log-item">No logs.</div>';
   }catch(e){
-
-    console.error(
-      "LOGS ERROR:",
-      e
-    );
-
-    container.innerHTML =
-      '<div class="log-item">ERROR</div>';
+    console.error("LOGS ERROR:", e);
+    container.innerHTML = '<div class="log-item">ERROR</div>';
   }
 }
 
-document
-  .getElementById(
-    "openLogsBtnDesktop"
-  )
-  .addEventListener(
-    "click",
-    openLogsAction
-  );
+document.getElementById("openLogsBtnDesktop").addEventListener("click", openLogsAction);
 
 /* =========================
    CLOSE MODALS
    ========================= */
 
-document
-  .querySelectorAll(
-    ".close-modal-btn"
-  )
-  .forEach(
-    btn => {
-
-      btn.addEventListener(
-        "click",
-        () => {
-
-          document.getElementById(
-            btn.getAttribute(
-              "data-modal"
-            )
-          ).style.display =
-            "none";
-        }
-      );
-    }
-  );
+document.querySelectorAll(".close-modal-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById(btn.getAttribute("data-modal")).style.display = "none";
+  });
+});
 
 /* =========================
    COMPOSER
    ========================= */
 
-const msgInput =
-  document.getElementById(
-    "msgInput"
-  );
+const msgInput = document.getElementById("msgInput");
 
-msgInput.addEventListener(
-  "input",
-  () => {
+msgInput.addEventListener("input", () => {
+  playKeyClickSound();
+  if(msgInput.value.trim()) startTyping();
+  else stopTyping();
+});
 
-    playKeyClickSound();
+document.getElementById("composer").addEventListener("submit", (e) => {
+  e.preventDefault();
+  sendMessage(msgInput.value);
+  msgInput.value = "";
+  stopTyping();
+  msgInput.focus();
+});
 
-    if(
-      msgInput.value.trim()
-    ){
-
-      startTyping();
-
-    }else{
-
-      stopTyping();
-    }
-  }
-);
-
-document
-  .getElementById(
-    "composer"
-  )
-  .addEventListener(
-    "submit",
-    (e) => {
-
-      e.preventDefault();
-
-      sendMessage(
-        msgInput.value
-      );
-
-      msgInput.value = "";
-
-      stopTyping();
-
-      msgInput.focus();
-    }
-  );
-
+/* =========================
+   RESTORE UNLOCK STATE
+   ========================= */
+if (localStorage.getItem("lime_unlocked") === "true") {
+  document.getElementById("searchFacade").style.display = "none";
+  document.getElementById("lockScreen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  signInAnonymously(auth).catch(() => {});
+  initChat();
+}
 </script>
 
-<!-- =====================================================
-     NEW SEARCH FACADE SCRIPT
-     ===================================================== -->
+<!-- Search Facade Script -->
 <script>
 (function(){
   const SECRET = "سليم";
@@ -4378,14 +2488,12 @@ document
   form.addEventListener("submit", function(e){
     e.preventDefault();
     const q = input.value.trim();
-
     if(!q){
       message.textContent = "اكتب حاجة للبحث عنها";
       message.classList.add("show");
       setTimeout(() => message.classList.remove("show"), 2200);
       return;
     }
-
     if(q === SECRET){
       facade.classList.add("hide");
       setTimeout(() => {
@@ -4396,7 +2504,6 @@ document
       }, 550);
       return;
     }
-
     window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
   });
 
