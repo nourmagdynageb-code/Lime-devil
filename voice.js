@@ -1,5 +1,6 @@
 // voice.js
 // Final bulletproof voice recorder & player.
+// v8: Prefer MP4/AAC for cross-device playback (iPhone + Android + PC).
 // Converts data: URLs to blob: URLs before playback (Chrome WebM/Opus fix).
 
 // ============================================================
@@ -13,9 +14,9 @@ export function registerVoiceDuration(src, durationMs) {
 }
 
 // ============================================================
-//  DATA URL → BLOB URL  (الحل الجذري لمشكلة Chrome)
+//  DATA URL → BLOB URL
 // ============================================================
-const blobUrlCache = new Map(); // data URL → blob URL
+const blobUrlCache = new Map();
 
 function dataUrlToObjectUrl(dataUrl) {
   if (!dataUrl || typeof dataUrl !== "string") return dataUrl;
@@ -30,25 +31,22 @@ function dataUrlToObjectUrl(dataUrl) {
     const header = dataUrl.slice(0, commaIdx);
     const base64 = dataUrl.slice(commaIdx + 1);
 
-    // استخرج mime وأزل ;codecs=... (Chrome مش بيحبها في data URLs)
     const mimeMatch = header.match(/^data:([^;,]+)/i);
     let mime = mimeMatch ? mimeMatch[1].toLowerCase() : "audio/webm";
     if (!mime || mime === "application/octet-stream") mime = "audio/webm";
 
-    // فك الـ base64
     const binary = atob(base64);
     const len = binary.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
 
-    // أنشئ blob و URL
     const blob = new Blob([bytes], { type: mime });
     const url = URL.createObjectURL(blob);
     blobUrlCache.set(dataUrl, url);
     return url;
   } catch (e) {
     console.error("[VOICE] dataUrl→objectUrl failed:", e);
-    return dataUrl; // fallback: نرجع الأصلي
+    return dataUrl;
   }
 }
 
@@ -84,7 +82,6 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
   let finalSrc;
 
   if (typeof audioOrSrc === "string") {
-    // ✅ الحل: حوّل data: → blob: قبل التشغيل
     finalSrc = dataUrlToObjectUrl(audioOrSrc);
     audio = new Audio();
     audio.src = finalSrc;
@@ -94,7 +91,6 @@ function createCustomAudioPlayer(audioOrSrc, durationMs, accent = "#39FF14") {
     audio = audioOrSrc;
     const raw = getAudioSrc(audio);
     finalSrc = dataUrlToObjectUrl(raw);
-    // لو كان data URL، بدّله بـ blob URL
     if (finalSrc && finalSrc !== raw) {
       try { audio.src = finalSrc; audio.load(); } catch (_) {}
     }
@@ -364,7 +360,7 @@ function scanAndWrapAll() {
     list: () => Array.from(document.querySelectorAll("audio")),
     registry: voiceDurationRegistry,
     convert: dataUrlToObjectUrl,
-    version: "blob-v7"
+    version: "blob-v8-mp4"
   };
 })();
 
@@ -395,14 +391,24 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const MIN_RECORDING_MS = 1200;
   const STOP_WATCHDOG_MS = 4000;
 
+  // ✅ v8: MP4/AAC أولاً للتوافق بين كل الأجهزة (iPhone + Android + PC)
   function getSupportedMimeType() {
     const candidates = [
-      "audio/webm;codecs=opus", "audio/webm",
-      "audio/ogg;codecs=opus", "audio/ogg",
-      "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/mpeg"
+      "audio/mp4;codecs=mp4a.40.2",
+      "audio/mp4",
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mpeg"
     ];
     for (const t of candidates) {
-      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (_) {}
+      try {
+        if (MediaRecorder.isTypeSupported(t)) {
+          console.log("[VOICE] Selected mime type:", t);
+          return t;
+        }
+      } catch (_) {}
     }
     return "";
   }
@@ -478,7 +484,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         registerVoiceDuration(dataUrl, durationMs || 0);
         await addDoc(messagesCol, {
           type: "voice", audioData: dataUrl,
-          audioType: audioBlob.type || "audio/webm",
+          audioType: audioBlob.type || "audio/mp4",
           durationMs: durationMs || 0,
           from: myId, fromName: myName,
           userId: myId, user: myName, ts: Date.now()
@@ -534,7 +540,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
         clearWatchdog();
         const measuredMs = Date.now() - recordingStartedAt;
         lastRecordingMs = Math.max(measuredMs, MIN_RECORDING_MS);
-        const finalType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || "audio/webm";
+        const finalType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || "audio/mp4";
         if (audioChunks.length > 0) {
           audioBlob = new Blob(audioChunks, { type: finalType });
           if (audioBlob.size > 0) createPreviewPopup(audioBlob, lastRecordingMs);
