@@ -1,8 +1,7 @@
 // voice.js
 // Final bulletproof voice recorder & player renderer for desktop & mobile.
-// Fixes: duration 0:00 in webm via ts-ebml metadata patching + codec negotiation + watchdog.
-
-import { Decoder, tools, Reader } from "ts-ebml";
+// Fixes: duration 0:00 in webm via lazy-loaded ts-ebml + codec negotiation + watchdog.
+// SAFE: لا يوجد import مباشر — لو ts-ebml مش موجود، الكود يكمل عادي.
 
 export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const micBtn = document.getElementById("voiceMicBtn");
@@ -30,40 +29,57 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
   const MIN_RECORDING_MS = 1200;
   const STOP_WATCHDOG_MS = 4000;
 
+  // وحدة ts-ebml — تُحمَّل بشكل lazy عند أول استخدام فقط.
+  let tsEbmlModule = null;
+  let tsEbmlLoadFailed = false;
+
   /**
-   * اختيار صيغة مدعومة مع codec صريح.
-   * الأولوية لـ webm/opus لأنه الأفضل دعماً للمدة على Chrome/Firefox/Edge.
-   * ثم mp4/aac لـ Safari/iOS.
+   * محاولة تحميل مكتبة ts-ebml بأمان.
+   * لو فشلت لأي سبب، نرجع null بدون ما نكسر باقي الكود.
    */
-  function getSupportedMimeType() {
-    const candidates = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-      "audio/ogg",
-      "audio/mp4;codecs=mp4a.40.2",
-      "audio/mp4",
-      "audio/mpeg"
-    ];
-    for (const type of candidates) {
-      try {
-        if (MediaRecorder.isTypeSupported(type)) return type;
-      } catch (_) {}
+  async function loadTsEbml() {
+    if (tsEbmlModule) return tsEbmlModule;
+    if (tsEbmlLoadFailed) return null;
+
+    // 1) لو المكتبة محمّلة مسبقاً على window (من CDN مثلاً)
+    if (typeof window !== "undefined") {
+      const globalLib = window.tsEBML || window.tsEml || window.TsEbml;
+      if (globalLib && globalLib.Decoder && globalLib.tools && globalLib.Reader) {
+        tsEbmlModule = globalLib;
+        return tsEbmlModule;
+      }
     }
-    return "";
+
+    // 2) محاولة dynamic import (يعمل فقط لو المشروع فيه bundler)
+    try {
+      const mod = await import(/* @vite-ignore */ "ts-ebml");
+      if (mod && mod.Decoder && mod.tools && mod.Reader) {
+        tsEbmlModule = mod;
+        return tsEbmlModule;
+      }
+    } catch (_) {
+      // نتجاهل الخطأ بهدوء — لا نكسر المشروع
+    }
+
+    tsEbmlLoadFailed = true;
+    console.warn("[VOICE] ts-ebml not available — duration fix disabled.");
+    return null;
   }
 
   /**
    * إصلاح ملفات webm بإضافة metadata المدة الصحيحة.
-   * الحل ده ضروري لأن Chrome ما بيكتبش حقل Duration في تسجيلات MediaRecorder.
-   * لو فشل لأي سبب، نرجع الـ blob الأصلي (fallback آمن).
+   * لو المكتبة مش متاحة أو فشل الإصلاح، نرجع الـ blob الأصلي.
    */
   async function fixWebmDuration(blob) {
     if (!blob || !blob.type || !blob.type.includes("webm")) {
       return blob;
     }
 
+    const lib = await loadTsEbml();
+    if (!lib) return blob;
+
     try {
+      const { Decoder, tools, Reader } = lib;
       const arrayBuffer = await blob.arrayBuffer();
       const decoder = new Decoder();
       const reader = new Reader();
@@ -96,6 +112,27 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
       console.warn("[VOICE] fixWebmDuration failed, using original blob:", err);
       return blob;
     }
+  }
+
+  /**
+   * اختيار صيغة مدعومة مع codec صريح.
+   */
+  function getSupportedMimeType() {
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mp4;codecs=mp4a.40.2",
+      "audio/mp4",
+      "audio/mpeg"
+    ];
+    for (const type of candidates) {
+      try {
+        if (MediaRecorder.isTypeSupported(type)) return type;
+      } catch (_) {}
+    }
+    return "";
   }
 
   function cleanupStream() {
@@ -305,7 +342,7 @@ export function initVoiceSystem({ db, messagesCol, myId, myName, addDoc }) {
           const rawBlob = new Blob(audioChunks, { type: finalType });
 
           if (rawBlob.size > 0) {
-            // ✅ إصلاح مدة الـ webm قبل العرض
+            // محاولة إصلاح المدة — لو المكتبة غير متاحة، نرجع الـ blob كما هو
             audioBlob = await fixWebmDuration(rawBlob);
             createPreviewPopup(audioBlob);
           } else {
