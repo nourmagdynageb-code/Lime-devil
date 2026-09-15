@@ -13,34 +13,19 @@ const PORT = process.env.PORT || 3000;
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ============================================================
-//  Body parser (للتسجيلات الكبيرة)
+//  Body parser
 // ============================================================
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ============================================================
-//  Security headers — CSP مرن يدعم blob: و Firebase
+//  CORS — عشان Firebase و أي API تشتغل بدون قيود
 // ============================================================
 app.use((req, res, next) => {
   res.removeHeader('Cross-Origin-Embedder-Policy');
   res.removeHeader('Cross-Origin-Opener-Policy');
   res.removeHeader('Cross-Origin-Resource-Policy');
-
-  res.setHeader(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https: https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebase.com",
-      "style-src 'self' 'unsafe-inline' https:",
-      "img-src 'self' data: blob: https:",
-      "media-src 'self' blob: data: https:",
-      "connect-src 'self' blob: data: https: wss: https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://*.firebase.com",
-      "font-src 'self' data: https:",
-      "frame-src 'self' https:",
-      "worker-src 'self' blob:"
-    ].join('; ')
-  );
-
+  // ملاحظة: مفيش Content-Security-Policy هنا — سايبينها مفتوحة
   next();
 });
 
@@ -54,7 +39,6 @@ app.post('/api/convert-audio', async (req, res) => {
       return res.status(400).json({ error: 'Invalid audio data' });
     }
 
-    // استخرج الـ mime ونوع الملف
     const m = audioDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!m) {
       return res.status(400).json({ error: 'Bad data URL format' });
@@ -64,7 +48,6 @@ app.post('/api/convert-audio', async (req, res) => {
     const base64Data = m[2];
     const inputBuffer = Buffer.from(base64Data, 'base64');
 
-    // حدد inputFormat من الـ mime
     let inputFormat = 'webm';
     if (inputMime.includes('mp4')) inputFormat = 'mp4';
     else if (inputMime.includes('ogg')) inputFormat = 'ogg';
@@ -109,28 +92,24 @@ app.post('/api/convert-audio', async (req, res) => {
 });
 
 // ============================================================
-//  Static files — يقدم index.html, voice.js, call.js
+//  Static files
 // ============================================================
-app.use(express.static(__dirname, {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    }
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    }
-  }
-}));
+app.use(express.static(__dirname));
 
 // ============================================================
-//  Fallback: أي route → index.html
+//  Fallback — للمسارات اللي من غير امتداد بس
+//  (عشان مايتداخلش مع ملفات مفقودة)
 // ============================================================
 app.get('*', (req, res) => {
+  // لو المسار فيه امتداد ملف (زي .json .js .png) → رجّع 404 عادي
+  if (/\.\w+$/.test(req.path)) {
+    return res.status(404).send('Not found');
+  }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ============================================================
-//  Start server  ← ده اللي كان ناقص!
+//  Start server
 // ============================================================
 app.listen(PORT, () => {
   console.log(`✅ Lime Devil server running on port ${PORT}`);
